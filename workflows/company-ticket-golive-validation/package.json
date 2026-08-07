@@ -1,0 +1,10 @@
+{
+  "name": "company-ticket-golive-validation",
+  "version": "1.0.0",
+  "private": true,
+  "description": "HubSpot workflow custom code action: validates that a Company's Target Go-Live Date matches the Target Go Live Date on its associated Onboarding Pipeline Ticket.",
+  "main": "src/index.js",
+  "dependencies": {
+    "@hubspot/api-client": "^11.1.0"
+  }
+}
