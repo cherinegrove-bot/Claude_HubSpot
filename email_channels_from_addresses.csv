@@ -1,0 +1,348 @@
+Inbox,Channel Name (From Name),From Address,Facility Address (customers email),Connected Address in HubSpot,Active,Conversations,Channel Instance ID,Notes
+Help Desk,377 Boat & RV Storage,reserve@377boatrvstorage.com,reserve@377boatrvstorage.com,hello-347@whitelabelstorage.hs-inbox.com,True,157,1481369370,
+Help Desk,49 Self Storage,support@49selfstorage.com,support@49selfstorage.com,hello-520@whitelabelstorage.hs-inbox.com,True,192,1491909168,
+Help Desk,6B Storage & RV,reserve@6bstorage.com,reserve@6bstorage.com,hello-628@whitelabelstorage.hs-inbox.com,True,90,2265236934,
+Help Desk,724 Safe Storage,reserve@724safestorage.com,reserve@724safestorage.com,hello-348@whitelabelstorage.hs-inbox.com,True,75,3112362356,
+Help Desk,A1 Self Storage,reserve@selfstoragemooresville.net,info@rivertownstorage.com,hello-877@whitelabelstorage.hs-inbox.com,True,75,3777246054,agent reply in sample came from reserve@selfstoragemooresville.net (A1 Self Storage) though inbound TO was info@rivertownstorage.com
+Help Desk,A1 Self Storage,reserve@selfstoragemooresville.net,reserve@selfstoragemooresville.net,hello-154@whitelabelstorage.hs-inbox.com,True,1095,1416994222,
+Help Desk,"Aaron Bros. Self Storage, Inc.",aaronbros@westorechicago.com,aaronbros@westorechicago.com,hello-263@whitelabelstorage.hs-inbox.com,True,21,3627587068,
+Help Desk,Advanced Self Storage,reserve@storagejc.com,reserve@storagejc.com,hello-876@whitelabelstorage.hs-inbox.com,True,115,2263611885,
+Help Desk,Advanced Storage Solutions - Detroit Lakes,detroitlakes@storageadvanced.com,detroitlakes@storageadvanced.com,hello-254@whitelabelstorage.hs-inbox.com,True,227,3250728557,
+Help Desk,Affordable Self Storage NY - 1680 Atlantic,reserve@1680.affordablestoragenyc.com,reserve@1680.affordablestoragenyc.com,hello-178@whitelabelstorage.hs-inbox.com,True,227,1488138238,
+Help Desk,Affordable Self Storage USA Inc - 2553 Atlantic,reserve@2553.affordablestoragenyc.com,reserve@2553.affordablestoragenyc.com,hello-897@whitelabelstorage.hs-inbox.com,True,113,1488138565,
+Help Desk,All About Storage (Auburndale),reserve@myallaboutstorage.com,reserve@myallaboutstorage.com,hello-567@whitelabelstorage.hs-inbox.com,True,95,2337273299,
+Help Desk,All In Storage,reserve@allinstoragega.com,reserve@allinstoragega.com,hello-803@whitelabelstorage.hs-inbox.com,True,25,3926509130,
+Help Desk,All Weather Storage,reserve@allweatherstoragepampa.com,reserve@allweatherstoragepampa.com,hello-689@whitelabelstorage.hs-inbox.com,True,114,1481441334,
+Help Desk,Allen Genoa Self Storage,reserve@agselfstorage.com,reserve@agselfstorage.com,hello-840@whitelabelstorage.hs-inbox.com,True,143,1481412111,
+Help Desk,American Storage,reserve@americanstoragemt.com,reserve@americanstoragemt.com,hello-857@whitelabelstorage.hs-inbox.com,True,103,3403212619,
+Help Desk,Androscoggin Self Storage,reserve@androscogginselfstorage.com,reserve@androscogginselfstorage.com,hello-412@whitelabelstorage.hs-inbox.com,True,74,1823468804,
+Help Desk,ast & EZ - South Tulsa,southtulsa@fastandezselfstorage.com,southtulsa@fastandezselfstorage.com,hello-280@whitelabelstorage.hs-inbox.com,True,148,3175109304,"from_name recorded exactly as in messageSenders (appears truncated - likely ""Fast & EZ - South Tulsa"")"
+Help Desk,Atkinsonville Self Storage,reserve@atkinsonvilleselfstorage.com,reserve@atkinsonvilleselfstorage.com,hello-613@whitelabelstorage.hs-inbox.com,True,111,1580930234,
+Help Desk,Attic SelfStor - Belleville,reserve@belleville.atticselfstor.com,reserve@belleville.atticselfstor.com,hello-394@whitelabelstorage.hs-inbox.com,True,165,1824468799,one outlier reply came from reserve@selfstoragemooresville.net (A1 Self Storage) - used majority address/name
+Help Desk,Attic SelfStor - Plainfield,reserve@plainfield.atticselfstor.com,reserve@plainfield.atticselfstor.com,hello-63@whitelabelstorage.hs-inbox.com,True,119,1824514448,
+Help Desk,Beaver Street Storage,reserve@gobeaverstreet.com,reserve@gobeaverstreet.com,hello-540@whitelabelstorage.hs-inbox.com,True,92,1669378047,
+Help Desk,Between The Lakes Storage,reserve@betweenthelakesstorage.com,reserve@betweenthelakesstorage.com,hello-419@whitelabelstorage.hs-inbox.com,True,77,3260621475,
+Help Desk,Blue Goose Storage,reserve@bluegoosestoragewi.com,reserve@bluegoosestoragewi.com,hello-342@whitelabelstorage.hs-inbox.com,True,25,1482250281,
+Help Desk,Blue Ridge Storage,reserve@blueridgess.com,reserve@blueridgess.com,hello-167@whitelabelstorage.hs-inbox.com,True,230,1746140934,
+Help Desk,Blue Sky Storage,reserve@blueskystoragenc.com,reserve@blueskystoragenc.com,hello-810@whitelabelstorage.hs-inbox.com,True,71,1482267155,
+Help Desk,Brads Storage - Annex,reserve@bradsstorageannex.com,reserve@bradsstorageannex.com,hello-339@whitelabelstorage.hs-inbox.com,True,182,1482191162,
+Help Desk,Briggs Self Storage,reserve@briggsselfstorage.com,reserve@briggsselfstorage.com,hello-229@whitelabelstorage.hs-inbox.com,True,44,3561444028,
+Help Desk,Burgreen Storage,reserve@burgreenstorage.com,reserve@burgreenstorage.com,hello-535@whitelabelstorage.hs-inbox.com,True,121,1486811901,
+Help Desk,Bypass Self Storage,reserve@bypassselfstorage.com,reserve@bypassselfstorage.com,hello-649@whitelabelstorage.hs-inbox.com,True,96,1482249675,
+Help Desk,Canton Self Storage Gold,reserve@gold.canton-selfstorage.com,reserve@gold.canton-selfstorage.com,hello-310@whitelabelstorage.hs-inbox.com,True,88,2042066369,
+Help Desk,Canton Self Storage Thompson,reserve@thompson.canton-selfstorage.com,reserve@thompson.canton-selfstorage.com,hello-343@whitelabelstorage.hs-inbox.com,True,70,2042053387,
+Help Desk,Capital City Self Storage,info@capitalcityselfstorage.com,info@capitalcityselfstorage.com,hello-109@whitelabelstorage.hs-inbox.com,True,238,2719264985,
+Help Desk,Capitol Mini Storage,help@capitolministorage.com,help@capitolministorage.com,hello-766@whitelabelstorage.hs-inbox.com,True,127,2488343297,
+Help Desk,Carlisle and 81 Self Storage,reserve@carlisleand81.com,reserve@carlisleand81.com,hello-233@whitelabelstorage.hs-inbox.com,True,64,1968895756,
+Help Desk,Central Reno Storage,reserve@centralrenostorage.com,reserve@centralrenostorage.com,hello-441@whitelabelstorage.hs-inbox.com,True,25,3638118999,
+Help Desk,Champions Boat & RV Storage,reserve@championsboatrvstorage.com,reserve@championsboatrvstorage.com,hello-775@whitelabelstorage.hs-inbox.com,True,62,2272707384,One earlier AGENT message came from a mismatched channel (reserve@selfstoragemooresville.net / A1 Self Storage) - excluded as not most frequent
+Help Desk,City Self Storage,reserve@cityselfstorageoflancaster.com,reserve@cityselfstorageoflancaster.com,hello-273@whitelabelstorage.hs-inbox.com,True,1080,2186821202,
+Help Desk,Country Place Storage,reserve@countryplacestorage.com,reserve@countryplacestorage.com,hello-925@whitelabelstorage.hs-inbox.com,True,153,2710869194,
+Help Desk,Crafts Self Storage - Topsham,topsham@craftsselfstorage.com,topsham@craftsselfstorage.com,hello-905@whitelabelstorage.hs-inbox.com,True,14,3936455571,
+Help Desk,Crown Outdoor Storage,reserve@crownoutdoorstorage.com,reserve@crownoutdoorstorage.com,hello-98@whitelabelstorage.hs-inbox.com,True,214,1485425660,
+Help Desk,Dobson Storage,reserve@dobsonstoragegreenville.com,reserve@dobsonstoragegreenville.com,hello-571@whitelabelstorage.hs-inbox.com,True,9,1578456348,
+Help Desk,Dobson Storage,reserve@dobsonstoragegreer.com,reserve@dobsonstoragegreer.com,hello-274@whitelabelstorage.hs-inbox.com,True,60,1813571469,
+Help Desk,East Coast Storage - Waltham,waltham@eastcoaststorage.com,waltham@eastcoaststorage.com,hello-666@whitelabelstorage.hs-inbox.com,True,110,3632933009,
+Help Desk,Eastland Storage Solutions,reserve@eastlandstoragesolutions.com,reserve@eastlandstoragesolutions.com,hello-978@whitelabelstorage.hs-inbox.com,True,205,2113648331,
+Help Desk,Easy Storage Crystal Lake,reserve@easystoragecrystallake.com,reserve@easystoragecrystallake.com,hello-421@whitelabelstorage.hs-inbox.com,True,121,1485474227,
+Help Desk,Easy Storage Forest City,reserve@easystorageforestcity.com,reserve@easystorageforestcity.com,hello-675@whitelabelstorage.hs-inbox.com,True,142,1488307339,
+Help Desk,Elephant Storage,reserve@120.elephantstoragenyc.com,reserve@120.elephantstoragenyc.com,hello-398@whitelabelstorage.hs-inbox.com,True,10,1742779853,
+Help Desk,Elephant Storage (2nd Location),reserve@212.elephantstoragenyc.com,reserve@212.elephantstoragenyc.com,hello-984@whitelabelstorage.hs-inbox.com,True,12,1742796680,
+Help Desk,Elyria Storage,reserve@elyriaselfstorage.com,reserve@elyriaselfstorage.com,hello-186@whitelabelstorage.hs-inbox.com,True,70,3182399507,
+Help Desk,Extra Storage LLC,reserve@extrastoragellc.com,reserve@extrastoragellc.com,hello-950@whitelabelstorage.hs-inbox.com,True,13,3035092857,
+Help Desk,Extra Storage LLC (Auburn),auburn@extrastoragellc.com,auburn@extrastoragellc.com,hello-171@whitelabelstorage.hs-inbox.com,True,54,3188290885,
+Help Desk,Extra Storage LLC (Daphne),daphne@extrastoragellc.com,daphne@extrastoragellc.com,hello-200@whitelabelstorage.hs-inbox.com,True,44,3188039321,
+Help Desk,Extra Storage LLC (Pulaski),pulaski@extrastoragellc.com,pulaski@extrastoragellc.com,hello-841@whitelabelstorage.hs-inbox.com,True,11,3783596571,
+Help Desk,EZ Lock It Mini Storage,reserve@ezlockitministorage.com,reserve@ezlockitministorage.com,hello-848@whitelabelstorage.hs-inbox.com,True,170,1488805075,
+Help Desk,Fast & EZ Self Storage - Boiling Springs,boilingsprings@fastandezselfstorage.com,boilingsprings@fastandezselfstorage.com,hello-481@whitelabelstorage.hs-inbox.com,True,346,2422136880,One earlier AGENT message came from a mismatched channel (reserve@selfstoragemooresville.net / A1 Self Storage) - excluded as not most frequent
+Help Desk,Fast & EZ Self Storage - Fontana,fontana@fastandezselfstorage.com,fontana@fastandezselfstorage.com,hello-913@whitelabelstorage.hs-inbox.com,True,323,2416369066,
+Help Desk,Fast & EZ Self Storage - Spring Valley,springvalley@fastandezselfstorage.com,springvalley@fastandezselfstorage.com,hello-969@whitelabelstorage.hs-inbox.com,True,276,1485437950,
+Help Desk,Fast & EZ Self Storage Montclair,montclair@fastandezselfstorage.com,montclair@fastandezselfstorage.com,hello-545@whitelabelstorage.hs-inbox.com,True,481,2416380202,One AGENT reply used a different sender (A1 Self Storage / reserve@selfstoragemooresville.net) but majority sender shown
+Help Desk,Fowler & Co Storage,reserve@fowlercostorage.com,reserve@fowlercostorage.com,hello-469@whitelabelstorage.hs-inbox.com,True,27,3778559596,
+Help Desk,Goshen Area Storage,reserve@goshenareastorage.com,reserve@goshenareastorage.com,hello-4@whitelabelstorage.hs-inbox.com,True,312,1580716270,
+Help Desk,Grafton Self Storage,reserve@graftonselfstoragecompany.com,reserve@graftonselfstoragecompany.com,hello-284@whitelabelstorage.hs-inbox.com,True,129,3630288373,
+Help Desk,Gully Storage,reserve@gullystorage.com,reserve@gullystorage.com,hello-361@whitelabelstorage.hs-inbox.com,True,20,1742949239,
+Help Desk,Happy Storage - Kratzville Rd,kratzville@evvstorage.com,kratzville@evvstorage.com,hello-204@whitelabelstorage.hs-inbox.com,True,4,3710799586,
+Help Desk,Harlem Mini Storage,reserve@harlemstoragewi.com,reserve@harlemstoragewi.com,hello-319@whitelabelstorage.hs-inbox.com,True,18,1487824352,
+Help Desk,"Hey, Store IT!",info@heystoreit.com,,hello-782@whitelabelstorage.hs-inbox.com,True,7,3183363182,Sample only returned outbound AGENT messages; no inbound VISITOR message with a TO address was present to confirm facility_address
+Help Desk,Hideaway Storage,reserve@hideawaystoragewapato.com,reserve@hideawaystoragewapato.com,hello-286@whitelabelstorage.hs-inbox.com,True,122,1584981089,
+Help Desk,Honey Crisp - Tolar,reserve@tolar.honeycrispselfstorage.com,reserve@tolar.honeycrispselfstorage.com,hello-97@whitelabelstorage.hs-inbox.com,True,78,1575470348,
+Help Desk,Honeycrisp - Lawerence,reserve@lawrence.honeycrispselfstorage.com,reserve@lawrence.honeycrispselfstorage.com,hello-148@whitelabelstorage.hs-inbox.com,True,170,1575498921,
+Help Desk,Honeycrisp - Millisap,reserve@millisap.honeycrispselfstorage.com,reserve@millisap.honeycrispselfstorage.com,hello-5@whitelabelstorage.hs-inbox.com,True,10,1575503450,
+Help Desk,Hyde Park Self Storage,hydepark@westorechicago.com,hydepark@westorechicago.com,hello-882@whitelabelstorage.hs-inbox.com,True,41,3627584729,
+Help Desk,I-78 Self Storage,reserve@i78storage.com,reserve@i78storage.com,hello-64@whitelabelstorage.hs-inbox.com,True,148,1487880191,
+Help Desk,Iron Mountain Storage,reserve@ironmountainstorage-montana.com,reserve@ironmountainstorage-montana.com,hello-669@whitelabelstorage.hs-inbox.com,True,95,3104169317,
+Help Desk,Jaguar Storage,reserve@jaguarstorage.com,reserve@jaguarstorage.com,hello-297@whitelabelstorage.hs-inbox.com,True,25,2869986982,
+Help Desk,Jericho Recreational Storage,reserve@jerichostorage.com,reserve@jerichostorage.com,hello-311@whitelabelstorage.hs-inbox.com,True,145,1573129543,
+Help Desk,Kearney Downtown Storage,reserve@kearneydowntownstorage.com,reserve@kearneydowntownstorage.com,hello-739@whitelabelstorage.hs-inbox.com,True,25,3182431522,
+Help Desk,Keep it Safe Storage,reserve@safestoragenow.com,reserve@safestoragenow.com,hello-760@whitelabelstorage.hs-inbox.com,True,8,1492446693,
+Help Desk,LaFayette Store It - Grant Street,reserve@501.lafayettestoreit.com,reserve@501.lafayettestoreit.com,hello-132@whitelabelstorage.hs-inbox.com,True,91,1735418056,
+Help Desk,Lafayette Store It - HWY 27,reserve@hwy27.lafayettestoreit.com,reserve@hwy27.lafayettestoreit.com,hello-898@whitelabelstorage.hs-inbox.com,True,72,1735399115,
+Help Desk,Lake Robinson Storage,reserve@lakerobinsonselfstorage.com,reserve@lakerobinsonselfstorage.com,hello-495@whitelabelstorage.hs-inbox.com,True,82,1578459750,
+Help Desk,Lakeview Storage,reserve@lakeviewstorageloda.com,reserve@lakeviewstorageloda.com,hello-364@whitelabelstorage.hs-inbox.com,True,143,1487943174,
+Help Desk,Liberty Central,info@libertycentral.com,info@libertycentral.com,hello-216@whitelabelstorage.hs-inbox.com,True,21,3705661835,
+Help Desk,Lily's Lockers Lexington - Self Storage,reserve@lilyslockers.com,reserve@lilyslockers.com,hello-657@whitelabelstorage.hs-inbox.com,True,40,2416654949,
+Help Desk,Lindenhurst Self Storage,contactus@lindenhurstselfstorage.com,contactus@lindenhurstselfstorage.com,hello-685@whitelabelstorage.hs-inbox.com,True,96,1817884670,
+Help Desk,Local Locker,reserve@localocker.com,reserve@localocker.com,hello-941@whitelabelstorage.hs-inbox.com,True,26526,1573158373,
+Help Desk,LOGO Storage Burnet,reserve@logostorageburnet.com,reserve@logostorageburnet.com,hello-741@whitelabelstorage.hs-inbox.com,True,84,2935747542,
+Help Desk,Lone Star Storage,manager@lonestarstoragetexas.com,manager@lonestarstoragetexas.com,hello-707@whitelabelstorage.hs-inbox.com,True,993,2263495845,
+Help Desk,Lorain Mini Storage,reserve@lorainministorage.com,reserve@lorainministorage.com,hello-113@whitelabelstorage.hs-inbox.com,True,76,3182322258,
+Help Desk,M & J Storage (Driggs ID),driggs@mjselfstorage.com,driggs@mjselfstorage.com,hello-762@whitelabelstorage.hs-inbox.com,True,207,2495538917,
+Help Desk,M & J Storage (Montpelier),montpelier@mjselfstorage.com,montpelier@mjselfstorage.com,hello-736@whitelabelstorage.hs-inbox.com,True,56,2495539811,
+Help Desk,Madras Self Storage,reserve@madrasselfstorage.com,reserve@madrasselfstorage.com,hello-975@whitelabelstorage.hs-inbox.com,True,181,1669974011,
+Help Desk,Martin Bluff Storage,reserve@martinbluffstoragems.com,reserve@martinbluffstoragems.com,hello-320@whitelabelstorage.hs-inbox.com,True,55,1819440296,
+Help Desk,Meridian Storage,reserve@meridian-storage.com,reserve@meridian-storage.com,hello-714@whitelabelstorage.hs-inbox.com,True,3,3926616892,
+Help Desk,Midtown Mini Storage,reserve@midtownmini.com,reserve@midtownmini.com,hello-491@whitelabelstorage.hs-inbox.com,True,70,1819518791,
+Help Desk,Mini Storage,reserve@ministorage-ga.com,reserve@ministorage-ga.com,hello-503@whitelabelstorage.hs-inbox.com,True,14,2272720408,
+Help Desk,Morrisville Self Storage,reserve@morrisvilleselfstorage.com,reserve@morrisvilleselfstorage.com,hello-942@whitelabelstorage.hs-inbox.com,True,35,2047254879,
+Help Desk,Mountain Timber Storage,reserve@mountaintimberstorage.com,reserve@mountaintimberstorage.com,hello-875@whitelabelstorage.hs-inbox.com,True,80,3475836186,
+Help Desk,Mountainside Storage,reserve@mountainsidestorageut.com,reserve@mountainsidestorageut.com,hello-27@whitelabelstorage.hs-inbox.com,True,6,3926711780,
+Help Desk,MWB Storage Solutions,reserve@mwbstoragesolutions.com,reserve@mwbstoragesolutions.com,hello-541@whitelabelstorage.hs-inbox.com,True,34,2870261093,
+Help Desk,North Mitchell Street LLC,reserve@northmitchellstreetstorage.com,reserve@northmitchellstreetstorage.com,hello-467@whitelabelstorage.hs-inbox.com,True,24,3639454279,
+Help Desk,Northwest Valley RV Storage,reserve@northwestvalleyrv.com,reserve@northwestvalleyrv.com,hello-695@whitelabelstorage.hs-inbox.com,True,260,2198307060,
+Help Desk,Ontario Mini Storage,reserve@ontarioministorageor.com,reserve@ontarioministorageor.com,hello-33@whitelabelstorage.hs-inbox.com,True,82,1670853684,
+Help Desk,Owl Storage - Columbia,reserve@columbia.owlstorage.com,reserve@columbia.owlstorage.com,hello-834@whitelabelstorage.hs-inbox.com,True,115,1584135622,
+Help Desk,Owl Storage - Columbia I-70,reserve@columbia-i-70.owlstorage.com,reserve@columbia-i-70.owlstorage.com,hello-8@whitelabelstorage.hs-inbox.com,True,106,1584138054,
+Help Desk,Owl Storage - Eldon,reserve@eldon.owlstorage.com,reserve@eldon.owlstorage.com,hello-817@whitelabelstorage.hs-inbox.com,True,134,1584135293,
+Help Desk,Owl Storage - Kankakee,reserve@kankakee.owlstorage.com,reserve@kankakee.owlstorage.com,hello-261@whitelabelstorage.hs-inbox.com,True,161,1584134643,
+Help Desk,Owl Storage - Macomb,reserve@macomb.owlstorage.com,reserve@macomb.owlstorage.com,hello-954@whitelabelstorage.hs-inbox.com,True,191,1584130186,
+Help Desk,Owl Storage - Park City - Broadway,reserve@parkcitybroadway.owlstorage.com,reserve@parkcitybroadway.owlstorage.com,hello-106@whitelabelstorage.hs-inbox.com,True,71,1584129607,
+Help Desk,Owl Storage - Rose Hill Berry,reserve@rosehillberry.owlstorage.com,reserve@rosehillberry.owlstorage.com,hello-849@whitelabelstorage.hs-inbox.com,True,122,1584128085,
+Help Desk,Owl Storage = Laurie,reserve@laurie.owlstorage.com,reserve@laurie.owlstorage.com,hello-119@whitelabelstorage.hs-inbox.com,True,122,1670907518,
+Help Desk,Packer Storage,manager@packerstorage.com,,manager@packerstorage.com,True,6,1486663824,All 5 sampled messages were outbound (AGENT) sales/prospecting emails from White Label Storage reps; no inbound (VISITOR) message found so no facility_address determined
+Help Desk,Packer Storage - 1802 Elmira,1802.packerstorage@gmail.com,1802.packerstorage@gmail.com,1802.packerstorage@gmail.com,True,112,1580960817,
+Help Desk,Packer Storage - Elmira,elmira.packerstorage@gmail.com,elmira.packerstorage@gmail.com,elmira.packerstorage@gmail.com,True,154,1574402602,
+Help Desk,Packer Storage - Oakes,oakes.packerstorage.com@gmail.com,oakes.packerstorage.com@gmail.com,oakes.packerstorage.com@gmail.com,True,20,1574420010,
+Help Desk,Packer Storage of Ashland - 3rd St,ashland1800.packerstorage@gmail.com,ashland1800.packerstorage@gmail.com,ashland1800.packerstorage@gmail.com,True,113,1488206415,
+Help Desk,Packer Storage of Ashland - 6th St,ashland315.packerstorage@gmail.com,ashland315.packerstorage@gmail.com,ashland315.packerstorage@gmail.com,True,107,1488210170,
+Help Desk,Packer Storage of Superior,superior.packerstorage@gmail.com,superior.packerstorage@gmail.com,superior.packerstorage@gmail.com,True,262,1488212368,
+Help Desk,Pillar Storage,reserve@pillarstorage.com,reserve@pillarstorage.com,hello-653@whitelabelstorage.hs-inbox.com,True,93,1583076483,
+Help Desk,Pine Grove Ravine,reserve@pinegroveravineselfstorage.com,reserve@pinegroveravineselfstorage.com,hello-222@whitelabelstorage.hs-inbox.com,True,198,1488605516,
+Help Desk,Pinetop Self Storage,reserve@pinetopministorageaz.com,reserve@pinetopministorageaz.com,hello-576@whitelabelstorage.hs-inbox.com,True,83,1488618736,
+Help Desk,Premier Mini Storage,reserve@premierministorage.net,reserve@premierministorage.net,hello-363@whitelabelstorage.hs-inbox.com,True,113,1811800852,
+Help Desk,Prestige Self Storage,reserve@prestigeselfstorageaz.com,reserve@prestigeselfstorageaz.com,hello-945@whitelabelstorage.hs-inbox.com,True,128,1580803103,
+Help Desk,R and R Storage & RV,hello-881@whitelabelstorage.hs-inbox.com,reserve@rrstoragerv.com,hello-881@whitelabelstorage.hs-inbox.com,True,15,3181088345,agent FROM address in sample was the hs-inbox address itself rather than rrstoragerv.com
+Help Desk,Raymond Clinton Mini Storage,reserve@raymondclintonministorage.com,reserve@raymondclintonministorage.com,hello-237@whitelabelstorage.hs-inbox.com,True,129,2120220444,
+Help Desk,Red Haven Storage,reserve@redhavenstorage.com,reserve@redhavenstorage.com,hello-558@whitelabelstorage.hs-inbox.com,True,73,1418388667,
+Help Desk,River Bridge Storage,reserve@riverbridgestorage.com,reserve@riverbridgestorage.com,hello-997@whitelabelstorage.hs-inbox.com,True,81,2710956193,
+Help Desk,SAF Indoor Storage,reserve@safindoor.com,reserve@safindoor.com,hello-776@whitelabelstorage.hs-inbox.com,True,14,3551268285,
+Help Desk,Safe Keep Storage - St James,stjames@safekeep-storage.com,stjames@safekeep-storage.com,hello-830@whitelabelstorage.hs-inbox.com,True,60,1488927796,
+Help Desk,Safe Storage,reserve@safestoragein.com,reserve@safestoragein.com,hello-971@whitelabelstorage.hs-inbox.com,True,62,2199155414,
+Help Desk,Seagoville Storage,reserve@seagovillestorage.com,reserve@seagovillestorage.com,hello-19@whitelabelstorage.hs-inbox.com,True,106,1488738791,
+Help Desk,SecretSpot Storage,reserve@secretspotstorage.com,reserve@secretspotstorage.com,hello-78@whitelabelstorage.hs-inbox.com,True,20,2349048517,
+Help Desk,Secura Self Storage,reserve@securajonesborostorage.com,reserve@securajonesborostorage.com,hello-534@whitelabelstorage.hs-inbox.com,True,201,2270055202,
+Help Desk,Secure Self Storage,reserve@storagewisconsindells.com,reserve@storagewisconsindells.com,hello-80@whitelabelstorage.hs-inbox.com,True,105,2568775331,
+Help Desk,Secure Vault Storage,reserve@securevaultstorage.net,reserve@securevaultstorage.net,hello-832@whitelabelstorage.hs-inbox.com,True,22,3035058852,
+Help Desk,SecureLoc Self Storage,reserve@securelocselfstorage.com,reserve@securelocselfstorage.com,hello-246@whitelabelstorage.hs-inbox.com,True,101,3112638970,
+Help Desk,Securely Storage,support@securelystorage.com,support@securelystorage.com,hello-987@whitelabelstorage.hs-inbox.com,True,78,3189684107,
+Help Desk,Self Storage On The Levee,reserve@selfstorageonthelevee.com,reserve@selfstorageonthelevee.com,hello-617@whitelabelstorage.hs-inbox.com,True,221,1820386212,
+Help Desk,Sherpa Storage,reserve@sherpastorage.com,reserve@sherpastorage.com,hello-468@whitelabelstorage.hs-inbox.com,True,84,2712093699,
+Help Desk,Shine Star Self Storage,reserve@shinestarstorage.com,reserve@shinestarstorage.com,hello-667@whitelabelstorage.hs-inbox.com,True,49,1417575211,
+Help Desk,Shockoe Bottom Storage,reserve@shockoebottomstorage.com,reserve@shockoebottomstorage.com,hello-153@whitelabelstorage.hs-inbox.com,True,68,1819591542,
+Help Desk,Shortfield Landings Storage,reserve@shortfieldlandingsstorage.com,reserve@shortfieldlandingsstorage.com,hello-671@whitelabelstorage.hs-inbox.com,True,44,2120265564,
+Help Desk,Simple Storage,admin@simplestorage.ca,admin@simplestorage.ca,hello-490@whitelabelstorage.hs-inbox.com,True,364,1962106761,
+Help Desk,Simple Storage - Moncton,reserve@moncton.simplestorage.ca,reserve@moncton.simplestorage.ca,hello-180@whitelabelstorage.hs-inbox.com,True,656,1889572698,
+Help Desk,SIMS Self Storage,reserve@simsstorage.com,reserve@simsstorage.com,hello-788@whitelabelstorage.hs-inbox.com,True,104,1663723378,
+Help Desk,SOA - Broadway,broadwaystreet@storageofamerica.com,broadwaystreet@storageofamerica.com,hello-868@whitelabelstorage.hs-inbox.com,True,2694,1741206133,
+Help Desk,SOA - Busha Highway,bushahwy@storageofamerica.com,bushahwy@storageofamerica.com,hello-996@whitelabelstorage.hs-inbox.com,True,2079,1741275836,
+Help Desk,SOA - Center,centerroad@storageofamerica.com,centerroad@storageofamerica.com,hello-935@whitelabelstorage.hs-inbox.com,True,2005,1741288007,
+Help Desk,SOA - Dort Highway,dorthighway@storageofamerica.com,dorthighway@storageofamerica.com,hello-155@whitelabelstorage.hs-inbox.com,True,2231,1741273153,
+Help Desk,SOA - Goodman,goodman@storageofamerica.com,goodman@storageofamerica.com,hello-614@whitelabelstorage.hs-inbox.com,True,1124,1741215244,
+Help Desk,SOA - Gratiot,gratiotroad@storageofamerica.com,gratiotroad@storageofamerica.com,hello-194@whitelabelstorage.hs-inbox.com,True,3151,1741279184,
+Help Desk,SOA - Infirmary,infirmaryroad@storageofamerica.com,infirmaryroad@storageofamerica.com,hello-108@whitelabelstorage.hs-inbox.com,True,1770,1741254366,
+Help Desk,SOA - Lake,lakestreet@storageofamerica.com,lakestreet@storageofamerica.com,hello-612@whitelabelstorage.hs-inbox.com,True,1170,1741265381,
+Help Desk,SOA - Moline,moline36thAve@storageofamerica.com,moline36thAve@storageofamerica.com,hello-846@whitelabelstorage.hs-inbox.com,True,2989,1743623543,
+Help Desk,SOA - Oak Harbor,oakharborroad@storageofamerica.com,oakharborroad@storageofamerica.com,hello-474@whitelabelstorage.hs-inbox.com,True,2693,1741247548,
+Help Desk,SOA - Pendleton Pike,pendletonpike@storageofamerica.com,pendletonpike@storageofamerica.com,hello-461@whitelabelstorage.hs-inbox.com,True,1393,1741196113,
+Help Desk,SOA - Range Road,rangeroad@storageofamerica.com,rangeroad@storageofamerica.com,hello-369@whitelabelstorage.hs-inbox.com,True,4149,1741269513,
+Help Desk,SOA - Rock Island,rockisland@storageofamerica.com,rockisland@storageofamerica.com,hello-517@whitelabelstorage.hs-inbox.com,True,2542,1743617994,
+Help Desk,SOA - Salisbury,salisburyroad@storageofamerica.com,salisburyroad@storageofamerica.com,hello-670@whitelabelstorage.hs-inbox.com,True,974,1741209267,
+Help Desk,SOA - Sanilac,sanilacroad@storageofamerica.com,sanilacroad@storageofamerica.com,hello-598@whitelabelstorage.hs-inbox.com,True,1442,1741282463,
+Help Desk,SOA - Shiloh Springs,shilohsprings@storageofamerica.com,shilohsprings@storageofamerica.com,hello-282@whitelabelstorage.hs-inbox.com,True,4601,1741226913,
+Help Desk,SOA - South Boulevard,sblvd@storageofamerica.com,sblvd@storageofamerica.com,hello-337@whitelabelstorage.hs-inbox.com,True,2377,1741190370,
+Help Desk,SOA - Townline,townlineroad@storageofamerica.com,townlineroad@storageofamerica.com,hello-256@whitelabelstorage.hs-inbox.com,True,2110,1741291585,
+Help Desk,SOA - West Washington,wwash@storageofamerica.com,wwash@storageofamerica.com,hello-103@whitelabelstorage.hs-inbox.com,True,1863,1741203604,
+Help Desk,South Shore Self Storage,southshore@westorechicago.com,southshore@westorechicago.com,hello-924@whitelabelstorage.hs-inbox.com,True,36,2191805219,
+Help Desk,Southern Home Storage,reserve@southernhomestorage.com,reserve@southernhomestorage.com,hello-530@whitelabelstorage.hs-inbox.com,True,256,1488816193,
+Help Desk,Space Station Storage,reserve@spacestationstoragekingston.com,reserve@spacestationstoragekingston.com,hello-193@whitelabelstorage.hs-inbox.com,True,350,1488828037,
+Help Desk,St Croix - Balsam Lake Self Storage,info@scblstorage.com,info@scblstorage.com,hello-252@whitelabelstorage.hs-inbox.com,True,238,1742122942,
+Help Desk,Storage 4 U - Greer,greer@storage4u-sc.com,greer@storage4u-sc.com,hello-532@whitelabelstorage.hs-inbox.com,True,70,2113792804,
+Help Desk,Storage 4 U - Lyman,lyman@storage4u-sc.com,lyman@storage4u-sc.com,hello-605@whitelabelstorage.hs-inbox.com,True,104,2113851558,
+Help Desk,StorageHub Green Bay,reserve@greenbaystoragehub.com,reserve@greenbaystoragehub.com,hello-721@whitelabelstorage.hs-inbox.com,True,474,1488843800,
+Help Desk,Store Near Me - Byer,reserve@byer.storenearme.co,reserve@byer.storenearme.co,hello-710@whitelabelstorage.hs-inbox.com,True,58,1488901853,
+Help Desk,Store Near Me - Challenger,reserve@challenger.storenearme.co,reserve@challenger.storenearme.co,hello-371@whitelabelstorage.hs-inbox.com,True,84,1488888298,
+Help Desk,Sunny Storage,reserve@sunnystorage.com,reserve@sunnystorage.com,hello-525@whitelabelstorage.hs-inbox.com,True,39,3103043551,
+Help Desk,Texas Lake Storage,reserve@texaslakestorage.com,reserve@texaslakestorage.com,hello-865@whitelabelstorage.hs-inbox.com,True,43,3180967246,
+Help Desk,The Storage Co,storageco@mjselfstorage.com,storageco@mjselfstorage.com,hello-198@whitelabelstorage.hs-inbox.com,True,60,2495540859,
+Help Desk,The Storage Spot,reserve@thestoragespot.com,reserve@thestoragespot.com,hello-880@whitelabelstorage.hs-inbox.com,True,118,1895380603,
+Help Desk,The Unit Storage,reserve@selfstoragespringfieldil.com,reserve@selfstoragespringfieldil.com,hello-87@whitelabelstorage.hs-inbox.com,True,173,1897119653,
+Help Desk,Tight Lock Storage,reserve@tightlockstorage.net,reserve@tightlockstorage.net,hello-504@whitelabelstorage.hs-inbox.com,True,77,1489318185,
+Help Desk,TMS Storage,reserve@tmsstoragetx.com,reserve@tmsstoragetx.com,hello-322@whitelabelstorage.hs-inbox.com,True,87,1489329846,
+Help Desk,ToyBox Storage,Info@toyboxstorages.com,Info@toyboxstorages.com,hello-594@whitelabelstorage.hs-inbox.com,True,2062,2043099441,
+Help Desk,Tozer Storage,12tozerstorage@gmail.com,12tozerstorage@gmail.com,12tozerstorage@gmail.com,True,2565,2124799806,
+Help Desk,Tri Tower Storage,reserve@tritowerstorage.com,reserve@tritowerstorage.com,hello-444@whitelabelstorage.hs-inbox.com,True,76,2191300343,
+Help Desk,Triad Self Storage,info@triadselfstorage.com,info@triadselfstorage.com,hello-381@whitelabelstorage.hs-inbox.com,True,72,2936922997,
+Help Desk,Triple J Self Storage,reserve@triplejselfstorage.com,reserve@triplejselfstorage.com,hello-542@whitelabelstorage.hs-inbox.com,True,130,1674894887,
+Help Desk,TrueNorth Storage,info@mytruenorthstorage.com,info@mytruenorthstorage.com,hello-606@whitelabelstorage.hs-inbox.com,True,92,2642247500,
+Help Desk,White Label Storage,reserve@rsparkplace.com,reserve@rsparkplace.com,hello-435@whitelabelstorage.hs-inbox.com,True,102,2563060713,
+Help Desk,White Label Storage,southaustin@spacestoragetx.com,southaustin@spacestoragetx.com,hello-11@whitelabelstorage.hs-inbox.com,True,122,3411783551,
+Help Desk,White Label Storage,support@jeffersonvilleselfstorage.com,support@jeffersonvilleselfstorage.com,hello-59@whitelabelstorage.hs-inbox.com,True,96,3414486958,agent display name is 'White Label Storage' though facility is Jeffersonville Self Storage
+Help Desk,White Pine Storage - West Division,reserve@westdivision.whitepineselfstorage.com,reserve@westdivision.whitepineselfstorage.com,hello-214@whitelabelstorage.hs-inbox.com,True,136,1489380740,
+Help Desk,,,,townandcountryselfstorageva@gmail.com,False,0,2717334544,No conversations found for this channel
+Help Desk,,,,hello-562@whitelabelstorage.hs-inbox.com,True,3,4099287045,Only 3 conversations found; all inbound messages were to the hs-inbox address itself (gmail auto-forward requests
+Help Desk,,,,hello-761@whitelabelstorage.hs-inbox.com,True,2,4026612141,Only 2 conversations found; both were internal test/onboarding emails with no clear facility inbound address
+Help Desk,,,,hello-357@whitelabelstorage.hs-inbox.com,True,1,4098801103,Only conversation found is a HubSpot sample/test contact; no real facility traffic
+Help Desk,,,,support@whitelabelstorage.com.hs-inbox.com,True,0,632590961,no conversations found for this channel
+Help Desk,,,62nd@storageofamerica.com,hello-554@whitelabelstorage.hs-inbox.com,True,1823,1741182515,
+Help Desk,,,83rdhalsted@westorechicago.com,hello-172@whitelabelstorage.hs-inbox.com,True,21,3627585555,no agent (outbound) messages in sampled conversations
+Help Desk,,,atozselfstoragepa@gmail.com,atozselfstoragepa@gmail.com,True,1273,2041088674,no AGENT messages in sample
+Help Desk,,,buchholzerblvd@storageofamerica.com,hello-393@whitelabelstorage.hs-inbox.com,True,3329,1741230544,No AGENT messages found in sampled conversations
+Help Desk,,,chandler@fastandezselfstorage.com,hello-111@whitelabelstorage.hs-inbox.com,True,781,2415744357,No AGENT-sent messages found in sample
+Help Desk,,,chestnut@storageofamerica.com,hello-28@whitelabelstorage.hs-inbox.com,True,1962,1741192893,No AGENT-sent messages found in sample
+Help Desk,,,contact@townandcountryselfstorage.net,hello-285@whitelabelstorage.hs-inbox.com,True,1630,2719287040,
+Help Desk,,,craftsselfstorage@gmail.com,hello-292@whitelabelstorage.hs-inbox.com,True,64,3936454432,No AGENT messages found in sampled conversations
+Help Desk,,,ewash@storageofamerica.com,hello-411@whitelabelstorage.hs-inbox.com,True,3778,1741186730,
+Help Desk,,,fargo@storageadvanced.com,hello-239@whitelabelstorage.hs-inbox.com,True,288,3250729942,no agent (outbound) messages in sampled conversations
+Help Desk,,,grandforks@storageadvanced.com,hello-199@whitelabelstorage.hs-inbox.com,True,343,3250730566,No AGENT-sent messages found in sample
+Help Desk,,,gustine@storageofamerica.com,hello-206@whitelabelstorage.hs-inbox.com,True,3199,1741211831,
+Help Desk,,,hickory@fastandezselfstorage.com,hello-661@whitelabelstorage.hs-inbox.com,True,483,2422136262,No AGENT-sent messages found in sample
+Help Desk,,,info@eastcoaststorage.com,hello-244@whitelabelstorage.hs-inbox.com,True,169,1741381776,No AGENT messages seen in sample
+Help Desk,,info@noviofficewarehouse.com,info@noviofficewarehouse.com,info@noviofficewarehouse.com,True,43,3560242876,"AGENT messages had a FROM deliveryIdentifier but no ""name"" field present in messageSenders (senderName metadata showed agent display names like ""Agent OP Whitelabel""/""Stephen Strong OP Agent 1"""
+Help Desk,,,josephave@evvstorage.com,hello-306@whitelabelstorage.hs-inbox.com,True,9,3711095728,
+Help Desk,,,keyword_quantum@ppc-outsourcing.agency,hello-77@whitelabelstorage.hs-inbox.com,True,129,1418111697,sampled conversations were mixed/misrouted vendor replies (BCC to this channel); also saw reserve@vaultselfstoragefl.com once; no agent (outbound) messages in sample; facility_address uncertain
+Help Desk,,,kitridgeroad@storageofamerica.com,hello-437@whitelabelstorage.hs-inbox.com,True,1866,1741242881,No AGENT messages found in sampled conversations
+Help Desk,,,lasvegas@fastandezselfstorage.com,hello-787@whitelabelstorage.hs-inbox.com,True,385,2418549796,No AGENT-sent messages found in sample
+Help Desk,,,myoxfordstorage@gmail.com,myoxfordstorage@gmail.com,True,1063,3030406030,no agent (outbound) messages in sampled conversations
+Help Desk,,,noble@primevaultselfstorage.com,hello-837@whitelabelstorage.hs-inbox.com,True,3,4097691949,No AGENT-sent messages found in sample; very few conversations
+Help Desk,,,northaustin@spacestoragetx.com,hello-92@whitelabelstorage.hs-inbox.com,True,32,3411776008,no AGENT messages in sample
+Help Desk,,,northlasvegas@fastandezselfstorage.com,hello-52@whitelabelstorage.hs-inbox.com,True,539,2418565790,No AGENT-sent messages found in sample
+Help Desk,,,phoenix@fastandezselfstorage.com,hello-980@whitelabelstorage.hs-inbox.com,True,395,2415752230,no agent (outbound) messages in sampled conversations
+Help Desk,,,providence@statestoragegroup.com,hello-251@whitelabelstorage.hs-inbox.com,True,77,3788815822,No AGENT-sent messages found in sample
+Help Desk,,,pss@preferredselfstorage.com,hello-543@whitelabelstorage.hs-inbox.com,True,83,2496354327,no agent (outbound) messages in sampled conversations
+Help Desk,,,reserve@aaffordablestoragewaxahachie.com,hello-325@whitelabelstorage.hs-inbox.com,True,199,2568641024,no AGENT messages in sample
+Help Desk,,,reserve@adirondackridgeselfstorage.com,hello-615@whitelabelstorage.hs-inbox.com,True,107,1489684700,No AGENT-sent messages found in sample; inbound TO addresses varied
+Help Desk,,,reserve@allstorageelkgrove.com,hello-328@whitelabelstorage.hs-inbox.com,True,448,1481206678,facility_address inferred from most frequent non-spam TO address; no AGENT messages found
+Help Desk,,,reserve@annarborstorageok.com,hello-182@whitelabelstorage.hs-inbox.com,True,121,1482010271,No AGENT-sent messages found in sample
+Help Desk,,,reserve@anytimestoragewi.com,hello-835@whitelabelstorage.hs-inbox.com,True,302,1482026191,no AGENT messages in sample
+Help Desk,,,reserve@armorstoragela.com,hello-981@whitelabelstorage.hs-inbox.com,True,125,1482083991,No AGENT messages seen in sample
+Help Desk,,,reserve@bainbridge.atticselfstor.com,hello-277@whitelabelstorage.hs-inbox.com,True,42,1885441660,
+Help Desk,,,reserve@bigdonsboatvehiclestorage.com,hello-948@whitelabelstorage.hs-inbox.com,True,20,2422072281,
+Help Desk,,,reserve@bouctouche.simplestorage.ca,hello-208@whitelabelstorage.hs-inbox.com,True,588,1889553292,no AGENT messages in sample
+Help Desk,,,reserve@brazil.atticselfstor.com,hello-724@whitelabelstorage.hs-inbox.com,True,154,1824535854,no agent (outbound) messages in sampled conversations
+Help Desk,,,reserve@cacheplusstorage.com,hello-957@whitelabelstorage.hs-inbox.com,True,154,2417487722,no agent (outbound) messages in sampled conversations
+Help Desk,,,reserve@carolinaprideselfstorage.com,hello-560@whitelabelstorage.hs-inbox.com,True,263,1487204198,No AGENT-sent messages found in sample
+Help Desk,,,reserve@cedarridge-storage.com,hello-307@whitelabelstorage.hs-inbox.com,True,2211,2197221523,no AGENT messages in sample
+Help Desk,,,reserve@centerpointselfstorage.com,hello-894@whitelabelstorage.hs-inbox.com,True,65,3175124409,no agent (outbound) messages in sampled conversations
+Help Desk,,,reserve@climatesmartstorage.com,hello-432@whitelabelstorage.hs-inbox.com,True,151,1811892581,no AGENT messages in sample
+Help Desk,,,reserve@cocoawarehouseandstorage.com,hello-668@whitelabelstorage.hs-inbox.com,True,258,1482901040,
+Help Desk,,,reserve@daphnetoyboxstorage.com,hello-637@whitelabelstorage.hs-inbox.com,True,59,2867620787,no AGENT messages in sample; sample dominated by phishing
+Help Desk,,,reserve@ecohawgstorage.com,hello-785@whitelabelstorage.hs-inbox.com,True,46,3475692780,no AGENT messages in sample
+Help Desk,,,reserve@fortcampbellministorage.com,hello-431@whitelabelstorage.hs-inbox.com,True,126,1483128605,
+Help Desk,,,reserve@gaeconomyselfstorage.com,hello-124@whitelabelstorage.hs-inbox.com,True,57,1573886663,no AGENT messages in sample
+Help Desk,,,reserve@gansettstorage.com,hello-174@whitelabelstorage.hs-inbox.com,True,154,1491897100,No AGENT messages seen in sample
+Help Desk,,,reserve@gatewaystorageut.com,hello-445@whitelabelstorage.hs-inbox.com,True,215,1890240935,
+Help Desk,,,reserve@gemcitystorage.com,hello-413@whitelabelstorage.hs-inbox.com,True,67,2935744474,Inbound TO addresses were mostly unrelated third-party spam (varied recipients); reserve@gemcitystorage.com (Gem City Storage) is the one plausible facility address seen; no AGENT-sent messages found
+Help Desk,,,reserve@greencastle.atticselfstor.com,hello-299@whitelabelstorage.hs-inbox.com,True,158,1885357901,No AGENT messages seen in sample
+Help Desk,,,reserve@halliestoragewi.com,hello-986@whitelabelstorage.hs-inbox.com,True,37,1487813826,no AGENT messages in sample
+Help Desk,,,reserve@hendersontxstorage.com,hello-344@whitelabelstorage.hs-inbox.com,True,264,1492442260,No AGENT messages found in sampled conversations
+Help Desk,,,reserve@hideawaytx.com,hello-122@whitelabelstorage.hs-inbox.com,True,76,2711047458,
+Help Desk,,,reserve@highway85storage.org,hello-212@whitelabelstorage.hs-inbox.com,True,109,1487854770,No AGENT messages found in sampled conversations
+Help Desk,,,reserve@hillsidestorage.com,hello-858@whitelabelstorage.hs-inbox.com,True,274,1487862649,no agent (outbound) messages in sampled conversations
+Help Desk,,,reserve@ironcreekstorage.com,hello-624@whitelabelstorage.hs-inbox.com,True,138,1487905736,no agent (outbound) messages in sampled conversations
+Help Desk,,,reserve@islesluxurystorage.com,hello-883@whitelabelstorage.hs-inbox.com,True,185,2867558785,No AGENT messages found in sampled conversations
+Help Desk,,,reserve@kansascitye210.owlstorage.com,hello-104@whitelabelstorage.hs-inbox.com,True,102,1584134213,no agent (outbound) messages in sampled conversations
+Help Desk,,,reserve@kearney-storage.com,hello-458@whitelabelstorage.hs-inbox.com,True,51,3182429809,No AGENT-sent messages found in sample
+Help Desk,,,reserve@lemoyneselfstorage.com,hello-327@whitelabelstorage.hs-inbox.com,True,55,2197210409,No AGENT-sent messages found in sample
+Help Desk,,,reserve@lincolnlandingstorage.com,hello-713@whitelabelstorage.hs-inbox.com,True,326,1487976434,
+Help Desk,,,reserve@meadowoodselfstorage.com,hello-574@whitelabelstorage.hs-inbox.com,True,330,1487986819,Inbound messages were mostly spam BCC'd to unrelated personal addresses; facility_address is best-guess (seen twice) rather than a clear majority
+Help Desk,,,reserve@mendonsecurestorage.com,hello-634@whitelabelstorage.hs-inbox.com,True,137,2265385922,
+Help Desk,,,reserve@mightyoakss.com,hello-281@whitelabelstorage.hs-inbox.com,True,446,2943847239,No AGENT messages found in sampled conversations (self-addressed system notification emails)
+Help Desk,,,reserve@milacasecurestorage.com,hello-715@whitelabelstorage.hs-inbox.com,True,101,1488921770,No AGENT-sent messages found in sample
+Help Desk,,,reserve@millsap.honeycrispselfstorage.com,hello-871@whitelabelstorage.hs-inbox.com,True,56,1576197407,no AGENT messages in sample
+Help Desk,,,reserve@monomoyselfstorage.com,hello-38@whitelabelstorage.hs-inbox.com,True,315,1488506272,No AGENT-sent messages found in sample
+Help Desk,,,reserve@moorestoragede.com,hello-732@whitelabelstorage.hs-inbox.com,True,507,1488514691,No AGENT messages seen in sample
+Help Desk,,,reserve@morstortx.com,hello-577@whitelabelstorage.hs-inbox.com,True,85,2795330750,No AGENT-sent messages found in sample
+Help Desk,,,reserve@mygreenvillestorage.com,hello-487@whitelabelstorage.hs-inbox.com,True,266,1974049407,No AGENT messages found in sampled conversations
+Help Desk,,,reserve@nobullstorage.com,hello-209@whitelabelstorage.hs-inbox.com,True,217,2488401667,No AGENT-sent messages found in sample
+Help Desk,,,reserve@northmsstorage.com,hello-662@whitelabelstorage.hs-inbox.com,True,58,2562119855,No AGENT messages found in sampled conversations
+Help Desk,,,reserve@oldmillstoragelondon.com,hello-711@whitelabelstorage.hs-inbox.com,True,17,3630218582,No AGENT messages seen in sample
+Help Desk,,,reserve@pennstoragesolutions.com,hello-991@whitelabelstorage.hs-inbox.com,True,8,3261763874,no agent (outbound) messages in sampled conversations
+Help Desk,,,reserve@popeselfstoragepangborn.com,hello-915@whitelabelstorage.hs-inbox.com,True,31,1487783916,no agent (outbound) messages in sampled conversations
+Help Desk,,,reserve@redstoragellc.com,hello-267@whitelabelstorage.hs-inbox.com,True,170,1747773358,No AGENT messages found in sampled conversations
+Help Desk,,,reserve@rockville.atticselfstor.com,hello-519@whitelabelstorage.hs-inbox.com,True,96,1885389335,No AGENT messages seen in sample
+Help Desk,,,reserve@rosehillrosewood.owlstorage.com,hello-427@whitelabelstorage.hs-inbox.com,True,50,1584127546,No AGENT messages seen in sample
+Help Desk,,,reserve@route.storenearme.co,hello-68@whitelabelstorage.hs-inbox.com,True,87,1488914033,no AGENT messages in sample
+Help Desk,,,reserve@s29.whitepineselfstorage.com,hello-592@whitelabelstorage.hs-inbox.com,True,77,1489368412,no agent (outbound) messages in sampled conversations
+Help Desk,,,reserve@shreveportsecurestorage.com,hello-248@whitelabelstorage.hs-inbox.com,True,78,1746942135,sample dominated by spam blasted to many hello- addresses; facility address inferred from real inbound
+Help Desk,,,reserve@southwatkinsvillestorage.com,hello-953@whitelabelstorage.hs-inbox.com,True,47,2272676084,No AGENT-sent messages found in sample
+Help Desk,,,reserve@spacestationsby.com,hello-12@whitelabelstorage.hs-inbox.com,True,175,2040133792,No AGENT-sent messages found in sample
+Help Desk,,,reserve@staxselfstorage.com,hello-794@whitelabelstorage.hs-inbox.com,True,123,1486114306,No AGENT messages seen in sample
+Help Desk,,,reserve@storagejuan.net,hello-784@whitelabelstorage.hs-inbox.com,True,36,2046538757,
+Help Desk,,,reserve@storagesams.com,hello-454@whitelabelstorage.hs-inbox.com,True,133,1492463407,no AGENT messages in sample
+Help Desk,,,reserve@suncoastselfstorage.com,hello-9@whitelabelstorage.hs-inbox.com,True,196,1488936260,no AGENT messages in sample
+Help Desk,,,reserve@thebigbrownstorage.com,hello-262@whitelabelstorage.hs-inbox.com,True,648,1746936439,no AGENT messages in sample
+Help Desk,,,reserve@theironstorage.com,hello-190@whitelabelstorage.hs-inbox.com,True,69,2710839222,no agent (outbound) messages in sampled conversations
+Help Desk,,,reserve@zipstorage.us,hello-842@whitelabelstorage.hs-inbox.com,True,41,2718248857,No AGENT messages seen in sample
+Help Desk,,,rolla@safekeep-storage.com,hello-358@whitelabelstorage.hs-inbox.com,True,48,3563959475,no AGENT messages in sample
+Help Desk,,,storage@tspom.com,hello-591@whitelabelstorage.hs-inbox.com,True,234,2267524979,No AGENT messages found in sampled conversations
+Help Desk,,,tulsa@fastandezselfstorage.com,hello-643@whitelabelstorage.hs-inbox.com,True,333,2417527280,No AGENT messages found in sampled conversations
+Help Desk,,,vista@fastandezselfstorage.com,hello-737@whitelabelstorage.hs-inbox.com,True,301,2417526682,no AGENT messages in sample
+Aseel Sawalha,,,aseel.sawalha@whitelabelstorage.com,support-16aabf36@whitelabelstorage.com.hs-inbox.com,True,8697,2724927615,No AGENT-sent messages found in sample; facility_address is the staff member's own address (most frequent inbound TO)
+Billing,,,,liisi@whitelabelstorage.com,False,0,1128780658,no conversations found
+Billing,,,,support@45059701.hubspot-inbox.com,True,0,485092634,
+Billing,,,billing@whitelabelstorage.com,billing@whitelabelstorage.com,True,4281,1185639867,
+Billing,,,receivables@whitelabelstorage.com,receivables@whitelabelstorage.com,True,652,1259397251,No AGENT messages seen in sample (all inbound VISITOR)
+Bryan Burns,,,,support-3ee13964@whitelabelstorage.com.hs-inbox.com,True,0,2047904024,No conversations found for this channel
+Bryan Burns,,,bryan.burns@whitelabelstorage.com,bryan.burns@whitelabelstorage.com,True,1973,2048128591,no AGENT messages in sample
+Bryan Morgan,,,bryan.burns@whitelabelstorage.com,support-1740e1c0@whitelabelstorage.com.hs-inbox.com,True,493,2724921796,No AGENT messages found in sampled conversations
+Casey Rhodes,,,,support-1225af0d@whitelabelstorage.com.hs-inbox.com,True,759,2047903153,sampled messages all inbound marketing/spam TO visitor's own personal address; no agent replies in sample
+Coleen Schuetz,,,coleen.schuetz@whitelabelstorage.com,support-5@whitelabelstorage.com.hs-inbox.com,True,2525,2040116992,Personal forwarding inbox; no AGENT messages seen in sample
+Courtney Benson,,,courtney.benson@whitelabelstorage.com,support-1f0f3374@whitelabelstorage.com.hs-inbox.com,True,2412,3554947534,
+Dalton,,,dalton.gibson@whitelabelstorage.com,support-7e419fd6@whitelabelstorage.com.hs-inbox.com,True,1538,3181824096,no AGENT messages in sample
+Dan Chojnacki,,,dan.chojnacki@whitelabelstorage.com,support-2c7790b6@whitelabelstorage.com.hs-inbox.com,True,4677,2570589820,No AGENT-sent messages found in sample
+Diamond,,,diamond.stephens@whitelabelstorage.com,support-66830735@whitelabelstorage.com.hs-inbox.com,True,411,3553816421,No AGENT messages found in sampled conversations
+Donna Perry,,,,support-3d9f9f59@whitelabelstorage.com.hs-inbox.com,True,0,2047901303,No conversations found for this channel
+Donna Perry,,,donna.perry@whitelabelstorage.com,donna.perry@whitelabelstorage.com,True,4575,2048040219,no agent (outbound) messages in sampled conversations
+Elizabeth Airey,,,,support-504ddae3@whitelabelstorage.com.hs-inbox.com,True,0,2724924936,
+Hashem Haswah,,,hashem.haswah@whitelabelstorage.com,support-399f9df7@whitelabelstorage.com.hs-inbox.com,True,2126,2724925278,no AGENT messages in sample
+Heather Glaude,,,heather.glaude@whitelabelstorage.com,support-36848d0d@whitelabelstorage.com.hs-inbox.com,True,3265,2047902521,No AGENT-sent messages found in sample
+Hunter Stoner,,,,support-8@whitelabelstorage.com.hs-inbox.com,True,0,2042028898,no conversations found
+Hunter Stoner,,,hunter.stoner@whitelabelstorage.com,hunter.stoner@whitelabelstorage.com,True,1461,2042037636,No AGENT messages found in sampled conversations
+James Statham,,,james.statham@whitelabelstorage.com,support-6f239887@whitelabelstorage.com.hs-inbox.com,True,5745,2047905817,Personal forwarding inbox; no AGENT messages seen in sample
+Jason Tierney,,,jason.tierney@whitelabelstorage.com,support-64eb1618@whitelabelstorage.com.hs-inbox.com,True,17221,2047904356,facility_address is the personal mailbox of Jason Tierney (BCC'd); no agent-sent messages seen in sample
+Joe Dennis,,,,support-6@whitelabelstorage.com.hs-inbox.com,True,0,2042018872,No conversations found for this channel
+Joe Dennis,,,joseph.dennis@whitelabelstorage.com,joseph.dennis@whitelabelstorage.com,True,852,2042021371,no AGENT messages in sample; personal inbox
+Jose Rodriguez,,,jose.rodriguez@whitelabelstorage.com,support-7@whitelabelstorage.com.hs-inbox.com,True,883,2042020366,No AGENT messages found in sampled conversations
+Justine Bailey,,,,support-147f9ecc@whitelabelstorage.com.hs-inbox.com,True,8668,2042050012,this appears to be a personal/internal mailbox (Justine Bailey) rather than a customer-facing facility inbox; inbound TOs were colleague addresses (justine.bailey@ dan.chojnacki@whitelabelstorage.com); no agent (outbound) messages in sample
+Kara Slavens,,,,support-9@whitelabelstorage.com.hs-inbox.com,True,0,2042045190,
+Kara Slavens,,,kara.slavens@whitelabelstorage.com,kara.slavens@whitelabelstorage.com,True,6348,2042048806,Personal forwarding inbox; no AGENT messages seen in sample
+Kay Tucker,,,,support-4@whitelabelstorage.com.hs-inbox.com,True,0,2040104471,No conversations found for this channel
+Kay Tucker,,,kay.tucker@whitelabelstorage.com,kay.tucker@whitelabelstorage.com,True,1766,2042928754,no AGENT messages in sample; personal inbox
+Kristin Sobelman,,,kristin.sobelman@whitelabelstorage.com,support-11bd59c5@whitelabelstorage.com.hs-inbox.com,True,677,3554949038,No AGENT messages found in sampled conversations
+Lock,,,,support-1297016a@whitelabelstorage.com.hs-inbox.com,True,0,2186656195,no conversations found
+Locker Fox Auction - Inbox,,,lockerfoxauctions@whitelabelstorage.com,support-1@whitelabelstorage.com.hs-inbox.com,True,7125,1185656082,Personal/shared forwarding inbox; no AGENT messages seen in sample
+Logan Fontaine,,,logan.fontaine@whitelabelstorage.com,support-72c807d8@whitelabelstorage.com.hs-inbox.com,True,8216,2570591923,facility_address is the personal mailbox of Logan Fontaine (BCC'd); no agent-sent messages seen in sample
+Luann Laughlin,,,sluann.laughlin@whitelabelstorage.com,support-31618be3@whitelabelstorage.com.hs-inbox.com,True,1273,2047899344,no AGENT messages in sample
+Matthew Beck,,,,support-113218a0@whitelabelstorage.com.hs-inbox.com,True,0,2047905389,No conversations found for this channel instance
+Matthew Beck,,,matthew.beck@whitelabelstorage.com,matthew.beck@whitelabelstorage.com,True,774,2048054556,No AGENT-sent messages found in sample; facility_address is the staff member's own address (most frequent inbound TO)
+Meredith Gorton,,,,support-7c76fa38@whitelabelstorage.com.hs-inbox.com,True,70,3554951869,personal/internal mailbox (Meredith Gorton) not a customer-facing facility inbox; no agent (outbound) messages in sample
+Miguel Luzon,,,,support-40095e92@whitelabelstorage.com.hs-inbox.com,True,0,2785097277,No conversations found for this channel
+Miguel Luzon,,,miguel.luzon@whitelabelstorage.com,support-48d56b94@whitelabelstorage.com.hs-inbox.com,True,1715,2570680836,facility_address is the personal mailbox of Miguel Luzon (BCC'd); no agent-sent messages seen in sample
+Mike Navales,,,mike.navales@whitelabelstorage.com,support-61c8019f@whitelabelstorage.com.hs-inbox.com,True,122,3628567044,no AGENT messages in sample; large response saved to file and parsed separately
+Misty Stegall,,,misty.stegall@whitelabelstorage.com,support-41e99887@whitelabelstorage.com.hs-inbox.com,True,8885,2047901837,No AGENT-sent messages found in sample; facility_address is the staff member's own address (most frequent inbound TO)
+Mo'men Khattab,,,momen.khattab@whitelabelstorage.com,support-1641a205@whitelabelstorage.com.hs-inbox.com,True,2235,3102417985,No AGENT messages found in sampled conversations
+Peter Smyth,,,,support-5bbb0b19@whitelabelstorage.com.hs-inbox.com,True,0,3102418924,no conversations found
+Rachel Au,,,rachel@whitelabelstorage.com,support-7ac8782b@whitelabelstorage.com.hs-inbox.com,True,4,3181825902,Personal forwarding inbox; no AGENT messages seen in sample
+Rachel Carroll,,,rachel.carroll@whitelabelstorage.com,support-7989672f@whitelabelstorage.com.hs-inbox.com,True,1046,2946763241,facility_address is the personal mailbox of Rachel Carroll (BCC'd); no agent-sent messages seen in sample
+Rahaf Sunoqrot,,,lockerfoxauctions@whitelabelstorage.com,support-410703d7@whitelabelstorage.com.hs-inbox.com,True,6668,2570592698,no AGENT messages in sample; TO recipient varied (lockerfoxauctions and rahaf.sunoqrot)
+Reserve@WLS,,,reserve@whitelabelstorage.com,support-5924df55@whitelabelstorage.com.hs-inbox.com,True,1343,3550013190,No AGENT-sent messages found in sample
+Ruth Kruger,,,ruth.kruger@whitelabelstorage.com,support-399c282d@whitelabelstorage.com.hs-inbox.com,True,2790,2269873526,No AGENT messages found in sampled conversations
+Ryan Ashby,,,,support-2e042e88@whitelabelstorage.com.hs-inbox.com,True,12728,2047904939,personal/internal mailbox (Ryan Ashby) not a customer-facing facility inbox; no agent (outbound) messages in sample
+Sally Sugayyer,,,,support-59d94e0e@whitelabelstorage.com.hs-inbox.com,True,0,3102420295,No conversations found for this channel
+Selines Rosado,,,selines.rosado@whitelabelstorage.com,support-77fdb4c6@whitelabelstorage.com.hs-inbox.com,True,2668,2570682180,facility_address is the personal mailbox of Selines Rosado (BCC'd); no agent-sent messages seen in sample
+Stacey Camp,,,stacey.camp@whitelabelstorage.com,support-12d1ae7c@whitelabelstorage.com.hs-inbox.com,True,3682,2047903562,no AGENT messages in sample
+System Support,,,Help@whitelabelstorage.com,support-6f0baa11@whitelabelstorage.com.hs-inbox.com,True,27,2574313911,No AGENT-sent messages found in sample; all messages in sample were internal staff emailing Support/Help address
+Test INBOX,,,,support-3e0ef1cf@whitelabelstorage.com.hs-inbox.com,True,0,4098693566,No conversations found for this channel instance
+Transitions,,,,support-2@whitelabelstorage.com.hs-inbox.com,True,0,1580659401,no conversations found
+Transitions,,,,transitions@whitelabelstorage.com,False,0,1580659505,No conversations found for this channel (inbox inactive/unauthorized per input)
+Yesenia Gonzaga,,,yesenia.gonzaga@whitelabelstorage.com,support-69cd207e@whitelabelstorage.com.hs-inbox.com,True,4451,2269872064,facility_address is the personal mailbox of Yesenia Gonzaga (BCC'd); no agent-sent messages seen in sample
