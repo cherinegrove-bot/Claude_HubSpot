@@ -20,7 +20,13 @@ function loadDotEnv(file = path.join(PROJECT_ROOT, '.env')) {
 
 function getAccessToken() {
   loadDotEnv();
-  const token = (process.env.HUBSPOT_ACCESS_TOKEN || '').trim();
+  // Tolerate common copy/paste slips: surrounding quotes, a "Bearer " prefix,
+  // or stray whitespace/newlines.
+  const token = (process.env.HUBSPOT_ACCESS_TOKEN || '')
+    .trim()
+    .replace(/^(['"])(.*)\1$/s, '$2')
+    .replace(/^Bearer\s+/i, '')
+    .replace(/\s+/g, '');
   if (!token) {
     throw new Error(
       'HUBSPOT_ACCESS_TOKEN is not set. Add it as an environment secret (see README → "HubSpot credential").'
