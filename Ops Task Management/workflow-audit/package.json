@@ -1,0 +1,17 @@
+{
+  "name": "wls-workflow-audit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Read-only audit of the WLS HubSpot workflow folder, compared against the Ops task management documentation.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "api-check": "NODE_USE_ENV_PROXY=1 node scripts/api-check.js",
+    "parse-doc": "node scripts/parse-doc.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0"
+  }
+}

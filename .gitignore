@@ -1,0 +1,6 @@
+# Secrets: never commit real credentials anywhere in this repo.
+.env
+.env.*
+!.env.example
+
+node_modules/

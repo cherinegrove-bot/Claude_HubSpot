@@ -1,0 +1,13 @@
+node_modules/
+.env
+.env.*
+!.env.example
+
+# Audit inputs (the WLS documentation) and outputs (raw HubSpot data,
+# reports, audit logs) stay out of git.
+input/
+output/
+*.xlsx
+*.xls
+*.csv
+*.docx
