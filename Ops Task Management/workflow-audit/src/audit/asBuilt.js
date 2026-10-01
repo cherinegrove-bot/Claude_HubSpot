@@ -16,7 +16,6 @@ const { titleMatch } = require('./compare');
 const F = require('./filters');
 
 const COLUMNS = ['Role', 'Tier', 'Location Type', 'Task Title', 'Task Details', 'Trigger', 'Task Due', 'Frequency'];
-const EXTRA = [['HubSpot workflow', 40], ['Notes', 60]];
 const TIER_ORDER = ['Enterprise', 'TIER 1', 'TIER 2', 'Tier 2 - L2', 'TIER 3', 'ALL'];
 const TIER_CODE = { Enterprise: 'Ent', 'TIER 1': 'T1', 'TIER 2': 'T2.1', 'Tier 2 - L2': 'T2.2', 'TIER 3': 'T3' };
 const TIER_NAME = { Enterprise: 'Enterprise', 'TIER 1': 'Tier 1', 'TIER 2': 'Tier 2.1', 'Tier 2 - L2': 'Tier 2.2', 'TIER 3': 'Tier 3' };
@@ -186,35 +185,43 @@ async function writeAsBuilt({ sourcePath, targetPath, audit }) {
 
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet('As built in HubSpot');
+  // Column A is the HubSpot workflow (linked), then the team's 8 columns, then Notes.
   const widths = [14, 14, 14, 30, 106, 26, 12, 17];
-  COLUMNS.forEach((_, i) => (ws.getColumn(i + 1).width = ss.getColumn(i + 1).width || widths[i]));
-  EXTRA.forEach(([, w], i) => (ws.getColumn(9 + i).width = w));
+  const TOTAL = 1 + COLUMNS.length + 1;
+  ws.getColumn(1).width = 36;
+  COLUMNS.forEach((_, i) => (ws.getColumn(i + 2).width = ss.getColumn(i + 1).width || widths[i]));
+  ws.getColumn(TOTAL).width = 60;
+  // Source column whose style each output column copies.
+  const srcCol = (c) => (c === 1 ? 4 : c === TOTAL ? 8 : c - 1);
 
   const header = ws.getRow(1);
-  [...COLUMNS, ...EXTRA.map(([t]) => t)].forEach((title, i) => {
+  ['HubSpot workflow', ...COLUMNS, 'Notes'].forEach((title, i) => {
     const cell = header.getCell(i + 1);
     cell.value = title;
-    cell.style = headerStyle(Math.min(i + 1, 8));
+    cell.style = headerStyle(Math.min(srcCol(i + 1), 8));
   });
-  ws.views = [{ state: 'frozen', ySplit: 1 }];
+  ws.views = [{ state: 'frozen', xSplit: 1, ySplit: 1 }];
 
   const portalId = audit.meta.portalId;
   const link = (id) => `https://app.hubspot.com/workflows/${portalId}/platform/flow/${id}/edit`;
   const addDivider = (text) => {
     const row = ws.addRow([text]);
-    ws.mergeCells(row.number, 1, row.number, COLUMNS.length + EXTRA.length);
+    ws.mergeCells(row.number, 1, row.number, TOTAL);
     row.getCell(1).style = copyStyle(divider);
   };
   const addRow = (values, workflowCell, notes, url, fill) => {
-    const row = ws.addRow([...values, workflowCell, notes]);
-    for (let c = 1; c <= COLUMNS.length + EXTRA.length; c++) {
-      const style = dataStyle(Math.min(c, 8));
-      if (c !== 4 && style.font) delete style.font.underline;
+    const row = ws.addRow([workflowCell, ...values, notes]);
+    for (let c = 1; c <= TOTAL; c++) {
+      const style = dataStyle(srcCol(c));
+      if (style.font) {
+        if (c === 1 && url) style.font.underline = true;
+        else delete style.font.underline;
+      }
       style.alignment = { ...(style.alignment || {}), wrapText: true, vertical: 'top' };
       if (fill) style.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: fill }, bgColor: { argb: fill } };
       row.getCell(c).style = style;
     }
-    if (url) row.getCell(4).value = { text: values[3], hyperlink: url };
+    if (url) row.getCell(1).value = { text: workflowCell, hyperlink: url };
   };
 
   const rows = buildRows(audit);
@@ -279,7 +286,7 @@ async function writeAsBuilt({ sourcePath, targetPath, audit }) {
   const lines = [
     'What this is',
     `Every row on the first sheet is a task HubSpot actually creates today, taken from the ${audit.records.length} workflows in "${audit.meta.folderName}" (read on ${String(audit.meta.fetchedAt).slice(0, 10)}). Nothing in HubSpot was changed.`,
-    'The first 8 columns match the current Phase 3 Task Management spreadsheet. Task Title links to the workflow in HubSpot.',
+    'Column A is the HubSpot workflow that creates the task (click it to open the workflow). The next 8 columns match the current Phase 3 Task Management spreadsheet.',
     '',
     'Role',
     'Tier code, then who gets the task: Ent = Enterprise, T1 = Tier 1, T2.1 = Tier 2.1 (HubSpot: "Tier 2 - L1"), T2.2 = Tier 2.2 (HubSpot: "Tier 2 - L2"), T3 = Tier 3, SOA = SOA facilities (any tier).',
