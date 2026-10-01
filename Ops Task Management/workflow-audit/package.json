@@ -7,6 +7,7 @@
     "node": ">=22"
   },
   "scripts": {
+    "audit": "node scripts/audit.js",
     "api-check": "NODE_USE_ENV_PROXY=1 node scripts/api-check.js",
     "fetch-raw": "NODE_USE_ENV_PROXY=1 node scripts/fetch-raw.js",
     "parse-doc": "node scripts/parse-doc.js",
