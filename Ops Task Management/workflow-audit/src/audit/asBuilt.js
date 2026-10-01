@@ -243,6 +243,128 @@ async function writeAsBuilt({ sourcePath, targetPath, audit }) {
     }
   }
 
+  // Exclusions: one row per workflow (same order and colour as the first
+  // tab), a column per rule that keeps facilities from getting the task.
+  const ex = wb.addWorksheet('Exclusions');
+  const exCols = [
+    ['HubSpot workflow', 36],
+    ['Task(s) it creates', 34],
+    ['Live only\n(Status = Live)', 13],
+    ['Full management only', 15],
+    ['"Exclude from Ops tasks" list\n(Street Rate Management = Automated (WLS))', 24],
+    ['SOA facilities', 18],
+    ['Customer Tier N/A or blank', 15],
+    ['Tiers it covers', 22],
+    ['Other exclusions', 34],
+    ['Only for facilities that…', 40],
+  ];
+  exCols.forEach(([, w], i) => (ex.getColumn(i + 1).width = w));
+  const supByWf = new Map(audit.suppression.map((x) => [x.workflowId, x]));
+  const optionLabel = (prop, v) => ((audit.properties[prop] && audit.properties[prop].options) || []).find((o) => o.value === v)?.label || v;
+  const groupOf = new Map();
+  for (const r of rows) if (!groupOf.has(r.record.id)) groupOf.set(r.record.id, r.group);
+  const exRecords = [...audit.records].sort((a, b) => (groupOf.get(a.id)?.order ?? 1e9) - (groupOf.get(b.id)?.order ?? 1e9));
+
+  const facts = exRecords.map((r) => {
+    const tree = r.enrollment.filters;
+    const sup = supByWf.get(r.id);
+    const live = F.requiredValues(tree, 'live');
+    const mgt = F.requiredValues(tree, 'mgt_type');
+    const tierLimit = F.requiredValues(tree, 'customer_tier');
+    const taskTiers = new Set(r.createdTasks.flatMap((t) => (t.tierConstrained ? t.tiers : [])));
+    const covered = TIER_ORDER.filter((t) => t !== 'ALL' && taskTiers.has(t)).map((t) => TIER_CODE[t]);
+    const soaTasks = r.createdTasks.filter((t) => t.soa === 'SOA only').length;
+    const anySoa = r.createdTasks.some((t) => t.soa === 'any');
+    const tierBranching = r.actions.branches.length > 0 && r.createdTasks.some((t) => t.tierConstrained);
+    const filters = F.andGroups(tree).flat();
+    const others = [];
+    const conditions = [];
+    for (const f of filters) {
+      if (['live', 'mgt_type', 'customer_tier'].includes(f.property)) continue;
+      const text = plain(F.describeFilter(f, { properties: audit.properties, lists: audit.lists }));
+      if (F.isNegative(f)) others.push(`Leaves out: ${text.replace(/ is none of /, ' is ').replace(/ is not /, ' is ').replace(/ does not contain /, ' contains ')}`);
+      else if (!(F.filterOperator(f) === 'IS_KNOWN' && filters.some((g) => g !== f && g.property === f.property))) conditions.push(text);
+    }
+    for (const sItem of sup.otherSuppression) others.push(plain(sItem));
+    return {
+      r,
+      live: live ? `Yes` : 'No',
+      mgt: mgt ? `Yes` : 'No',
+      mgtText: mgt ? mgt.map((v) => optionLabel('mgt_type', v)).join(' or ') : '',
+      list: sup.suppressionLists.length ? 'Yes' : 'No',
+      soa: soaTasks ? 'Included (SOA task)' : anySoa ? 'Not checked' : 'Left out',
+      na: tierBranching ? 'Left out' : 'Not checked',
+      tiers: tierLimit ? `Only ${TIER_ORDER.filter((t) => tierLimit.includes(t)).map((t) => TIER_CODE[t]).join(', ')} can enrol` : covered.length ? covered.join(', ') : 'All tiers',
+      others: others.join('\n') || '—',
+      conditions: conditions.join('\n') || '—',
+    };
+  });
+
+  const n = facts.length;
+  const count = (k, v) => facts.filter((f) => f[k] === v).length;
+  const notLive = facts.filter((f) => f.live === 'No').map((f) => f.r.name.replace(/^Create Tasks \| ?/, '').trim());
+  const summary = [
+    'Which tasks have exclusions',
+    `"Exclude from Ops tasks" list (Street Rate Management = Automated (WLS)): ${count('list', 'Yes')} of ${n} workflows.`,
+    `Full management only (${facts[0] ? facts[0].mgtText : ''}): ${count('mgt', 'Yes')} of ${n} workflows.`,
+    `Live only: ${count('live', 'Yes')} of ${n} workflows. Not checked in: ${notLive.join('; ') || 'none'}.`,
+    `SOA facilities are left out of ${count('soa', 'Left out')} of ${n} workflows. Customer Tier N/A or blank is left out wherever a workflow splits by tier (${count('na', 'Left out')} of ${n}).`,
+    'Red cells mean the rule applies, so those facilities do not get the task.',
+  ];
+  summary.forEach((text, i) => {
+    const row = ex.addRow([text]);
+    ex.mergeCells(row.number, 1, row.number, exCols.length);
+    const cell = row.getCell(1);
+    cell.alignment = { wrapText: true, vertical: 'top' };
+    if (i === 0) cell.style = copyStyle(divider);
+    else cell.font = { name: 'Roboto', color: { argb: 'FF434343' } };
+  });
+  ex.addRow([]);
+  const exHeader = ex.addRow(exCols.map(([t]) => t));
+  exHeader.eachCell((c) => {
+    c.style = headerStyle(4);
+    c.alignment = { wrapText: true, vertical: 'top' };
+  });
+  ex.views = [{ state: 'frozen', xSplit: 1, ySplit: exHeader.number }];
+
+  const RED = 'FFF4CCCC';
+  const applies = (v) => v === 'Yes' || v === 'Left out';
+  for (const f of facts) {
+    const r = f.r;
+    const g = groupOf.get(r.id);
+    const fill = g ? GROUP_FILLS[g.order % GROUP_FILLS.length] : null;
+    const row = ex.addRow([
+      { text: `${r.name} (${r.status})`, hyperlink: link(r.id) },
+      [...new Set(r.createdTasks.map((t) => t.title.trim() || '(no title)'))].join('\n'),
+      f.live,
+      f.mgt,
+      f.list,
+      f.soa,
+      f.na,
+      f.tiers,
+      f.others,
+      f.conditions,
+    ]);
+    for (let c = 1; c <= exCols.length; c++) {
+      const style = dataStyle(c === 1 ? 4 : 2);
+      if (c !== 1 && style.font) delete style.font.underline;
+      style.alignment = { wrapText: true, vertical: 'top', horizontal: c >= 3 && c <= 7 ? 'center' : undefined };
+      const v = row.getCell(c).value;
+      const colour = c >= 3 && c <= 7 ? (applies(v) ? RED : 'FFFFFFFF') : c === 9 && v !== '—' ? RED : c <= 2 ? fill : null;
+      if (colour) style.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colour }, bgColor: { argb: colour } };
+      row.getCell(c).style = style;
+    }
+  }
+  for (const u of audit.unavailable) {
+    const row = ex.addRow([`${u.name} (not readable)`, '', '?', '?', '?', '?', '?', '?', 'Could not be read from HubSpot. Check manually.', '']);
+    for (let c = 1; c <= exCols.length; c++) {
+      const style = dataStyle(2);
+      if (style.font) delete style.font.underline;
+      style.alignment = { wrapText: true, vertical: 'top', horizontal: c >= 3 && c <= 8 ? 'center' : undefined };
+      row.getCell(c).style = style;
+    }
+  }
+
   // Sheet 2: the workflows in the folder, in plain words.
   const wf = wb.addWorksheet('Workflows in the folder');
   const wfCols = [['Workflow', 44], ['On / Off', 9], ['Runs', 26], ['Facilities it includes', 50], ['Facilities it leaves out', 60], ['Tasks it creates', 44]];
