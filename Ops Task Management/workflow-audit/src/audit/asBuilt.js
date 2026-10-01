@@ -18,8 +18,10 @@ const F = require('./filters');
 const COLUMNS = ['Role', 'Tier', 'Location Type', 'Task Title', 'Task Details', 'Trigger', 'Task Due', 'Frequency'];
 const EXTRA = [['HubSpot workflow', 40], ['Notes', 60]];
 const TIER_ORDER = ['Enterprise', 'TIER 1', 'TIER 2', 'Tier 2 - L2', 'TIER 3', 'ALL'];
-const TIER_CODE = { Enterprise: 'Ent', 'TIER 1': 'T1', 'TIER 2': 'T2-L1', 'Tier 2 - L2': 'T2-L2', 'TIER 3': 'T3' };
-const TIER_NAME = { Enterprise: 'Enterprise', 'TIER 1': 'Tier 1', 'TIER 2': 'Tier 2 - L1', 'Tier 2 - L2': 'Tier 2 - L2', 'TIER 3': 'Tier 3' };
+const TIER_CODE = { Enterprise: 'Ent', 'TIER 1': 'T1', 'TIER 2': 'T2.1', 'Tier 2 - L2': 'T2.2', 'TIER 3': 'T3' };
+const TIER_NAME = { Enterprise: 'Enterprise', 'TIER 1': 'Tier 1', 'TIER 2': 'Tier 2.1', 'Tier 2 - L2': 'Tier 2.2', 'TIER 3': 'Tier 3' };
+// Soft fills, one per task group, repeated in order.
+const GROUP_FILLS = ['FFDDEBF7', 'FFE2EFDA', 'FFFFF2CC', 'FFFCE4D6', 'FFEDE2F6', 'FFD9F0EE', 'FFF8E1EC', 'FFEDEDED'];
 const DAY = { MONDAY: 'Mondays', TUESDAY: 'Tuesdays', WEDNESDAY: 'Wednesdays', THURSDAY: 'Thursdays', FRIDAY: 'Fridays', SATURDAY: 'Saturdays', SUNDAY: 'Sundays' };
 const ordinal = (n) => `${n}${n % 10 === 1 && n !== 11 ? 'st' : n % 10 === 2 && n !== 12 ? 'nd' : n % 10 === 3 && n !== 13 ? 'rd' : 'th'}`;
 const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
@@ -116,16 +118,47 @@ function buildRows(audit) {
     });
   }
 
-  // Order like the team's document: by the first spreadsheet row with the
-  // same title, then by workflow, tier and repeat.
+  // Group rows by task: one group per workflow, and two workflows share a
+  // group when they create the same task for different tiers (e.g. one for
+  // Ent/T1/T2.1 and one for T2.2/T3). Groups follow the order of the team's
+  // document; inside a group rows go by tier.
+  const byWorkflow = new Map();
+  for (const r of rows) {
+    if (!byWorkflow.has(r.record.id)) byWorkflow.set(r.record.id, { ids: [r.record.id], rows: [], docIndex: Infinity, name: r.record.name });
+    const g = byWorkflow.get(r.record.id);
+    g.rows.push(r);
+    g.docIndex = Math.min(g.docIndex, r.docIndex);
+  }
+  const taskGroups = [];
+  for (const g of byWorkflow.values()) {
+    const tiers = new Set(g.rows.map((r) => r.tierKey));
+    const partner = taskGroups.find(
+      (x) =>
+        x.rows.some((a) => g.rows.some((b) => a.title && b.title && titleMatch(a.title, b.title))) &&
+        !x.rows.some((a) => a.tierKey !== 'ALL' && tiers.has(a.tierKey))
+    );
+    if (partner) {
+      partner.rows.push(...g.rows);
+      partner.docIndex = Math.min(partner.docIndex, g.docIndex);
+    } else taskGroups.push(g);
+  }
+  taskGroups.sort((a, b) => a.docIndex - b.docIndex || a.name.localeCompare(b.name)).forEach((g, i) => {
+    g.order = i;
+    for (const r of g.rows) r.group = g;
+  });
   rows.sort(
     (a, b) =>
-      a.docIndex - b.docIndex ||
-      a.record.name.localeCompare(b.record.name) ||
+      a.group.order - b.group.order ||
       TIER_ORDER.indexOf(a.tierKey) - TIER_ORDER.indexOf(b.tierKey) ||
-      a.title.localeCompare(b.title) ||
+      a.record.name.localeCompare(b.record.name) ||
       a.values[5].length - b.values[5].length
   );
+  // Say so when the same task is also created for this tier by another workflow.
+  for (const r of rows) {
+    const others = rows.filter((x) => x.record.id !== r.record.id && x.tierKey === r.tierKey && x.title && r.title && titleMatch(x.title, r.title));
+    const names = [...new Set(others.map((x) => x.record.name))];
+    if (names.length) r.notes.push(`This tier also gets a task with this name from: ${names.join('; ')}.`);
+  }
   return rows;
 }
 
@@ -172,24 +205,26 @@ async function writeAsBuilt({ sourcePath, targetPath, audit }) {
     ws.mergeCells(row.number, 1, row.number, COLUMNS.length + EXTRA.length);
     row.getCell(1).style = copyStyle(divider);
   };
-  const addRow = (values, workflowCell, notes, url) => {
+  const addRow = (values, workflowCell, notes, url, fill) => {
     const row = ws.addRow([...values, workflowCell, notes]);
     for (let c = 1; c <= COLUMNS.length + EXTRA.length; c++) {
       const style = dataStyle(Math.min(c, 8));
       if (c !== 4 && style.font) delete style.font.underline;
       style.alignment = { ...(style.alignment || {}), wrapText: true, vertical: 'top' };
+      if (fill) style.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: fill }, bgColor: { argb: fill } };
       row.getCell(c).style = style;
     }
     if (url) row.getCell(4).value = { text: values[3], hyperlink: url };
   };
 
   const rows = buildRows(audit);
-  const documented = rows.filter((r) => r.docIndex !== Infinity);
-  const extra = rows.filter((r) => r.docIndex === Infinity);
-  for (const r of documented) addRow(r.values, `${r.record.name} (${r.record.status})`, r.notes.join('\n'), link(r.record.id));
+  const documented = rows.filter((r) => r.group.docIndex !== Infinity);
+  const extra = rows.filter((r) => r.group.docIndex === Infinity);
+  const fillFor = (r) => GROUP_FILLS[r.group.order % GROUP_FILLS.length];
+  for (const r of documented) addRow(r.values, `${r.record.name} (${r.record.status})`, r.notes.join('\n'), link(r.record.id), fillFor(r));
   if (extra.length) {
     addDivider('In HubSpot but not in the current spreadsheet');
-    for (const r of extra) addRow(r.values, `${r.record.name} (${r.record.status})`, r.notes.join('\n'), link(r.record.id));
+    for (const r of extra) addRow(r.values, `${r.record.name} (${r.record.status})`, r.notes.join('\n'), link(r.record.id), fillFor(r));
   }
   if (audit.unavailable.length) {
     addDivider('Could not be read from HubSpot: check these manually');
@@ -247,7 +282,8 @@ async function writeAsBuilt({ sourcePath, targetPath, audit }) {
     'The first 8 columns match the current Phase 3 Task Management spreadsheet. Task Title links to the workflow in HubSpot.',
     '',
     'Role',
-    'Tier code, then who gets the task: Ent = Enterprise, T1 = Tier 1, T2-L1 = Tier 2 - L1, T2-L2 = Tier 2 - L2, T3 = Tier 3, SOA = SOA facilities (any tier).',
+    'Tier code, then who gets the task: Ent = Enterprise, T1 = Tier 1, T2.1 = Tier 2.1 (HubSpot: "Tier 2 - L1"), T2.2 = Tier 2.2 (HubSpot: "Tier 2 - L2"), T3 = Tier 3, SOA = SOA facilities (any tier).',
+    'Rows for the same task are grouped together and share a colour, so you can see which tiers get it.',
     'OM = Operations Manager, SM = Site Manager. "SM (only if no OM)" means HubSpot gives the task to the OM when there is one, and to the SM only when the OM field is blank.',
     '',
     'Location Type',
