@@ -18,6 +18,7 @@ const { parseTaskSpec } = require('../src/docs/parseTaskSpec');
 const { runAudit } = require('../src/audit/runAudit');
 const { buildReport } = require('../src/audit/report');
 const { writeAuditedSpreadsheet } = require('../src/audit/spreadsheet');
+const { writeAsBuilt } = require('../src/audit/asBuilt');
 
 const arg = (name) => {
   const i = process.argv.indexOf(name);
@@ -47,9 +48,12 @@ async function main() {
     JSON.stringify({ meta: audit.meta, records: audit.records.map(({ raw: _raw, ...r }) => r), suppression: audit.suppression, unavailable: audit.unavailable, comparison: audit.comparison }, null, 2)
   );
   let sheet = null;
+  let asBuilt = null;
   if (docPath) {
     sheet = path.join(outDir, `${path.basename(docPath, path.extname(docPath))} - Audited.xlsx`);
     await writeAuditedSpreadsheet({ sourcePath: docPath, targetPath: sheet, audit });
+    asBuilt = path.join(outDir, `${path.basename(docPath, path.extname(docPath))} - As built in HubSpot.xlsx`);
+    await writeAsBuilt({ sourcePath: docPath, targetPath: asBuilt, audit });
   }
 
   const results = {};
@@ -59,6 +63,7 @@ async function main() {
   console.log(`Spreadsheet rows: ${JSON.stringify(results)}`);
   console.log(`Report: ${path.relative(PROJECT_ROOT, path.join(outDir, 'report.md'))}`);
   if (sheet) console.log(`Spreadsheet: ${path.relative(PROJECT_ROOT, sheet)}`);
+  if (asBuilt) console.log(`As built: ${path.relative(PROJECT_ROOT, asBuilt)}`);
 }
 
 main().catch((error) => {
