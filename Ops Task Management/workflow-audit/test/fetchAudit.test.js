@@ -36,17 +36,18 @@ test('resolves folder names, records unmatched names and failures, resolves list
       id: '10',
       objectTypeId: '0-2',
       suppressionFilterBranch: { filters: [{ listId: '4291', filterType: 'IN_LIST' }] },
+      enrollmentCriteria: { listFilterBranch: { filters: [{ property: 'customer_tier' }] } },
     },
     '/automation/v3/workflows': { workflows: [] },
     '/crm/v3/lists/4291': { list: { name: 'Do not task' } },
     '/crm/v3/owners': { results: [{ id: 'o1' }] },
-    '/crm/v3/properties/companies': { results: [{ name: 'customer_tier' }] },
+    '/crm/v3/properties/companies': { results: [{ name: 'customer_tier', label: 'Customer Tier', extra: 'x' }, { name: 'unused' }] },
   });
   const bundle = await fetchAuditData(client, { workflowNames: ['Create Tasks | Alpha', 'Missing One'] }, { extraWorkflowIds: ['99'] });
   assert.deepStrictEqual(bundle.scopeResolution.unmatchedNames, ['Missing One']);
   assert.deepStrictEqual(Object.keys(bundle.flows), ['10']);
   assert.ok(bundle.lists['4291']);
   assert.strictEqual(bundle.owners.length, 1);
-  assert.ok(bundle.properties['0-2']);
+  assert.deepStrictEqual(bundle.properties['0-2'].map((p) => p.name), ['customer_tier']);
   assert.deepStrictEqual(bundle.errors.map((e) => e.context), ['workflow 99']);
 });

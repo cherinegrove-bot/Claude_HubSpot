@@ -29,6 +29,37 @@ function collectListIds(value, out = new Set()) {
   return out;
 }
 
+// Property names referenced anywhere in the workflows (filters and
+// "owner from property" task assignment), so only those labels are kept.
+function collectPropertyNames(value, out = new Set()) {
+  if (!value || typeof value !== 'object') return out;
+  if (Array.isArray(value)) {
+    for (const item of value) collectPropertyNames(item, out);
+    return out;
+  }
+  if (typeof value.property === 'string') out.add(value.property);
+  if (typeof value.propertyName === 'string') out.add(value.propertyName);
+  for (const child of Object.values(value)) collectPropertyNames(child, out);
+  return out;
+}
+
+const slimProperty = (p) => ({
+  name: p.name,
+  label: p.label,
+  type: p.type,
+  fieldType: p.fieldType,
+  options: (p.options || []).map((o) => ({ label: o.label, value: o.value })),
+});
+
+const slimOwner = (o) => ({
+  id: String(o.id),
+  userId: o.userId,
+  email: o.email,
+  firstName: o.firstName,
+  lastName: o.lastName,
+  archived: o.archived,
+});
+
 function errorDetail(error, context) {
   const base = error && error.toJSON ? error.toJSON() : { message: String(error && error.message) };
   return { context, ...base };
@@ -128,8 +159,11 @@ async function fetchAuditData(client, scope, { extraWorkflowIds = [], onProgress
   }
 
   onProgress('Reading owners');
-  bundle.owners =
-    (await attempt('owners', () => client.getAllPages('/crm/v3/owners', { query: { limit: 500 }, label: 'owners' }))) || [];
+  bundle.owners = (
+    (await attempt('owners', () => client.getAllPages('/crm/v3/owners', { query: { limit: 500 }, label: 'owners' }))) || []
+  ).map(slimOwner);
+
+  const referenced = collectPropertyNames(Object.values(bundle.flows));
 
   const objectTypes = new Set(Object.values(bundle.flows).map((f) => f.objectTypeId).filter(Boolean));
   for (const objectTypeId of objectTypes) {
@@ -139,7 +173,7 @@ async function fetchAuditData(client, scope, { extraWorkflowIds = [], onProgress
     const props = await attempt(`${objectPath} properties`, () =>
       client.get(`/crm/v3/properties/${objectPath}`, { label: `${objectPath} properties` })
     );
-    if (props) bundle.properties[objectTypeId] = props.results || [];
+    if (props) bundle.properties[objectTypeId] = (props.results || []).filter((p) => referenced.has(p.name)).map(slimProperty);
   }
 
   bundle.requests = client.requestLog;
@@ -147,4 +181,4 @@ async function fetchAuditData(client, scope, { extraWorkflowIds = [], onProgress
   return bundle;
 }
 
-module.exports = { fetchAuditData, nameKey, collectListIds, OBJECT_TYPE_PATHS };
+module.exports = { fetchAuditData, nameKey, collectListIds, collectPropertyNames, OBJECT_TYPE_PATHS };
