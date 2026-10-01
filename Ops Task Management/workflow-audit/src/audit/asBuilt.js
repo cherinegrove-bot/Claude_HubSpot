@@ -26,7 +26,7 @@ const ordinal = (n) => `${n}${n % 10 === 1 && n !== 11 ? 'st' : n % 10 === 2 && 
 const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 // "Customer Tier (customer_tier) is any of" → "Customer Tier is any of"
-const plain = (text) => String(text || '').replace(/ \([a-z0-9_]+\)/g, '').replace(/\bstreet_rate_management\b/g, 'Street Rate Management').replace(/\bis any of\b/g, 'is').replace(/"/g, '');
+const plain = (text) => String(text || '').replace(/is between today − (\d+) days and now/g, 'is within the last $1 days').replace(/ \([a-z0-9_]+\)/g, '').replace(/\bstreet_rate_management\b/g, 'Street Rate Management').replace(/\bis any of\b/g, 'is').replace(/"/g, '');
 
 function triggerText(record, delayDays, properties = {}) {
   const s = record.schedule.enrollmentSchedule;
@@ -52,6 +52,69 @@ function roleText(task, tierKey) {
   const who = task.role === 'NAMED' ? (task.assignee.ownerResolved ? task.assignee.text.replace(/^Specific user: /, '') : `inactive user (ID ${task.assignee.ownerId})`) : task.role || '?';
   const soaSuffix = task.soa === 'SOA only' && tierKey !== 'ALL' ? '-SOA' : '';
   return { prefix, who, soaSuffix };
+}
+
+// Plain-English conditions for one create-task path: what must be true for
+// HubSpot to create it, and what stops it.
+function taskConditions(record, task, audit) {
+  const props = audit.properties;
+  const label = (name) => (props[name] && props[name].label) || name;
+  const valueLabel = (name, v) => {
+    if (name === 'customer_tier' && TIER_NAME[v]) return TIER_NAME[v];
+    const o = ((props[name] && props[name].options) || []).find((x) => x.value === v);
+    return o ? o.label : String(v);
+  };
+  const vals = (f) => ((f.operation && f.operation.values) || []).map((v) => valueLabel(f.property, v));
+  const when = [];
+  const not = [];
+  const classify = (f) => {
+    const op = F.filterOperator(f);
+    if (f.filterType === 'IN_LIST') {
+      const l = audit.lists[String(f.listId)];
+      const name = l && l.list ? `"${l.list.name}" list` : `list ${f.listId}`;
+      (op === 'NOT_IN_LIST' ? not : when).push(op === 'NOT_IN_LIST' ? `Facility is on the ${name}` : `Facility is on the ${name}`);
+      return;
+    }
+    const L = label(f.property);
+    if (op === 'IS_KNOWN') when.push(`${L} is filled in`);
+    else if (op === 'IS_UNKNOWN') when.push(`${L} is blank`);
+    else if (op === 'IS_ANY_OF' || op === 'IS_EQUAL_TO') when.push(`${L} is ${vals(f).join(' or ')}`);
+    else if (op === 'STARTS_WITH') when.push(`${L} starts with "${vals(f).join('" or "')}"`);
+    else if (op === 'CONTAINS_EXACTLY') when.push(`${L} contains "${vals(f).join('" or "')}"`);
+    else if (op === 'DOES_NOT_CONTAIN_EXACTLY') not.push(`${L} contains "${vals(f).join('" or "')}"`);
+    else if (op === 'IS_NONE_OF' || op === 'IS_NOT_EQUAL_TO' || op === 'IS_NOT_ANY_OF') not.push(`${L} is ${vals(f).join(' or ')}`);
+    else when.push(plain(F.describeFilter(f, { properties: props, lists: audit.lists })));
+  };
+  const classifyTree = (tree) => {
+    const groups = F.andGroups(tree).filter((g) => g.length);
+    if (groups.length === 1) groups[0].forEach(classify);
+    else if (groups.length > 1) when.push(`One of: ${plain(F.describeTree(tree, { properties: props, lists: audit.lists }))}`);
+  };
+
+  classifyTree(record.enrollment.filters);
+  const sup = record.raw.suppressionFilterBranch;
+  for (const f of F.andGroups(sup).flat()) {
+    if (f.filterType === 'IN_LIST') {
+      const l = audit.lists[String(f.listId)];
+      const crit = l && l.list && l.list.filterBranch ? ` (${plain(F.describeTree(l.list.filterBranch, { properties: props, lists: audit.lists })).replace(/\bstreet_rate_management\b/g, 'Street Rate Management')})` : '';
+      not.push(`Facility is on the "${l && l.list ? l.list.name : f.listId}" list${crit}`);
+    } else not.push(plain(F.describeFilter(f, { properties: props, lists: audit.lists })));
+  }
+  const actions = new Map((record.raw.actions || []).map((a) => [String(a.actionId), a]));
+  for (const step of task.path) {
+    const a = actions.get(String(step.actionId));
+    const branches = (a && a.listBranches) || [];
+    const b = branches.find((x) => x.branchName === step.branchName);
+    if (b) classifyTree(b.filterBranch);
+    for (const name of step.notEarlier || []) {
+      const e = branches.find((x) => x.branchName === name);
+      const fs = e ? F.andGroups(e.filterBranch) : [];
+      if (fs.length === 1 && fs[0].length === 1 && F.filterOperator(fs[0][0]) === 'IS_KNOWN') when.push(`${label(fs[0][0].property)} is blank`);
+      else not.push(`Facility matches the earlier "${name}" branch${e ? ` (${plain(F.describeTree(e.filterBranch, { properties: props, lists: audit.lists }))})` : ''}`);
+    }
+  }
+  if (!record.reEnrollment.enabled) not.push('Facility has already had this task once (re-enrolment is off)');
+  return { when: [...new Set(when)], not: [...new Set(not)] };
 }
 
 // One row per (workflow, title, tier, SOA, delay); roles on that row are joined.
@@ -96,6 +159,20 @@ function buildRows(audit) {
     const role = named ? `${prefix}${soaSuffix} – ${roleWords}` : `${prefix}-${roleWords}${soaSuffix}`;
     const tier = g.tierKey === 'ALL' ? (first.soa === 'SOA only' ? 'All tiers (SOA facilities)' : 'All tiers') : TIER_NAME[g.tierKey] || g.tierKey;
     const docMatch = docTasks.find((d) => titleMatch(d.values.taskTitle, first.title));
+    // Conditions shared by every role on this row, then each role's own.
+    const perTask = g.tasks.map((t) => ({ t, c: taskConditions(g.record, t, audit) }));
+    const shared = (key) => perTask[0].c[key].filter((x) => perTask.every((p) => p.c[key].includes(x)));
+    const who = (t) => (t.role === 'NAMED' ? t.assignee.text.replace(/^Specific user: /, '') : t.role);
+    const own = (key) =>
+      perTask.length > 1
+        ? perTask
+            .map((p) => ({ p, extra: p.c[key].filter((x) => !shared(key).includes(x)) }))
+            .filter((x) => x.extra.length)
+            .map(({ p, extra }) => `${who(p.t)} ${key === 'when' ? 'gets it if' : 'does not get it if'}: ${extra.join(key === 'when' ? ' and ' : ' or ')}`)
+        : [];
+    const whenList = [...shared('when'), ...own('when')];
+    const notList = [...shared('not'), ...own('not')];
+    const created = g.record.status === 'ON' ? 'YES' : 'NO – workflow is OFF';
     if (g.record.status === 'OFF') notes.unshift('Workflow is turned OFF, so this task is not being created.');
     if (!first.title.trim()) notes.unshift('Task has no title.');
     rows.push({
@@ -112,6 +189,9 @@ function buildRows(audit) {
         triggerText(g.record, first.delayBeforeDays, audit.properties),
         first.dueDays === null ? 'No due date' : plural(first.dueDays, 'Day'),
         frequencyText(g.record),
+        created,
+        whenList.map((x) => `• ${x}`).join('\n') || '—',
+        notList.map((x) => `• ${x}`).join('\n') || '—',
       ],
       notes: [...new Set(notes)],
     });
@@ -187,15 +267,18 @@ async function writeAsBuilt({ sourcePath, targetPath, audit }) {
   const ws = wb.addWorksheet('As built in HubSpot');
   // Column A is the HubSpot workflow (linked), then the team's 8 columns, then Notes.
   const widths = [14, 14, 14, 30, 106, 26, 12, 17];
-  const TOTAL = 1 + COLUMNS.length + 1;
+  const AUDIT_COLS = [['Task created?', 14], ['Created only when (all must be true)', 48], ['Not created when (any one is true)', 48]];
+  const TOTAL = 1 + COLUMNS.length + AUDIT_COLS.length + 1;
   ws.getColumn(1).width = 36;
   COLUMNS.forEach((_, i) => (ws.getColumn(i + 2).width = ss.getColumn(i + 1).width || widths[i]));
-  ws.getColumn(TOTAL).width = 60;
+  AUDIT_COLS.forEach(([, w], i) => (ws.getColumn(2 + COLUMNS.length + i).width = w));
+  ws.getColumn(TOTAL).width = 50;
+  const CREATED_COL = 2 + COLUMNS.length;
   // Source column whose style each output column copies.
-  const srcCol = (c) => (c === 1 ? 4 : c === TOTAL ? 8 : c - 1);
+  const srcCol = (c) => (c === 1 ? 4 : c > COLUMNS.length + 1 ? 8 : c - 1);
 
   const header = ws.getRow(1);
-  ['HubSpot workflow', ...COLUMNS, 'Notes'].forEach((title, i) => {
+  ['HubSpot workflow', ...COLUMNS, ...AUDIT_COLS.map(([t]) => t), 'Notes'].forEach((title, i) => {
     const cell = header.getCell(i + 1);
     cell.value = title;
     cell.style = headerStyle(Math.min(srcCol(i + 1), 8));
@@ -218,7 +301,13 @@ async function writeAsBuilt({ sourcePath, targetPath, audit }) {
         else delete style.font.underline;
       }
       style.alignment = { ...(style.alignment || {}), wrapText: true, vertical: 'top' };
-      if (fill) style.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: fill }, bgColor: { argb: fill } };
+      let colour = fill;
+      if (c === CREATED_COL) {
+        const v = String(values[COLUMNS.length] || '');
+        colour = v.startsWith('YES') ? 'FFB6D7A8' : v.startsWith('NO') ? 'FFEA9999' : 'FFFFE599';
+        style.font = { ...(style.font || {}), bold: true };
+      }
+      if (colour) style.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colour }, bgColor: { argb: colour } };
       row.getCell(c).style = style;
     }
     if (url) row.getCell(1).value = { text: workflowCell, hyperlink: url };
@@ -238,130 +327,9 @@ async function writeAsBuilt({ sourcePath, targetPath, audit }) {
     for (const u of audit.unavailable) {
       const docRows = audit.parsedDoc.tasks.filter((t) => t.workflowLink && t.workflowLink.workflowId === u.id);
       const note = `HubSpot did not return this workflow's settings, so these rows are copied from the current spreadsheet and not confirmed.`;
-      if (docRows.length) for (const d of docRows) addRow(COLUMNS.map((_, i) => Object.values(d.values)[i]), `${u.name} (not readable)`, note, u.id ? link(u.id) : null);
-      else addRow(['', '', '', u.name.replace(/^Create Tasks \| /, ''), '', '', '', ''], `${u.name} (not readable)`, 'Not listed by HubSpot at all; nothing to compare. Check it in HubSpot.', null);
-    }
-  }
-
-  // Exclusions: one row per workflow (same order and colour as the first
-  // tab), a column per rule that keeps facilities from getting the task.
-  const ex = wb.addWorksheet('Exclusions');
-  const exCols = [
-    ['HubSpot workflow', 36],
-    ['Task(s) it creates', 34],
-    ['Live only\n(Status = Live)', 13],
-    ['Full management only', 15],
-    ['"Exclude from Ops tasks" list\n(Street Rate Management = Automated (WLS))', 24],
-    ['SOA facilities', 18],
-    ['Customer Tier N/A or blank', 15],
-    ['Tiers it covers', 22],
-    ['Other exclusions', 34],
-    ['Only for facilities that…', 40],
-  ];
-  exCols.forEach(([, w], i) => (ex.getColumn(i + 1).width = w));
-  const supByWf = new Map(audit.suppression.map((x) => [x.workflowId, x]));
-  const optionLabel = (prop, v) => ((audit.properties[prop] && audit.properties[prop].options) || []).find((o) => o.value === v)?.label || v;
-  const groupOf = new Map();
-  for (const r of rows) if (!groupOf.has(r.record.id)) groupOf.set(r.record.id, r.group);
-  const exRecords = [...audit.records].sort((a, b) => (groupOf.get(a.id)?.order ?? 1e9) - (groupOf.get(b.id)?.order ?? 1e9));
-
-  const facts = exRecords.map((r) => {
-    const tree = r.enrollment.filters;
-    const sup = supByWf.get(r.id);
-    const live = F.requiredValues(tree, 'live');
-    const mgt = F.requiredValues(tree, 'mgt_type');
-    const tierLimit = F.requiredValues(tree, 'customer_tier');
-    const taskTiers = new Set(r.createdTasks.flatMap((t) => (t.tierConstrained ? t.tiers : [])));
-    const covered = TIER_ORDER.filter((t) => t !== 'ALL' && taskTiers.has(t)).map((t) => TIER_CODE[t]);
-    const soaTasks = r.createdTasks.filter((t) => t.soa === 'SOA only').length;
-    const anySoa = r.createdTasks.some((t) => t.soa === 'any');
-    const tierBranching = r.actions.branches.length > 0 && r.createdTasks.some((t) => t.tierConstrained);
-    const filters = F.andGroups(tree).flat();
-    const others = [];
-    const conditions = [];
-    for (const f of filters) {
-      if (['live', 'mgt_type', 'customer_tier'].includes(f.property)) continue;
-      const text = plain(F.describeFilter(f, { properties: audit.properties, lists: audit.lists }));
-      if (F.isNegative(f)) others.push(`Leaves out: ${text.replace(/ is none of /, ' is ').replace(/ is not /, ' is ').replace(/ does not contain /, ' contains ')}`);
-      else if (!(F.filterOperator(f) === 'IS_KNOWN' && filters.some((g) => g !== f && g.property === f.property))) conditions.push(text);
-    }
-    for (const sItem of sup.otherSuppression) others.push(plain(sItem));
-    return {
-      r,
-      live: live ? `Yes` : 'No',
-      mgt: mgt ? `Yes` : 'No',
-      mgtText: mgt ? mgt.map((v) => optionLabel('mgt_type', v)).join(' or ') : '',
-      list: sup.suppressionLists.length ? 'Yes' : 'No',
-      soa: soaTasks ? 'Included (SOA task)' : anySoa ? 'Not checked' : 'Left out',
-      na: tierBranching ? 'Left out' : 'Not checked',
-      tiers: tierLimit ? `Only ${TIER_ORDER.filter((t) => tierLimit.includes(t)).map((t) => TIER_CODE[t]).join(', ')} can enrol` : covered.length ? covered.join(', ') : 'All tiers',
-      others: others.join('\n') || '—',
-      conditions: conditions.join('\n') || '—',
-    };
-  });
-
-  const n = facts.length;
-  const count = (k, v) => facts.filter((f) => f[k] === v).length;
-  const notLive = facts.filter((f) => f.live === 'No').map((f) => f.r.name.replace(/^Create Tasks \| ?/, '').trim());
-  const summary = [
-    'Which tasks have exclusions',
-    `"Exclude from Ops tasks" list (Street Rate Management = Automated (WLS)): ${count('list', 'Yes')} of ${n} workflows.`,
-    `Full management only (${facts[0] ? facts[0].mgtText : ''}): ${count('mgt', 'Yes')} of ${n} workflows.`,
-    `Live only: ${count('live', 'Yes')} of ${n} workflows. Not checked in: ${notLive.join('; ') || 'none'}.`,
-    `SOA facilities are left out of ${count('soa', 'Left out')} of ${n} workflows. Customer Tier N/A or blank is left out wherever a workflow splits by tier (${count('na', 'Left out')} of ${n}).`,
-    'Red cells mean the rule applies, so those facilities do not get the task.',
-  ];
-  summary.forEach((text, i) => {
-    const row = ex.addRow([text]);
-    ex.mergeCells(row.number, 1, row.number, exCols.length);
-    const cell = row.getCell(1);
-    cell.alignment = { wrapText: true, vertical: 'top' };
-    if (i === 0) cell.style = copyStyle(divider);
-    else cell.font = { name: 'Roboto', color: { argb: 'FF434343' } };
-  });
-  ex.addRow([]);
-  const exHeader = ex.addRow(exCols.map(([t]) => t));
-  exHeader.eachCell((c) => {
-    c.style = headerStyle(4);
-    c.alignment = { wrapText: true, vertical: 'top' };
-  });
-  ex.views = [{ state: 'frozen', xSplit: 1, ySplit: exHeader.number }];
-
-  const RED = 'FFF4CCCC';
-  const applies = (v) => v === 'Yes' || v === 'Left out';
-  for (const f of facts) {
-    const r = f.r;
-    const g = groupOf.get(r.id);
-    const fill = g ? GROUP_FILLS[g.order % GROUP_FILLS.length] : null;
-    const row = ex.addRow([
-      { text: `${r.name} (${r.status})`, hyperlink: link(r.id) },
-      [...new Set(r.createdTasks.map((t) => t.title.trim() || '(no title)'))].join('\n'),
-      f.live,
-      f.mgt,
-      f.list,
-      f.soa,
-      f.na,
-      f.tiers,
-      f.others,
-      f.conditions,
-    ]);
-    for (let c = 1; c <= exCols.length; c++) {
-      const style = dataStyle(c === 1 ? 4 : 2);
-      if (c !== 1 && style.font) delete style.font.underline;
-      style.alignment = { wrapText: true, vertical: 'top', horizontal: c >= 3 && c <= 7 ? 'center' : undefined };
-      const v = row.getCell(c).value;
-      const colour = c >= 3 && c <= 7 ? (applies(v) ? RED : 'FFFFFFFF') : c === 9 && v !== '—' ? RED : c <= 2 ? fill : null;
-      if (colour) style.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colour }, bgColor: { argb: colour } };
-      row.getCell(c).style = style;
-    }
-  }
-  for (const u of audit.unavailable) {
-    const row = ex.addRow([`${u.name} (not readable)`, '', '?', '?', '?', '?', '?', '?', 'Could not be read from HubSpot. Check manually.', '']);
-    for (let c = 1; c <= exCols.length; c++) {
-      const style = dataStyle(2);
-      if (style.font) delete style.font.underline;
-      style.alignment = { wrapText: true, vertical: 'top', horizontal: c >= 3 && c <= 8 ? 'center' : undefined };
-      row.getCell(c).style = style;
+      const unknown = ['UNKNOWN – could not read the workflow', 'Check in HubSpot', 'Check in HubSpot'];
+      if (docRows.length) for (const d of docRows) addRow([...COLUMNS.map((_, i) => Object.values(d.values)[i]), ...unknown], `${u.name} (not readable)`, note, u.id ? link(u.id) : null);
+      else addRow(['', '', '', u.name.replace(/^Create Tasks \| /, ''), '', '', '', '', ...unknown], `${u.name} (not readable)`, 'Not listed by HubSpot at all; nothing to compare. Check it in HubSpot.', null);
     }
   }
 
@@ -409,6 +377,7 @@ async function writeAsBuilt({ sourcePath, targetPath, audit }) {
     'What this is',
     `Every row on the first sheet is a task HubSpot actually creates today, taken from the ${audit.records.length} workflows in "${audit.meta.folderName}" (read on ${String(audit.meta.fetchedAt).slice(0, 10)}). Nothing in HubSpot was changed.`,
     'Column A is the HubSpot workflow that creates the task (click it to open the workflow). The next 8 columns match the current Phase 3 Task Management spreadsheet.',
+    'Task created? says whether HubSpot is creating the task now (YES) or not (NO, the workflow is turned off). "Created only when" lists everything that must be true for a facility to get it; "Not created when" lists everything that stops it.',
     '',
     'Role',
     'Tier code, then who gets the task: Ent = Enterprise, T1 = Tier 1, T2.1 = Tier 2.1 (HubSpot: "Tier 2 - L1"), T2.2 = Tier 2.2 (HubSpot: "Tier 2 - L2"), T3 = Tier 3, SOA = SOA facilities (any tier).',
