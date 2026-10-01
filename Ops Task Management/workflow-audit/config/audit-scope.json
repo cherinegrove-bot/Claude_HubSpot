@@ -2,5 +2,33 @@
   "folderName": "C-Ops - Task Management",
   "expectedWorkflowCount": 24,
   "workflowIds": [],
-  "workflowNames": []
+  "workflowNames": [
+    "Create Tasks | NPS Detractor Recovery Actions",
+    "Create Tasks | BOG Oversight Ent and T1",
+    "Create Tasks | Confirm contacts on facility are correct",
+    "Create Tasks | Month End Call",
+    "Create Tasks | Playbook Review/Maintenance",
+    "Create Tasks | Playbook Review/Maintenance T1 OM",
+    "Create Tasks | Prepare Month End Report",
+    "Create Tasks | Prepare Rate Review",
+    "Create Tasks | Rate Review - Execution ENT, Tier 1 and Tier 2.1",
+    "Create Tasks | Rate Review - Execution Tier 2.2 and Tier 3",
+    "Create Tasks | Respond to reviews at Storage Reach",
+    "Create Tasks | Review Tow and Unsold Auctions report, action as needed",
+    "Create Tasks | Send Monthly Marketing Report Owner",
+    "Create Tasks | Storage Reach",
+    "Create Tasks | Update Customer Sentiment | Ent, Tier 1, Tier 2.1",
+    "Create Tasks | Update Customer Sentiment |Tier 2.2, Tier 3",
+    "Create Tasks | Weekly calls first 90 days after go live",
+    "Create Tasks | Weekly KPI review to owner for first 90 days",
+    "OM | RISK within the first 90 days",
+    "R+S - AI Lien Process",
+    "R+S - BOG Weekly Walkthrough + BOG Performance Status",
+    "R+S - Facility Performance Monitoring and Escalation",
+    "R+S - Reminders: Respond within 1 day to external emails",
+    "T1 SM SOA | R+S - Execute Monthly Walk Through - BOG"
+  ],
+  "folderListedObjectTypes": {
+    "Create Tasks | Respond to reviews at Storage Reach": "User"
+  }
 }
