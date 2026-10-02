@@ -314,8 +314,8 @@ for new, stage, old in WF:
                     nxt_txt,
                     f'Task records with Record source detail 1 = "{new}", Record creation source ID actionExecutionIndex = {idx}. Example parent task ID {ex_task} on ticket {TURL(exid["tickets"][0]) if exid["tickets"] else "n/a"}',
                     ' '.join(x for x in [('Title variants: ' + '; '.join(f'"{v}" x{c} ({", ".join(d)})' for v, c, d in par['variants'])) if par['variants'] else '',
-                        ('WORKFLOW HANDOFF: "Set task queue" (1677143128) then puts subtask "' + next(s['title'] for s in subs if 'BOG' in s['title']) + '" into queue "BOG - Run and Sustain" (VERIFIED config + records, see F-24).') if any('BOG' in s['title'] for s in subs) else '',
-                        ('WORKFLOW HANDOFF: "Set OM and SM overdue tasks to Deferred" (1795953061) can set this parent to DEFERRED once overdue (4 observed, see F-25).') if 'Hunter' in par['title'] else ''] if x),
+                        ('WORKFLOW HANDOFF: "Set task queue" (1677143128) then puts subtask "' + next(s['title'] for s in subs if 'BOG' in s['title']) + '" into queue "BOG - Run and Sustain" (VERIFIED config + records, see F-25).') if any('BOG' in s['title'] for s in subs) else '',
+                        ('WORKFLOW HANDOFF: "Set OM and SM overdue tasks to Deferred" (1795953061) can set this parent to DEFERRED once overdue (4 observed, see F-26).') if 'Hunter' in par['title'] else ''] if x),
                     ('VERIFIED (screenshot + records); subtask owner/due/associations from records only' if va else 'VERIFIED (records) for output; action label NEEDS VERIFICATION')])
 
 dam_headers = ['Workflow', 'Workflow ID', 'Workflow Step', 'Branch', 'Action #', 'Action Name', 'Action Type', 'What The Action Does', 'Object',
@@ -556,21 +556,6 @@ F('Needs Verification', CW_NAME, 'Handoff to Kickoff',
   'Current pipeline stage of tickets created by this workflow; no task or stage automation observed between UNASSIGNED and Transition Kickoff.',
   'The whole Transitions task flow starts only when someone moves the ticket by hand (INFERENCE).',
   'Confirm who moves tickets from UNASSIGNED to Transition Kickoff and whether any workflow does it.')
-F('Confirmed', 'Transitions - Transition Kickoff Tasks (+SubTask)', 'Action #1 associations',
-  'The contact association never adds anyone. Action 1 is set to associate "associated contacts" with label "Transition" (VERIFIED screenshot), but none of the 420 Kickoff tasks is linked to a contact. All 21 Kickoff tickets do have contacts, but none of those ticket-contact associations carries the "Transition" label (they are all unlabelled).',
-  'Action 1 panel: "Associated contacts - Associate Transition". Ticket->contact association labels on the 21 Kickoff tickets: 21 unlabelled, 0 "Transition" (label typeId 72 exists). Task->contact associations: 0/420.',
-  'Kickoff tasks never appear on the customer contact\'s record, although the setting suggests they should.',
-  'Decide whether to label the main customer contact "Transition" on each ticket, or change the action to all associated contacts.')
-F('Needs Verification', 'Transitions - Transition Kickoff Tasks (+SubTask)', 'Action #1 subtasks',
-  'Action 1 is set to associate the task with all associated companies (VERIFIED screenshot). The parent got the company in 20/21 enrollments, but in the 4 earliest enrollments (2026-08-24 to 08-27) 13-14 of its 14 subtasks got no company, while the parent did. From 2026-08-28 subtasks get the company too. (The 2026-09-01 ticket had no company at all.)',
-  'Task->company associations of Kickoff Action #1 subtasks vs. their parent, by enrollment date.',
-  'Suggests subtasks did not inherit the parent\'s associations until about 2026-08-28 (a HubSpot or workflow change). Older subtasks do not show on the company record.',
-  'No action needed if the current behaviour is right; optionally add the company to the ~70 older subtasks.')
-F('Needs Verification', 'Transitions - Transition Kickoff Tasks (+SubTask)', 'Action #1 subtasks',
-  'Subtask due dates: the parent is due in 7 business days at 8:00 AM (VERIFIED, matches 21/21 records), but its subtasks are due 1-7 business days after creation (e.g. subtask 1 in 1 bd, subtask 7 in 5 bd, subtask 17 in 7 bd). The action panel lists only the subtask titles, so where these per-subtask due dates and the "no owner" setting come from is not visible.',
-  'Action 1 panel (Due date 7, business days only); subtask due dates in records (Task & Subtask Logic).',
-  'Needed to confirm F-02 (subtasks without owners) is a setting, not a side effect.',
-  'Click one subtask inside Action 1 and screenshot its settings (owner and due date).')
 F('No Issue Found', 'All 7 (+SubTask)', 'Enrollment',
   'Every ticket whose latest entry into a stage is after the matching (+SubTask) workflow went live got exactly one enrollment, with the single exception in F-07 (based on the latest "Date entered" value per stage; earlier entries are overwritten). No delays between task actions (all tasks of an enrollment created within ~1-85 seconds).',
   'Enrollment evidence sheet; stage-entry dates of all 262 Onboarding Pipeline tickets.',
@@ -587,6 +572,21 @@ F('Potential Issue', 'Set OM and SM overdue tasks to Deferred (1795953061) + all
   'Config of workflow 1795953061 (VERIFIED: enrollment = hs_task_is_overdue true AND hubspot_team_id in [58458611, 58458777] AND status not Completed; action 1 sets hs_task_status = DEFERRED). Task records: 4 DEFERRED parents, all owner 80038421.',
   'A deferred Launch Readiness parent drops out of overdue views while its subtask (2. Finalize BOG candidates) can still be open.',
   'Confirm which users are in teams 58458611 / 58458777 and whether Transitions tasks should be excluded from auto-deferral.')
+F('Confirmed', 'Transitions - Transition Kickoff Tasks (+SubTask)', 'Action #1 associations',
+  'The contact association never adds anyone. Action 1 is set to associate "associated contacts" with label "Transition" (VERIFIED screenshot), but none of the 420 Kickoff tasks is linked to a contact. All 21 Kickoff tickets do have contacts, but none of those ticket-contact associations carries the "Transition" label (they are all unlabelled).',
+  'Action 1 panel: "Associated contacts - Associate Transition". Ticket->contact association labels on the 21 Kickoff tickets: 21 unlabelled, 0 "Transition" (label typeId 72 exists). Task->contact associations: 0/420.',
+  'Kickoff tasks never appear on the customer contact\'s record, although the setting suggests they should.',
+  'Decide whether to label the main customer contact "Transition" on each ticket, or change the action to all associated contacts.')
+F('Needs Verification', 'Transitions - Transition Kickoff Tasks (+SubTask)', 'Action #1 subtasks',
+  'Action 1 is set to associate the task with all associated companies (VERIFIED screenshot). The parent got the company in 20/21 enrollments, but in the 4 earliest enrollments (2026-08-24 to 08-27) 13-14 of its 14 subtasks got no company, while the parent did. From 2026-08-28 subtasks get the company too. (The 2026-09-01 ticket had no company at all.)',
+  'Task->company associations of Kickoff Action #1 subtasks vs. their parent, by enrollment date.',
+  'Suggests subtasks did not inherit the parent\'s associations until about 2026-08-28 (a HubSpot or workflow change). Older subtasks do not show on the company record.',
+  'No action needed if the current behaviour is right; optionally add the company to the ~70 older subtasks.')
+F('Needs Verification', 'Transitions - Transition Kickoff Tasks (+SubTask)', 'Action #1 subtasks',
+  'Subtask due dates: the parent is due in 7 business days at 8:00 AM (VERIFIED, matches 21/21 records), but its subtasks are due 1-7 business days after creation (e.g. subtask 1 in 1 bd, subtask 7 in 5 bd, subtask 17 in 7 bd). The action panel lists only the subtask titles, so where these per-subtask due dates and the "no owner" setting come from is not visible.',
+  'Action 1 panel (Due date 7, business days only); subtask due dates in records (Task & Subtask Logic).',
+  'Needed to confirm F-02 (subtasks without owners) is a setting, not a side effect.',
+  'Click one subtask inside Action 1 and screenshot its settings (owner and due date).')
 af_headers = ['Finding #', 'Classification', 'Workflow', 'Action #', 'Finding', 'Evidence', 'Why It Matters', 'Recommended Verification', 'Status']
 
 # ---------------------------------------------------------------- evidence sheets
