@@ -27,6 +27,15 @@ SHORT = {
     'Transitions - TRANSITION COMPLETE (+SubTask)': 'Transition Complete',
 }
 NEWS = [w[0] for w in WF]
+# Configuration supplied by WLS as screenshots (VERIFIED (screenshot)). Key = workflow name.
+CFG = {
+    'Transitions - Transition Kickoff Tasks (+SubTask)': dict(
+        trigger_type='Records meet custom conditions (filter-based enrollment, not an event trigger)',
+        trigger='Group 1 (all must be true): Create date is known AND Pipeline is any of Onboarding Pipeline AND Ticket status is any of Transition Kickoff (Onboarding Pipeline). No other groups (no OR).',
+        source='Screenshot of the enrollment trigger panel supplied by WLS on 2026-10-02',
+        reenroll=None, suppression=None),
+}
+
 
 
 def frac(c, n):
@@ -197,6 +206,7 @@ lines = [
     ('What CAN be read: every task the workflows created. HubSpot stamps each workflow-created task with the workflow name (Record source detail 1), the enrollment ID and the action execution index (Record creation source ID). That shows what each workflow did, in what order, for which ticket and when.', FONT),
     ('', FONT),
     ('EVIDENCE LABELS USED IN EVERY SHEET', BOLD),
+    ('VERIFIED (screenshot) - workflow configuration seen in a screenshot of the HubSpot workflow editor supplied by WLS. This is real configuration.', FONT),
     ('VERIFIED (records) - directly visible in HubSpot task / ticket / deal records. Not the workflow configuration itself.', FONT),
     ('INFERENCE - logically derived from the records (for example: tasks appear within seconds of a ticket entering a stage, so the trigger is probably "ticket enters stage"). Not proven.', FONT),
     ('NEEDS VERIFICATION - cannot be determined without opening the workflow in HubSpot.', FONT),
@@ -241,7 +251,17 @@ dam.append([CW_NAME, CW_ID, '1 (observed)', 'Unknown', '1', 'Create record - Tic
 for new, stage, old in WF:
     st = wfstats[new]
     groups = M[new]['groups']
-    dam.append([new, NOID, 'Trigger', 'n/a', '-', 'Enrollment trigger', 'NEEDS VERIFICATION',
+    cfg = CFG.get(new)
+    if cfg:
+        dam.append([new, NOID, 'Trigger', 'Group 1', '-', 'Enrollment trigger', cfg['trigger_type'],
+                    f'Enrolls a ticket when it meets: {cfg["trigger"]}',
+                    'Ticket', 'Create date; Pipeline; Ticket status (pipeline stage)', 'Any', f'Pipeline = Onboarding Pipeline AND Ticket status = {STG[stage]}',
+                    'The three conditions above, all required', 'n/a',
+                    f'{st["n_enr"]} enrollments on {st["n_tix"]} tickets; no ticket enrolled twice.', 'Action #1',
+                    f'{cfg["source"]}. Matches the records: {trig_evidence(new)}',
+                    'Re-enrollment and suppression tabs not yet supplied - Needs Verification.', 'VERIFIED (screenshot)'])
+    else:
+      dam.append([new, NOID, 'Trigger', 'n/a', '-', 'Enrollment trigger', 'NEEDS VERIFICATION',
                 f'NEEDS VERIFICATION. Observed: enrollment starts when the ticket enters "{STG[stage]}".',
                 'Ticket', 'Pipeline stage (hs_pipeline_stage)', 'Any earlier stage', f'{STG[stage]} ({stage})', 'Needs Verification (re-enrollment and suppression unreadable)', 'n/a',
                 f'{st["n_enr"]} enrollments on {st["n_tix"]} tickets; no ticket enrolled twice.', f'Action #1', trig_evidence(new),
@@ -291,7 +311,7 @@ po.append([step, 'Ticket waits in UNASSIGNED (or On Hold / Website Only)', 'None
            'No Transitions (+SubTask) tasks created. How a ticket gets to Transition Kickoff (manual move or another workflow) is Needs Verification. Tickets created by cloning or manually (not by this workflow) also enter Kickoff and get the same tasks.', step + 1]); step += 1
 for k, (new, stage, old) in enumerate(WF):
     st = wfstats[new]
-    po.append([step, f'Ticket enters stage "{STG[stage]}"', 'Enrollment trigger Needs Verification; observed match ' + f'{st["match"]}/{st["n_d"]}', new, 'Enrollment (INFERENCE: "ticket enters stage")',
+    po.append([step, f'Ticket enters stage "{STG[stage]}"', (f'VERIFIED (screenshot): {CFG[new]["trigger"]}' if new in CFG else 'Enrollment trigger Needs Verification; observed match ' + f'{st["match"]}/{st["n_d"]}'), new, ('Enrollment: ' + CFG[new]['trigger_type']) if new in CFG else 'Enrollment (INFERENCE: "ticket enters stage")',
                f'Workflow enrolls {st["dmin"]:.0f}-{st["dmax"]:.0f} s after stage entry ({st["n_enr"]} enrollments, {st["first"]:%Y-%m-%d} to {st["last"]:%Y-%m-%d})', step + 1]); step += 1
     for g in [g for g in M[new]['groups'] if g['kind'] == 'PARENT']:
         subs = [s for s in M[new]['groups'] if s['idx'] == g['idx'] and s['kind'] == 'SUB']
@@ -320,7 +340,7 @@ for new, stage, old in WF:
     nxtw = NEWS[NEWS.index(new) + 1] if NEWS.index(new) + 1 < len(NEWS) else '(end)'
     wi.append([new, NOID, 'Ticket (INFERENCE: tasks are associated to the enrolled ticket)',
                f'Creates the {STG[stage]} task set: {st["parents"]} parent tasks with {st["subs"]} subtasks in total.',
-               f'NEEDS VERIFICATION. Observed: ticket enters "{STG[stage]}" (stage ID {stage}). {trig_evidence(new)}',
+               (f'VERIFIED (screenshot): {CFG[new]["trigger_type"]}. {CFG[new]["trigger"]}' if new in CFG else f'NEEDS VERIFICATION. Observed: ticket enters "{STG[stage]}" (stage ID {stage}). {trig_evidence(new)}'),
                f'Needs Verification. Observed: {st["multi"]} tickets enrolled more than once (so far no ticket has re-entered this stage after {st["first"]:%Y-%m-%d}).',
                'Needs Verification. One possible effect seen in Kickoff: see Audit Findings F-07.' if 'Kickoff' in new else 'Needs Verification. No missed enrollment observed for tickets entering this stage since go-live.',
                f'Needs Verification. At least {len(st["idxs"])} task-creating action(s) observed' + (f' and {max(st["idxs"]) + 1 - len(st["idxs"])} unknown action(s) in index gaps' if max(st['idxs']) + 1 > len(st['idxs']) else '') + '.',
@@ -417,7 +437,7 @@ F('Potential Issue', 'All 7 (+SubTask)', 'All',
 F('Confirmed', 'Transitions - Transition Kickoff Tasks (+SubTask) and legacy "Transitions - Transition Kickoff Tasks"', 'All',
   '3 tickets received two full Kickoff task sets, one from the legacy workflow and one from the (+SubTask) workflow, because they entered Transition Kickoff again months later. One of them (Dalston Mini Storage) also got the legacy set twice (2026-05-14 and 2026-07-13), so the legacy workflow re-enrolled on re-entry.',
   'Tickets 45732124308, 45687131913, 46699346342: legacy Kickoff tasks dated 2026-05/06/07 and (+SubTask) tasks dated 2026-08/09.',
-  'Re-entering a stage re-creates the whole task set. Whether the (+SubTask) workflows also re-enroll is unknown - no ticket has re-entered a stage since they went live.',
+  'Re-entering a stage re-creates the whole task set. The (+SubTask) Kickoff trigger is filter-based (VERIFIED screenshot), so whether a ticket that re-enters Kickoff gets a second set depends on its re-enrollment setting, which has not been supplied. No ticket has re-entered a stage since the (+SubTask) workflows went live.',
   'Check the re-enrollment setting on all 7 (+SubTask) workflows.')
 F('No Issue Found', 'All 7 (+SubTask) vs legacy versions', 'All',
   'Clean cut-over: each legacy workflow created its last task (2026-08-11 to 2026-08-18) before its (+SubTask) replacement created its first (2026-08-20 to 2026-08-31). No ticket got both versions for the same stage entry.',
@@ -427,8 +447,8 @@ F('No Issue Found', 'All 7 (+SubTask) vs legacy versions', 'All',
 F('Needs Verification', 'Transitions - Transition Kickoff Tasks (+SubTask)', 'Trigger / suppression',
   'Ticket "Spencerport Personal Storage" (48042783912) entered Transition Kickoff on 2026-09-01 at 12:27:50 UTC (08:27 ET) and was back in UNASSIGNED 9 seconds later. The Kickoff workflow created no tasks; "Website Only Onboarding" created 13 tasks instead and the ticket is now in Website Only. It is the only ticket that entered Kickoff since go-live without getting tasks.',
   f'hs_v2_date_entered_1094530721 = 2026-09-01T12:27:50Z, hs_v2_date_entered_1100007030 = 2026-09-01T12:27:59Z; no tasks with source "{NEWS[0]}" on this ticket. {TURL("48042783912")}',
-  'Shows that some condition (suppression, branch, or unenrollment) can stop the Kickoff workflow. That condition cannot be seen.',
-  'Check Kickoff suppression lists / "unenroll if criteria no longer met" and any Website Only exclusion.')
+  'The trigger is filter-based (VERIFIED screenshot: Ticket status is any of Transition Kickoff). INFERENCE: the ticket left Kickoff 9 seconds after entering, before HubSpot evaluated it (other tickets enroll 4-13 s after entry), so it never met the conditions at evaluation time. Suppression is still unverified.',
+  'Check Kickoff suppression lists. If the timing explanation is right, any ticket moved through Kickoff in under ~10 seconds will skip the Kickoff tasks.')
 F('Potential Issue', 'Transitions - Pre Launch Setup Tasks (+SubTask)', 'Action #1 and #4',
   f'One enrollment produced only part of the task set: "{TK[pl_partial[0]["tickets"][0]]["properties"]["subject"]}" (ticket {pl_partial[0]["tickets"][0]}, 2026-08-31) received only the Bryn parent (Action #4) and its subtask. Actions #1-#3 and #5 left no tasks.' if pl_partial else 'n/a',
   f'Enrollment {pl_partial[0]["enr"]}: tasks only at actionExecutionIndex 3. {TURL(pl_partial[0]["tickets"][0])}' if pl_partial else '',
