@@ -1,96 +1,89 @@
-# WLS Transitions Workflow Audit (observed-behaviour build)
+# WLS Transitions Workflow Audit
 
-Workbook: `WLS_Transitions_Workflow_Audit.xlsx`. Data as of 2026-10-02, HubSpot portal 45059701.
+- **Workbook:** `WLS_Transitions_Workflow_Audit.xlsx`
+- **Data as of:** 2026-10-02
+- **HubSpot portal:** 45059701
 
-**Scope (8 workflows):**
-1. Closed Won | Create Ticket in INITIAL SETUP - UNASSIGNED (1670039203)
-2. Transitions - Transition Kickoff Tasks (+SubTask)
-3. Transitions - Pre Launch Setup Tasks (+SubTask)
-4. Transitions - Launch Readiness Tasks (+SubTask)
-5. Transitions - Go Live Execution Tasks (+SubTask)
-6. Transitions - Final Sign Off Tasks (+SubTask)
-7. Transitions - 30-Day Monitoring (+SubTask)
-8. Transitions - TRANSITION COMPLETE (+SubTask)
+## Scope (13 workflows)
 
-## Important limitation
+| # | Workflow | ID | Object |
+|---|---|---|---|
+| 1 | Closed Won \| Create Ticket in INITIAL SETUP - UNASSIGNED | 1670039203 | Deal |
+| 2 | Transitions - Transition Kickoff Tasks (+SubTask) | 1866384267 | Ticket |
+| 3 | Transitions - Pre Launch Setup Tasks (+SubTask) | 1866658899 | Ticket |
+| 4 | Transitions - Launch Readiness Tasks (+SubTask) | 1866664080 | Ticket |
+| 5 | Transitions - Go Live Execution Tasks (+SubTask) | 1866664222 | Ticket |
+| 6 | Transitions - Final Sign Off Tasks (+SubTask) | 1866664327 | Ticket |
+| 7 | Transitions - 30-Day Monitoring (+SubTask) | 1866659765 | Ticket |
+| 8 | Transitions - TRANSITION COMPLETE (+SubTask) | 1867929348 | Ticket |
+| 9 | Transition Kickoff Tasks > Pre Launch Setup Tasks (task complete) | 1699704693 | Task |
+| 10 | Transition Pre Launch Setup Tasks > Launch Readiness Tasks (task complete) | 1699666189 | Task |
+| 11 | Transition Launch Readiness Tasks > Go Live Execution Tasks (task complete) | 1699704743 | Task |
+| 12 | Transition Go-Live Execution tasks > Final Signoff tasks (task complete) | 1699730300 | Task |
+| 13 | Transition Final Signoff tasks > 30 Day monitoring task (task complete) | 1699702705 | Task |
 
-HubSpot's Automation API will not return the configuration of any of these 8 workflows.
-- Workflow 1670039203 returns `403 FLOW_ACCESS_DENIED`.
-- The 7 (+SubTask) workflows are missing from the API's workflow list altogether.
+## Sources
 
-That was still true after every sensitive read scope and the write scopes were added to the private app.
+- **Workflow settings (source of truth):** read from the HubSpot Automation v4 API on 2026-10-02 and marked *VERIFIED (config)*. That covers every trigger, re-enrollment/unenrollment setting and action.
+- **Subtasks:** the API does not return them. Subtask titles, owners and due dates come from the tasks the workflows created (*VERIFIED (records)*). For Kickoff Step 1 they were also checked against a screenshot.
+- **Cross-check:** task and ticket records are used to confirm the settings against what actually happened (counts, owners, due dates, timing).
 
-The workbook is therefore built from the records the workflows create. HubSpot stamps every workflow-created task with three things:
-- the workflow name
-- the enrollment ID
-- the action execution index
+## What actually happens
 
-That shows **what** each workflow did, **in what order**, **for which ticket** and **when**. It does **not** show:
-- triggers
-- re-enrollment
-- suppression
-- branch conditions
-- delays
-- actions that create no record
-- the exact HubSpot action labels
+1. **The ticket is created.** A deal reaching *Closed won* (White Label Storage SALES pipeline) triggers the Closed Won workflow. It creates one ticket:
+   - name = the deal's name
+   - stage = **UNASSIGNED** (Onboarding Pipeline)
+   - owner = Elizabeth Airey
+   - linked to the deal, the deal's contacts and the deal's companies (company label "Transitions")
 
-Every statement in the workbook is labelled **VERIFIED (records)**, **INFERENCE** or **NEEDS VERIFICATION**.
+   Re-enrollment is off, so each deal gets one ticket.
+2. **The ticket waits in UNASSIGNED.** None of the 13 workflows moves it to Transition Kickoff; a person has to.
+3. **Each stage triggers its workflow.** Whenever *Ticket status* equals the stage, the matching (+SubTask) workflow enrolls the ticket. Each workflow then creates its parent tasks back to back, with no delays. Their subtasks have no owner. Owners are either the **ticket owner** ("Ticket Owner/PM" tasks) or a **fixed person** (Mo'men, Bryn, Mike, Ilse, Hunter, Ryan, Aseel).
 
-## What actually happens?
+   | Stage | Parent tasks | Due (business days, 08:00) |
+   |---|---|---|
+   | Kickoff | 3 | 7 |
+   | Pre-Launch | 5 | 6 |
+   | Launch Readiness | 5 | 6 |
+   | Go-Live | 5 | 1 |
+   | Final Sign-Off | 6 | 4 |
+   | 30-Day Monitoring | 2 | 30 |
+   | Transition Complete | 1 | 0 |
 
-1. **Ticket creation.** The Closed Won workflow has created 171 Onboarding Pipeline tickets (2025-07-14 to 2026-10-01). Each one is created in stage **UNASSIGNED**, and the ticket name is usually the deal name. The deal trigger itself can't be seen.
-2. **Waiting.** None of the 7 Transitions workflows fires in UNASSIGNED, On Hold or Website Only. Nothing observed moves the ticket out of UNASSIGNED, so the move to Transition Kickoff appears to be manual (INFERENCE).
-3. **Stage entry triggers each workflow.** Every one of the 101 enrollments started 4–25 seconds after the ticket entered the matching stage (INFERENCE: the trigger is "ticket enters stage"):
+4. **Pre-Launch has one branch.** If an associated company has *PPC Ads = Yes*, it also creates "Marketing | Create Marketing Proposal" for that company's Marketing Portfolio Manager. The choices are Brock, Sarah or Mohammad; anyone else goes to Brock.
+5. **Moving to the next stage is meant to be automatic, but no longer is.** The five "(task complete)" workflows move the ticket on when a task with a specific old title is completed (e.g. "TRANSITION KICKOFF: PM - FINAL SIGN OFF"). They only act if the ticket is still in that stage. Those titles came from the **legacy** workflows, and the (+SubTask) workflows never create them, so **for the new process every stage move is manual** (F-01). Since 2026-08-20 the advance workflows have only fired on 41 leftover legacy tasks.
+6. **Two moves were never automated:** UNASSIGNED → Kickoff, and Post 30-Day Monitoring → Transition Completed (F-02).
+7. **The final check runs after the ticket is closed.** Entering Transition Completed (a closed stage) creates one final PM task, due the same day (F-18).
 
-   | Stage entered | Workflow that runs |
-   |---|---|
-   | Transition Kickoff | Kickoff |
-   | Pre-Launch Setup | Pre Launch |
-   | Launch Readiness | Launch Readiness |
-   | Go-Live Execution | Go Live |
-   | Final Signoff | Final Sign Off |
-   | Post 30-Day Monitoring | 30-Day |
-   | Transition Completed | TRANSITION COMPLETE |
+## What WLS should verify / decide
 
-4. **Task actions.** Each workflow runs a short series of task-creating actions, with no delays between them. Each action creates one **parent task** plus its **subtasks**.
-   - Parents are owned either by the **ticket owner** ("Ticket Owner/PM" parents) or by a **fixed named person** (Bryn, Mo'men, Mike, Ilse, Hunter, Ryan, Aseel, Brock).
-   - **Subtasks have no owner**, except in TRANSITION COMPLETE.
-   - Due dates are a fixed number of business days after creation, at 08:00 ET.
-   - The full lists are in *Task & Subtask Logic*.
-5. **Handoffs between workflows.** The only link between the 7 workflows is the ticket's stage. Completing tasks does not move the stage; timing data and the subtask text "move manually" both point to manual moves.
-6. **Two other workflows act on these tasks** (their configuration was readable):
-   - **Set task queue** puts the two "BOG" subtasks into the *BOG - Run and Sustain* queue.
-   - **Set OM and SM overdue tasks to Deferred** can defer overdue parents owned by OM/SM team members.
-7. **Completion.** Moving the ticket to Transition Completed, which is a closed stage, creates one final PM task, due the same day.
-
-## What should WLS verify?
-
-- For all 8 workflows: the enrollment trigger, the re-enrollment setting, the suppression lists, and whether there are branches, delays or non-task actions. The gaps at Pre-Launch #6–#7 prove that at least some non-task actions exist.
-- The exact action type and settings of each task action, especially:
-  - the subtask **owner** (empty in 6 of 7 workflows)
-  - the due-date rule
-  - the association settings (some tasks are ticket-only)
-- Why Spencerport (48042783912) entered Kickoff and got no Kickoff tasks (F-07). It's possible suppression or "unenroll" settings exist.
-- Why one Pre-Launch enrollment (Stow Pros, 2026-08-31) created only one of five parent tasks (F-08).
-- Whether Pre-Launch's new "Marketing | Create Marketing Proposal" task (#8) duplicates the "Marketing Proposal Task" workflow (F-09).
-- Whether open subtasks are meant to stay open when the parent is completed (95 open now), and whether anything should close out tasks from earlier stages (F-03, F-04).
-- Whether the TRANSITION COMPLETE check is meant to run *after* the ticket is closed (F-16).
-- Whether onboarding BOG subtasks belong in the BOG Run & Sustain queue, and whether Transitions tasks should be auto-deferred (F-25, F-26).
-- Whether the 79 Closed Won tickets linked to 2 deals, and the 18 companies with more than one onboarding ticket, are intended (F-22).
-- Who moves tickets from UNASSIGNED into Transition Kickoff, and between later stages (F-20, F-23).
-- That the legacy non-subtask Transitions workflows are switched off. They stopped creating tasks 2026-08-11 to 08-18 (F-06).
+- **F-01:** which (+SubTask) task should trigger each automatic stage move. Then either update the five advance workflows' title filters or retire them.
+- **F-02:** who owns the UNASSIGNED → Kickoff and 30-Day → Completed moves.
+- **F-04:** re-enrollment is off everywhere, so a ticket sent back to a stage gets no new tasks. Is that intended?
+- **F-05, F-06, F-25:** subtask owner settings. One subtask screenshot would confirm whether "no owner" is a setting.
+- **F-07, F-08:** whether parents and stages should wait for subtasks to be complete. There are 95 open subtasks under completed parents, and many overdue tasks.
+- **F-10, F-11:** contact and company associations.
+  - The "Transition" contact label is almost never used, so tasks rarely link to a contact.
+  - Some actions don't link the company at all.
+- **F-12, F-13:**
+  - The task owners that are fixed people (hard-coded).
+  - How the ticket owner changes from Elizabeth Airey to the PM before Kickoff starts.
+- **F-14:** why 79 tickets are linked to 2 deals.
+- **F-15:** the Pre-Launch proposal fallback to Brock, and which company it reads when a ticket has several.
+- **F-16, F-17, F-24:** three individual tickets: Stow Pros, Spencerport, and company 38502110732.
 
 ## Re-running
 
-The `scripts/` folder pulls the data with `HUBSPOT_ACCESS_TOKEN` and rebuilds the workbook. Run them in this order from a scratch directory:
+The scripts in `scripts/` read `HUBSPOT_ACCESS_TOKEN`. Run them from a scratch directory in this order:
 
-1. `pull.py`
-2. `pull2.py`
-3. `pull3.py`
-4. `analyze.py`
-5. `model.py`
-6. `build.py`
+1. `pull_configs.py`
+2. `pull.py`
+3. `pull2.py`
+4. `pull3.py`
+5. `analyze.py`
+6. `model.py`
+7. `build.py`
 
-The scripts need `openpyxl` and `tzdata`. The raw JSON they produce contains customer data and is deliberately not committed.
+They need `openpyxl` and `tzdata`. The raw JSON they produce contains customer data and is not committed.
 
-The Read Me summary counts are COUNTIF formulas that Excel calculates when the file is opened. LibreOffice could not run in this environment to pre-calculate them.
+The Read Me sheet's summary counts are COUNTIF formulas that Excel calculates when the file is opened.
