@@ -39,7 +39,13 @@ CFG = {
         suppression='None - "Unenroll if tickets meet the following conditions" has no criteria',
         n_actions='3 actions, then End. No branches, no delays, no other action types',
         canvas_source='Screenshots of the workflow canvas and the trigger Settings tab supplied by WLS on 2026-10-02',
-        actions={0: dict(label='Create task', text='Create task Transition | TRANSITION KICK-OFF with 14 subtasks and assign to Ticket owner', subs=14, owner='Ticket owner'),
+        actions={0: dict(label='Create task', text='Create task Transition | TRANSITION KICK-OFF with 14 subtasks and assign to Ticket owner', subs=14, owner='Ticket owner',
+                         detail=('Title "Transition | TRANSITION KICK-OFF"; Type To-do; Start date Immediately; Due date Custom: 7 days at 8:00 AM, Business days only (Mon-Fri), account time zone UTC-04:00; '
+                                 'Email reminder None; Shared task queue None; Priority (None); Assign task to "An existing owner of the ticket" -> Ticket owner; '
+                                 'Notes: "Before You Begin: Stage entered - Master Task created (TRANSITION KICK-OFF); Waiting for Customer - Customer must pay the Setup Fee invoiced in item 5; Waiting for Other - All Kick-Off subtasks (PM, Momen, Bryn) must be complete. Before Completing This Task: Verify all checklist items are complete; Notify PM if blockers exist; Mark task Complete"; '
+                                 'Subtasks (14, titles only shown in panel): 1, 2, 3, 4, 5, 6, 7, 9, 10, 12, 13, 15, 16, 17; '
+                                 'Associate new task with: the enrolled ticket + associated contacts with label "Transition" + All associated companies'),
+                         detail_src='Screenshots of the Action 1 edit panel supplied by WLS on 2026-10-02'),
                  1: dict(label='Create task', text="Create task Transition | TRANSITION KICK-OFF | Subtask - Mo'men with 2 subtasks and assign to Mo'men Khattab", subs=2, owner="Mo'men Khattab"),
                  2: dict(label='Create task', text='Create task Transition | TRANSITION KICK-OFF | Subtask - Bryn with 1 subtask and assign to Bryn Morgan', subs=1, owner='Bryn Morgan')},
         last_action=2),
@@ -302,7 +308,7 @@ for new, stage, old in WF:
                     (va['label'] if va else 'Create task, with subtasks (exact HubSpot label Needs Verification)'), ('Create task (VERIFIED screenshot)' if va else 'Task creation (observed output)'),
                     (f'Canvas reads: "{va["text"]}" (VERIFIED). Records: parent "{par["title"]}" with {len(subs)} subtask(s): {sub_list}.' if va else f'Creates parent task "{par["title"]}" with {len(subs)} subtask(s): {sub_list}.'),
                     'Task (parent + subtasks), associated with the Ticket', f'Parent: {par["title"]}', '(new record)',
-                    (f'Owner: {va["owner"]} (VERIFIED screenshot; records: {owner_text(par)}) ' if va else f'Owner: {owner_text(par)} ') + f'Due: {due_text(par)} Priority: {top(par["pri"], par["n"])}. Type: {top(par["typ"], par["n"])}. Associations: {top(par["assoc"], par["n"])}.',
+                    (f'VERIFIED CONFIG: {va["detail"]}. RECORDS: ' if va and va.get('detail') else '') + (f'Owner: {va["owner"]} (VERIFIED screenshot; records: {owner_text(par)}) ' if va else f'Owner: {owner_text(par)} ') + f'Due: {due_text(par)} Priority: {top(par["pri"], par["n"])}. Type: {top(par["typ"], par["n"])}. Associations: {top(par["assoc"], par["n"])}.',
                     cond, ('None - no delay actions in this workflow (VERIFIED screenshot)' if va else f'None observed: all tasks of one enrollment were created within {st["spread"]:.0f} s.'),
                     f'{par["n"]} parent tasks and {sum(s["n"] for s in subs)} subtasks created across all enrollments. Current parent status: {top(par["st"], par["n"])}.',
                     nxt_txt,
@@ -370,12 +376,14 @@ for new, stage, old in WF:
     for g in M[new]['groups']:
         if g['kind'] == 'PARENT':
             parent, sub = g['title'], '-'
-            tconf = f'Owner: {owner_text(g)} Due: {due_text(g)} Priority: {top(g["pri"], g["n"])}. Type: {top(g["typ"], g["n"])}. Associations: {top(g["assoc"], g["n"])}.'
+            _va = CFG.get(new, {}).get('actions', {}).get(g['idx'], {})
+            tconf = (f'VERIFIED CONFIG ({_va["detail_src"]}): {_va["detail"]}. RECORDS: ' if _va.get('detail') else (f'VERIFIED (canvas): assigned to {_va["owner"]}. RECORDS: ' if _va else '')) + f'Owner: {owner_text(g)} Due: {due_text(g)} Priority: {top(g["pri"], g["n"])}. Type: {top(g["typ"], g["n"])}. Associations: {top(g["assoc"], g["n"])}.'
             sconf = f'{sum(1 for s in M[new]["groups"] if s["idx"] == g["idx"] and s["kind"] == "SUB")} subtask(s) created under this parent (rows below)'
         else:
             parent, sub = g['parent'], g['title']
             tconf = '(see parent row)'
-            sconf = f'Owner: {owner_text(g)} Due: {due_text(g)} Priority: {top(g["pri"], g["n"])}. Type: {top(g["typ"], g["n"])}. Associations: {top(g["assoc"], g["n"])}.'
+            _va = CFG.get(new, {}).get('actions', {}).get(g['idx'], {})
+            sconf = ('Title VERIFIED in action config (subtask owner/due settings not shown in the panel - Needs Verification). RECORDS: ' if _va.get('detail') else '') + f'Owner: {owner_text(g)} Due: {due_text(g)} Priority: {top(g["pri"], g["n"])}. Type: {top(g["typ"], g["n"])}. Associations: {top(g["assoc"], g["n"])}.'
         cond = 'None observed - created in every enrollment' if g['n'] == st['n_enr'] else f'Created in {g["n"]}/{st["n_enr"]} enrollments - Needs Verification'
         sim = legacy_similar(old, g['title']) if g['kind'] == 'SUB' or not g['title'].startswith('Transition |') else None
         if new.startswith('Transitions - Pre Launch') and g['title'].startswith('Marketing |'):
@@ -385,6 +393,8 @@ for new, stage, old in WF:
         else:
             dup = 'None found in the task data'
         deps = ''
+        if g['kind'] == 'PARENT' and CFG.get(new, {}).get('actions', {}).get(g['idx'], {}).get('detail') and 'Waiting for' in CFG[new]['actions'][g['idx']]['detail']:
+            deps = 'Task notes (VERIFIED) say: wait for the customer to pay the Setup Fee (subtask 5) and for all Kick-Off subtasks incl. Mo\'men\'s and Bryn\'s parents to be complete. This is an instruction only - nothing in the workflow enforces it.'
         if g['kind'] == 'SUB':
             deps = 'Belongs to the parent task; completing the parent does not close it (open subtasks under completed parents observed)' if g['open_under_done'] else 'Belongs to the parent task'
             if re.search(r'Task \d out of 3|task 2 and 3|STAGE \d', g['title'], re.I):
@@ -546,6 +556,21 @@ F('Needs Verification', CW_NAME, 'Handoff to Kickoff',
   'Current pipeline stage of tickets created by this workflow; no task or stage automation observed between UNASSIGNED and Transition Kickoff.',
   'The whole Transitions task flow starts only when someone moves the ticket by hand (INFERENCE).',
   'Confirm who moves tickets from UNASSIGNED to Transition Kickoff and whether any workflow does it.')
+F('Confirmed', 'Transitions - Transition Kickoff Tasks (+SubTask)', 'Action #1 associations',
+  'The contact association never adds anyone. Action 1 is set to associate "associated contacts" with label "Transition" (VERIFIED screenshot), but none of the 420 Kickoff tasks is linked to a contact. All 21 Kickoff tickets do have contacts, but none of those ticket-contact associations carries the "Transition" label (they are all unlabelled).',
+  'Action 1 panel: "Associated contacts - Associate Transition". Ticket->contact association labels on the 21 Kickoff tickets: 21 unlabelled, 0 "Transition" (label typeId 72 exists). Task->contact associations: 0/420.',
+  'Kickoff tasks never appear on the customer contact\'s record, although the setting suggests they should.',
+  'Decide whether to label the main customer contact "Transition" on each ticket, or change the action to all associated contacts.')
+F('Needs Verification', 'Transitions - Transition Kickoff Tasks (+SubTask)', 'Action #1 subtasks',
+  'Action 1 is set to associate the task with all associated companies (VERIFIED screenshot). The parent got the company in 20/21 enrollments, but in the 4 earliest enrollments (2026-08-24 to 08-27) 13-14 of its 14 subtasks got no company, while the parent did. From 2026-08-28 subtasks get the company too. (The 2026-09-01 ticket had no company at all.)',
+  'Task->company associations of Kickoff Action #1 subtasks vs. their parent, by enrollment date.',
+  'Suggests subtasks did not inherit the parent\'s associations until about 2026-08-28 (a HubSpot or workflow change). Older subtasks do not show on the company record.',
+  'No action needed if the current behaviour is right; optionally add the company to the ~70 older subtasks.')
+F('Needs Verification', 'Transitions - Transition Kickoff Tasks (+SubTask)', 'Action #1 subtasks',
+  'Subtask due dates: the parent is due in 7 business days at 8:00 AM (VERIFIED, matches 21/21 records), but its subtasks are due 1-7 business days after creation (e.g. subtask 1 in 1 bd, subtask 7 in 5 bd, subtask 17 in 7 bd). The action panel lists only the subtask titles, so where these per-subtask due dates and the "no owner" setting come from is not visible.',
+  'Action 1 panel (Due date 7, business days only); subtask due dates in records (Task & Subtask Logic).',
+  'Needed to confirm F-02 (subtasks without owners) is a setting, not a side effect.',
+  'Click one subtask inside Action 1 and screenshot its settings (owner and due date).')
 F('No Issue Found', 'All 7 (+SubTask)', 'Enrollment',
   'Every ticket whose latest entry into a stage is after the matching (+SubTask) workflow went live got exactly one enrollment, with the single exception in F-07 (based on the latest "Date entered" value per stage; earlier entries are overwritten). No delays between task actions (all tasks of an enrollment created within ~1-85 seconds).',
   'Enrollment evidence sheet; stage-entry dates of all 262 Onboarding Pipeline tickets.',
