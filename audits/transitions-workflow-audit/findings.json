@@ -1,0 +1,122 @@
+{
+  "suppress": [
+    "T08",
+    "T09"
+  ],
+  "findings": [
+    {
+      "classification": "Needs Verification",
+      "workflow": "All 7 Transitions (+SubTask) workflows",
+      "action": "Every Create task action",
+      "finding": "Team check 1 (queue): 26 of 31 Create task actions set queue ID 13519270, which this audit treats as the Transitions queue. The other 5 are the Go-Live Execution actions (see the queue finding). The API cannot return queue names, so it is not confirmed that 13519270 is the queue named \"Transitions\". The 4 \"Marketing | Create Marketing Proposal\" actions (Pre-Launch Setup, Steps 8-11) also use 13519270 although they are assigned to Brock Hegr, Sarah Schlosberg and Mohammad Abudahab. VERIFIED (config).",
+      "evidence": "Config queue_id on all 31 Create task actions; teams.json has no queue_ids for Transitions (CS Ops \"Ops Tasks\" is 13519269).",
+      "why": "If 13519270 is not the Transitions queue, every task is outside the team's queue. Marketing proposal tasks in the Transitions queue may not be seen by the marketing managers they are assigned to.",
+      "verify": "In HubSpot (Tasks > Queues), confirm that queue ID 13519270 is \"Transitions\", then add it to teams.json. Confirm the marketing proposal tasks are meant to sit in the Transitions queue."
+    },
+    {
+      "classification": "Needs Verification",
+      "workflow": "All 7 Transitions (+SubTask) workflows",
+      "action": "Every Create task action",
+      "finding": "Team check 2 (subtasks not linked to the ticket): every one of the 31 Create task actions associates its task with the enrolled ticket (associationTypeId 230, ENROLLED_OBJECT). That is correct for main tasks. The subtask settings are not returned by the API, and no task has been created in the queue since 2026-10-06, so whether subtasks also get the ticket link cannot be checked yet. VERIFIED (config) for main tasks; NEEDS VERIFICATION for subtasks.",
+      "evidence": "Config associations on all 31 Create task actions; 0 queue tasks with create date on or after 2026-10-06.",
+      "why": "The team rule says only main tasks may be linked to the ticket. If subtasks inherit the parent's associations, they will break the rule.",
+      "verify": "Run the weekly check after the first ticket enters a Transitions stage on or after 2026-10-06, or send a screenshot of one subtask's settings per workflow."
+    },
+    {
+      "classification": "Confirmed",
+      "workflow": "Closed Won | Create Ticket in INITIAL SETUP - UNASSIGNED",
+      "action": "Step 1 - Create record",
+      "finding": "The ticket is created with a fixed owner, Elizabeth Airey (owner ID 81929768), and that owner is archived (deactivated) in the owners list. Every \"Ticket Owner/PM\" task in the 7 Transitions workflows takes its owner from the ticket owner. VERIFIED (config) + owners API.",
+      "evidence": "Config action 1: hubspot_owner_id = STATIC_VALUE 81929768; owners API: archived = true.",
+      "why": "New tickets start with a deactivated owner. If the owner is not changed before the ticket reaches Transition Kickoff, the ticket-owner tasks go to a deactivated user.",
+      "verify": "Confirm who or what changes the ticket owner before Kickoff. \"Transitions | PM = Ticket Owner\" (1857850789) is ON but was outside the agreed scope, so it was not checked."
+    },
+    {
+      "classification": "Potential Issue",
+      "workflow": "All 7 Transitions (+SubTask) workflows; Closed Won",
+      "action": "Associations",
+      "finding": "Tasks copy contacts only from the ticket's contacts with the label \"Transition\" (ticket-to-contact associationTypeId 72). The Closed Won workflow links the new ticket to the deal's contacts without a label (associationTypeId 16). Unless something else adds the \"Transition\" label, tasks on these tickets get no contact. INFERENCE from the two configs.",
+      "evidence": "Config: Create task actions copy USER_DEFINED 72 (\"Transition\"); Closed Won action 1 copies deal-to-contact 3 into ticket-to-contact 16.",
+      "why": "Tasks would not show on the contact record.",
+      "verify": "Open one Transitions ticket and check whether its contacts carry the \"Transition\" association label."
+    },
+    {
+      "classification": "Potential Issue",
+      "workflow": "Transitions - Pre Launch Setup Tasks (+SubTask)",
+      "action": "Steps 6-11",
+      "finding": "Step 6 checks PPC Enrolled on any associated company (associationTypeId 339). Step 7 reads Marketing Portfolio Manager from a different source: the earliest-created company with the \"Transitions\" label (associationTypeId 70, sorted by create date ascending). A ticket with no \"Transitions\"-labelled company, or a manager other than the three named, falls to the default branch and the proposal goes to Brock Hegr. Step 6 has no \"otherwise\" action, so tickets without PPC get no proposal. VERIFIED (config); the effect on a given ticket is INFERENCE.",
+      "evidence": "Config action 29 (list branch \"PPC Yes\"), action 31 (static branch on fetched_object_347342609.marketing_portfolio_mgr), dataSources.",
+      "why": "On tickets with more than one company, the proposal can go to the wrong portfolio manager.",
+      "verify": "Confirm that the PPC company and the Portfolio Manager company are meant to be the same one, and that Brock Hegr is the intended default."
+    },
+    {
+      "classification": "Potential Issue",
+      "workflow": "Transitions - TRANSITION COMPLETE (+SubTask)",
+      "action": "Step 1",
+      "finding": "The trigger stage, Transition Completed, is a closed stage (isClosed = true). The workflow creates its final-check task \"Transition | TRANSITION COMPLETE | Subtask - Ticket Owner/PM\" due 0 business days after enrollment, at 08:00, so the check is created after the ticket is already closed. VERIFIED (config).",
+      "evidence": "Pipelines API: stage 1094530724 Transition Completed, isClosed = true; config action 1 due_time delta 0.",
+      "why": "A completion check created after closing cannot stop a ticket from closing with open items.",
+      "verify": "Confirm whether this check should run before the ticket moves into Transition Completed."
+    },
+    {
+      "classification": "Needs Verification",
+      "workflow": "Transitions - 30-Day Monitoring (+SubTask)",
+      "action": "Step 1",
+      "finding": "The task \"Transition | 30 - DAY MONITORING | Subtask - Automated\" is an ordinary To-do assigned to the ticket owner. Nothing in the workflow automates it. VERIFIED (config).",
+      "evidence": "Config action 4: task_type TODO, owner = ticket owner (hubspot_owner_id).",
+      "why": "The name suggests the work happens automatically, so the PM may not act on it.",
+      "verify": "Confirm whether the task is meant to be manual. If not, confirm where the automation lives."
+    },
+    {
+      "classification": "Needs Verification",
+      "workflow": "All in scope",
+      "action": "Records",
+      "finding": "No task has been created in the Transitions queue since the start date (2026-10-06, the day of this run). The record-based checks therefore had nothing to check yet: task owners, due dates, subtask ticket links, partial or missed enrollments, and actions never executed. VERIFIED (records).",
+      "evidence": "Queue tasks with create date on or after 2026-10-06: 0.",
+      "why": "This workbook confirms the configuration only. It does not yet show that the tasks come out as configured.",
+      "verify": "Run the weekly check once tickets have entered Transitions stages after 2026-10-06."
+    }
+  ],
+  "process_notes": [
+    "Scope agreed with the user on 2026-10-06: the Closed Won ticket workflow and the 7 Transitions (+SubTask) workflows. The 5 stage-advance (task complete) workflows were left out, so the stage hand-offs between the task workflows were not checked.",
+    "Queue: ID 13519270 was taken from the workflows' Create task actions. It still needs to be confirmed as the queue named \"Transitions\".",
+    "Read only: nothing in HubSpot was changed."
+  ],
+  "top": [
+    {
+      "id": "F-08",
+      "text": "The 5 Go-Live Execution tasks have no queue set, so they will not appear in the Transitions queue.",
+      "next": "Open each Go-Live Execution Create task action and check its Queue field."
+    },
+    {
+      "id": "F-13",
+      "text": "The other 26 task actions use queue ID 13519270. The API can't show names, so it isn't confirmed that this is the Transitions queue.",
+      "next": "Check under Tasks > Queues that 13519270 is \"Transitions\"."
+    },
+    {
+      "id": "F-14",
+      "text": "Main tasks are linked to the ticket, as intended. Whether subtasks are also linked can't be seen yet: subtasks are not in the API and no tasks exist since 6 Oct.",
+      "next": "Rerun the weekly check after the first enrollment, or send one subtask settings screenshot."
+    },
+    {
+      "id": "F-09",
+      "text": "New tickets are created owned by Elizabeth Airey, a deactivated user, and every Ticket Owner/PM task follows the ticket owner.",
+      "next": "Confirm what sets the real PM as ticket owner before Kickoff."
+    },
+    {
+      "id": "F-10",
+      "text": "Tasks copy only contacts with the \"Transition\" label, but the ticket workflow links contacts without a label, so tasks likely get no contact.",
+      "next": "Check the contact association labels on one Transitions ticket."
+    },
+    {
+      "id": "F-11",
+      "text": "The marketing proposal checks PPC on any company but picks the portfolio manager from the earliest \"Transitions\" company. Anything else defaults to Brock Hegr.",
+      "next": "Confirm the intended company and default owner."
+    },
+    {
+      "id": "F-12",
+      "text": "The Transition Complete check is created after the ticket reaches a closed stage, due the same day.",
+      "next": "Decide whether this check should run before closing."
+    }
+  ]
+}
