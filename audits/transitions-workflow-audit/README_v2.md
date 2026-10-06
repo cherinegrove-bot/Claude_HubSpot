@@ -22,7 +22,7 @@ Read only: nothing in HubSpot was changed. This audit reports what it finds; wha
 | 7 | Transitions - 30-Day Monitoring (+SubTask) | 1866659765 | Ticket | ON |
 | 8 | Transitions - TRANSITION COMPLETE (+SubTask) | 1867929348 | Ticket | ON |
 
-- **Queue:** Transitions. The workflows set queue ID `13519270`. The API cannot return queue names, so it still needs confirming that this ID is the "Transitions" queue (F-13).
+- **Queue:** Transitions, ID `13519270` (confirmed by WLS on 2026-10-06 and recorded in `teams.json`).
 - **Start date:** 2026-10-06. Only tasks in the queue created on or after this date are in scope. None existed yet when the audit ran (F-16).
 - **Not in scope:** the 5 stage-advance (task complete) workflows. Moving tickets between stages was therefore not checked.
 - **Team checks added for this run:**
@@ -74,7 +74,7 @@ Evidence labels used throughout: VERIFIED (config), VERIFIED (records), VERIFIED
 
 ## What WLS should verify / decide
 
-1. Is queue ID 13519270 the "Transitions" queue? Should the 4 marketing proposal tasks sit in it? (F-13)
+1. Should the 4 marketing proposal tasks sit in the Transitions queue? (F-13)
 2. Should the 5 Go-Live Execution tasks have a queue set? At the moment they have none. (F-08)
 3. Are subtasks linked to the ticket? Send one subtask settings screenshot per workflow, or wait for the weekly check after the first enrollment. (F-14)
 4. What changes the ticket owner from Elizabeth Airey (deactivated) to the real PM, and does it happen before Kickoff? (F-09)

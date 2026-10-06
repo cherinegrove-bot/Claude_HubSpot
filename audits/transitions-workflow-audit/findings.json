@@ -8,10 +8,10 @@
       "classification": "Needs Verification",
       "workflow": "All 7 Transitions (+SubTask) workflows",
       "action": "Every Create task action",
-      "finding": "Team check 1 (queue): 26 of 31 Create task actions set queue ID 13519270, which this audit treats as the Transitions queue. The other 5 are the Go-Live Execution actions (see the queue finding). The API cannot return queue names, so it is not confirmed that 13519270 is the queue named \"Transitions\". The 4 \"Marketing | Create Marketing Proposal\" actions (Pre-Launch Setup, Steps 8-11) also use 13519270 although they are assigned to Brock Hegr, Sarah Schlosberg and Mohammad Abudahab. VERIFIED (config).",
-      "evidence": "Config queue_id on all 31 Create task actions; teams.json has no queue_ids for Transitions (CS Ops \"Ops Tasks\" is 13519269).",
-      "why": "If 13519270 is not the Transitions queue, every task is outside the team's queue. Marketing proposal tasks in the Transitions queue may not be seen by the marketing managers they are assigned to.",
-      "verify": "In HubSpot (Tasks > Queues), confirm that queue ID 13519270 is \"Transitions\", then add it to teams.json. Confirm the marketing proposal tasks are meant to sit in the Transitions queue."
+      "finding": "Team check 1 (queue): 26 of 31 Create task actions set queue ID 13519270. WLS confirmed on 2026-10-06 that this is the \"Transitions\" queue, and it is now in teams.json. The other 5 are the Go-Live Execution actions, which set no queue (see the queue finding). The 4 \"Marketing | Create Marketing Proposal\" actions (Pre-Launch Setup, Steps 8-11) also use the Transitions queue, although they are assigned to Brock Hegr, Sarah Schlosberg and Mohammad Abudahab. VERIFIED (config); queue name confirmed by WLS.",
+      "evidence": "Config queue_id on all 31 Create task actions; teams.json Transitions queue_ids = [\"13519270\"].",
+      "why": "Marketing proposal tasks in the Transitions queue may not be seen by the marketing managers they are assigned to.",
+      "verify": "Confirm the marketing proposal tasks are meant to sit in the Transitions queue."
     },
     {
       "classification": "Needs Verification",
@@ -79,7 +79,7 @@
   ],
   "process_notes": [
     "Scope agreed with the user on 2026-10-06: the Closed Won ticket workflow and the 7 Transitions (+SubTask) workflows. The 5 stage-advance (task complete) workflows were left out, so the stage hand-offs between the task workflows were not checked.",
-    "Queue: ID 13519270 was taken from the workflows' Create task actions. It still needs to be confirmed as the queue named \"Transitions\".",
+    "Queue: ID 13519270, confirmed by WLS on 2026-10-06 as the \"Transitions\" queue and recorded in teams.json.",
     "Read only: nothing in HubSpot was changed."
   ],
   "top": [
@@ -90,8 +90,8 @@
     },
     {
       "id": "F-13",
-      "text": "The other 26 task actions use queue ID 13519270. The API can't show names, so it isn't confirmed that this is the Transitions queue.",
-      "next": "Check under Tasks > Queues that 13519270 is \"Transitions\"."
+      "text": "The 4 marketing proposal tasks go into the Transitions queue (13519270, confirmed), although marketing managers own them.",
+      "next": "Confirm that these tasks are meant to sit in the Transitions queue."
     },
     {
       "id": "F-14",
