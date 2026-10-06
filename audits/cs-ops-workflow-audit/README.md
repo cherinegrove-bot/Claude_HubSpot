@@ -10,6 +10,7 @@
   | Workflow Inventory | 23 |
   | Audit Findings | 13 |
 
+- **Summary page:** `cs-ops-audit-summary.html`, a one-page overview that opens in any browser. It has the headline numbers, top findings, all findings and workflows.
 - **Data as of:** 2026-10-06
 - **HubSpot portal:** 45059701
 - **Read-only:** nothing in HubSpot was changed.

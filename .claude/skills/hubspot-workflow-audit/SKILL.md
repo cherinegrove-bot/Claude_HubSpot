@@ -1,6 +1,6 @@
 ---
 name: hubspot-workflow-audit
-description: Audits a team's HubSpot workflows (e.g. Marketing, Transitions, CS Ops) from their real configuration. Has two modes. Weekly check mode answers two questions for one team's task queue (did every company that should enroll actually enroll, and were its tasks created and assigned correctly) and returns a short problem list. Full map mode produces an Excel workbook (process overview, action map, workflow inventory, task and subtask logic, workflow connections, findings and evidence sheets). Use it whenever the user asks to audit, check, map, document, reverse-engineer or review a set of HubSpot workflows or the tasks they create, or asks for a "weekly check", "workflow audit" or "workflow workbook" for a team, even if they don't name this skill.
+description: Audits a team's HubSpot workflows (e.g. Marketing, Transitions, CS Ops) from their real configuration. Has two modes. Weekly check mode answers two questions for one team's task queue (did every company that should enroll actually enroll, and were its tasks created and assigned correctly) and returns a short problem list. Full map mode produces three outputs: an Excel workbook (process overview, action map, workflow inventory, task and subtask logic, findings), an HTML summary page that opens in a browser, and a plain-English README. Use it whenever the user asks to audit, check, map, document, reverse-engineer or review a set of HubSpot workflows or the tasks they create, or asks for a "weekly check", "workflow audit" or "workflow workbook" for a team, even if they don't name this skill.
 ---
 
 # HubSpot Workflow Audit
@@ -38,7 +38,7 @@ Each team has its own queue and rules. The machine-readable copy of this table i
 | Team | Queue name | Start date | Companies in scope | Team-specific rules |
 |---|---|---|---|---|
 | CS Ops | `Ops Tasks` | 2026-10-06 | Live, full management | Tasks go to the SM, even if the facility has an OM. Only the Rate Review workflow has the segment exclusion. Tasks that were turned off as duplicates must not appear. |
-| Transitions | `Transitions` | Ask the user | Agree with the user before the first run | None yet |
+| Transitions | `Transitions` | 2026-10-06 | Agree with the user before the first run | None yet |
 | Marketing | `Marketing Services` | Ask the user | Agree with the user before the first run | None yet |
 
 Rules for every team: subtasks created on or after the start date must **not** be associated with the ticket. Only main tasks are.
@@ -205,8 +205,17 @@ If the user supplies screenshots, add what they show as findings or process note
    - the sources
    - **What actually happens**: record creation, enrollment, actions, branches, tasks/subtasks, hand-offs, completion, in numbered steps
    - **What WLS should verify / decide**: specific questions, each referencing a finding number
-2. **Commit** the workbook, `findings.json` and the README. Never commit `$WK`. Push to the session's branch, and **send the workbook to the user** (SendUserFile).
-3. **Summarise in chat:**
+2. **Write `audits/<team>-workflow-audit/<team>-audit-summary.html`**: one self-contained HTML page (all CSS inline, no external images or scripts) that anyone can open in a browser. Build it from the same data as the workbook. Keep it plain and readable, in this order:
+   - **Header:** team, queue, start date, date run, number of workflows checked
+   - **Headline numbers:** findings by classification (Confirmed, Potential Issue, Needs Verification, No Issue Found), workflows ON vs OFF, tasks checked since the start date
+   - **Top findings:** the same 5 to 7 as the chat summary, each with its finding number, a one-line plain-English explanation and what to check next
+   - **All findings:** a table (finding #, classification, workflow, finding, recommended verification), colour-coded by classification
+   - **Workflows:** one row per workflow (name, ID, ON/OFF, trigger in plain English, number of tasks, related findings)
+   - **Footer:** evidence labels and "Read only: nothing in HubSpot was changed"
+   Build it with `python3 $SK/summary_html.py --workbook <xlsx> --findings <findings.json> --work $WK --team "<Team>" --out <html>` (it reads only the workbook, `findings.json` and the saved fetch data; nothing is fetched). Put the top 5 to 7 findings in `findings.json` under `"top": [{"id": "F-03", "text": "...", "next": "..."}]`.
+   Use the same colours every time: navy title bar (`#263449`), slate blue headers (`#3F5066`) with white text, light grey-blue rows (`#F3F5F7`), Poppins with a system font fallback. Do not include customer contact details. Company names and record IDs are fine.
+3. **Commit** the workbook, `findings.json`, the README and the HTML page. Never commit `$WK`. Push to the session's branch, and **send the workbook and the HTML page to the user** (SendUserFile). Tell the user they can upload the HTML page to a claude.ai chat if they want it published as a shareable artifact.
+4. **Summarise in chat:**
    - what's in the workbook (sheet names and row counts)
    - the 5 to 7 most important findings, in plain language
    - what still needs verification and exactly what to send (e.g. "one subtask's settings screenshot")
