@@ -46,7 +46,7 @@ The list of workflows was confirmed by WLS. HubSpot's API doesn't return workflo
 | Create Tasks \| Respond to reviews at Storage Reach | not found | - |
 
 **Team settings:**
-- **Queue:** 13519269, assumed to be "Ops Tasks", because the API doesn't return queue names
+- **Queue:** Ops Tasks, ID 13519269 (confirmed by WLS)
 - **Start date:** 2026-10-06
 - **Companies:** Live with full management (252 companies)
 
