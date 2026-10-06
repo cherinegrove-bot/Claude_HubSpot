@@ -8,8 +8,8 @@
       "classification": "Needs Verification",
       "workflow": "All 7 Transitions (+SubTask) workflows",
       "action": "Every Create task action",
-      "finding": "Team check 1 (queue): 26 of 31 Create task actions set queue ID 13519270. WLS confirmed on 2026-10-06 that this is the \"Transitions\" queue, and it is now in teams.json. The other 5 are the Go-Live Execution actions, which set no queue (see the queue finding). The 4 \"Marketing | Create Marketing Proposal\" actions (Pre-Launch Setup, Steps 8-11) also use the Transitions queue, although they are assigned to Brock Hegr, Sarah Schlosberg and Mohammad Abudahab. VERIFIED (config); queue name confirmed by WLS.",
-      "evidence": "Config queue_id on all 31 Create task actions; teams.json Transitions queue_ids = [\"13519270\"].",
+      "finding": "Team check 1 (queue): all 31 Create task actions now set queue ID 13519270, which WLS confirmed on 2026-10-06 is the \"Transitions\" queue (recorded in teams.json). The 5 Go-Live Execution actions were fixed on 2026-10-06 and re-read from the configuration (see F-08). The 4 \"Marketing | Create Marketing Proposal\" actions (Pre-Launch Setup, Steps 8-11) also use the Transitions queue, although they are assigned to Brock Hegr, Sarah Schlosberg and Mohammad Abudahab. VERIFIED (config); queue name confirmed by WLS.",
+      "evidence": "Config queue_id on all 31 Create task actions (Go-Live Execution re-read 2026-10-06, revision 60); teams.json Transitions queue_ids = [\"13519270\"].",
       "why": "Marketing proposal tasks in the Transitions queue may not be seen by the marketing managers they are assigned to.",
       "verify": "Confirm the marketing proposal tasks are meant to sit in the Transitions queue."
     },
@@ -85,12 +85,12 @@
   "top": [
     {
       "id": "F-08",
-      "text": "The 5 Go-Live Execution tasks have no queue set, so they will not appear in the Transitions queue.",
-      "next": "Open each Go-Live Execution Create task action and check its Queue field."
+      "text": "Fixed: all 5 Go-Live Execution tasks now use the Transitions queue (re-read from the configuration on 6 Oct).",
+      "next": "Nothing to check. Tasks created from now on should land in the queue; the weekly check will confirm it."
     },
     {
       "id": "F-13",
-      "text": "The 4 marketing proposal tasks go into the Transitions queue (13519270, confirmed), although marketing managers own them.",
+      "text": "All 31 task actions now use the Transitions queue (13519270). The 4 marketing proposal tasks go there too, although marketing managers own them.",
       "next": "Confirm that these tasks are meant to sit in the Transitions queue."
     },
     {
