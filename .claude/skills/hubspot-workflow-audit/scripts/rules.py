@@ -149,9 +149,40 @@ def referenced_lists(cfg):
     return sorted(set(re.findall(r'"listId": "?(\d+)', json.dumps(cfg))))
 
 
+def referenced_props_all(cfg):
+    return sorted(set(re.findall(r'"property": "(\w+)"', json.dumps({'e': cfg.get('enrollmentCriteria', {}), 's': suppression(cfg)}))) - {'hs_name', 'hs_value'})
+
+
+def suppression(cfg):
+    """HubSpot stores 'Unenroll / suppress if ...' at the TOP LEVEL of the flow as suppressionFilterBranch."""
+    return cfg.get('suppressionFilterBranch') or cfg.get('enrollmentCriteria', {}).get('suppressionFilterBranch')
+
+
+def suppressed(cfg, props, lists=None):
+    sb = suppression(cfg)
+    return eval_branch(sb, props, lists) if sb else False
+
+
+def schedule_text(cfg):
+    sc = cfg.get('enrollmentSchedule')
+    if not sc:
+        return None
+    t = sc.get('timeOfDay', {})
+    at = f"{t.get('hour', 0):02d}:{t.get('minute', 0):02d}"
+    if sc.get('type') == 'WEEKLY':
+        return f"re-checked every week on {', '.join(d.title() for d in sc.get('daysOfWeek', []))} at {at}"
+    if sc.get('type') == 'MONTHLY_SPECIFIC_DAYS':
+        return f"re-checked every month on day(s) {', '.join(str(d) for d in sc.get('daysOfMonth', []))} at {at}"
+    if sc.get('type') == 'DAILY':
+        return f"re-checked every day at {at}"
+    return 'schedule ' + json.dumps(sc)
+
+
 def list_filters(cfg):
-    """[(listId, operator, where)] for every list filter in the trigger or in branches."""
+    """[(listId, operator, where)] for every list filter in the suppression, trigger or branches."""
     out = []
+    for m in re.finditer(r'\{[^{}]*"listId": "?(\d+)"?[^{}]*\}', json.dumps(suppression(cfg) or {})):
+        out.append((m.group(1), 'SUPPRESS', 'suppression'))
     for m in re.finditer(r'\{[^{}]*"listId": "?(\d+)"?[^{}]*\}', json.dumps(cfg.get('enrollmentCriteria', {}))):
         op = re.search(r'"operator": "(\w+)"', m.group(0))
         out.append((m.group(1), op.group(1) if op else 'IN_LIST', 'trigger'))

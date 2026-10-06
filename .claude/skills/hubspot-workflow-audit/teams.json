@@ -25,7 +25,8 @@
       "owner_property": "site_manager",
       "owner_property_note": "Tasks go to the SM (company property site_manager), even if the facility has an OM (operations_manager).",
       "exclusion_only_in": "Rate Review",
-      "flag_tasks_from_off_or_removed_actions": true
+      "flag_tasks_from_off_or_removed_actions": true,
+      "every_task_action_in_queue": true
     }
   },
   "Transitions": {
@@ -37,7 +38,8 @@
       "subtasks_not_on_ticket": true,
       "owner_property": null,
       "exclusion_only_in": null,
-      "flag_tasks_from_off_or_removed_actions": true
+      "flag_tasks_from_off_or_removed_actions": true,
+      "every_task_action_in_queue": true
     }
   },
   "Marketing": {
@@ -49,7 +51,8 @@
       "subtasks_not_on_ticket": true,
       "owner_property": null,
       "exclusion_only_in": null,
-      "flag_tasks_from_off_or_removed_actions": true
+      "flag_tasks_from_off_or_removed_actions": true,
+      "every_task_action_in_queue": true
     }
   }
 }

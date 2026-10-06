@@ -233,7 +233,7 @@ def main():
     company_wfs = [c for c in cfg.values() if c.get('objectTypeId') == '0-2']
     if company_wfs or (team or {}).get('company_scope'):
         cprops = sorted({'name', 'hs_object_id', 'hubspot_owner_id'} | set(rules.scope_props(team)) |
-                        {p for c in company_wfs for p in rules.referenced_props(c)} |
+                        {p for c in company_wfs for p in rules.referenced_props_all(c)} |
                         {p for c in company_wfs for p in rules.branch_props(c)} |
                         {rules.owner_spec(x['fields'])[1] for c in company_wfs for x in c.get('actions', []) if x.get('actionTypeId') == '0-3' and rules.owner_spec(x['fields'])[0] == 'property'} |
                         ({(team or {}).get('rules', {}).get('owner_property')} - {None}))
@@ -247,7 +247,7 @@ def main():
         companies = search_all('companies', cf, cprops) if cf else search_all('companies', [{'propertyName': 'hs_object_id', 'operator': 'HAS_PROPERTY'}], cprops)
         save(a.work, 'companies.json', companies)
         print('companies in scope', len(companies))
-        lists = {}
+        lists, names = {}, {}
         for lid in sorted({l for c in company_wfs for l in rules.referenced_lists(c)}):
             mem, after = [], None
             try:
@@ -258,10 +258,16 @@ def main():
                     if not after:
                         break
                 lists[lid] = mem
-                print('list', lid, len(mem))
+                try:
+                    meta = req(f'/crm/v3/lists/{lid}')
+                    names[lid] = (meta.get('list') or meta).get('name')
+                except RuntimeError:
+                    pass
+                print('list', lid, names.get(lid), len(mem))
             except RuntimeError as e:
                 print('list', lid, 'not readable:', str(e)[:120], file=sys.stderr)
         save(a.work, 'lists.json', lists)
+        save(a.work, 'list_names.json', names)
 
     # 4. tickets touched (by tasks or by triggers on ticket pipelines) with stage-entry dates
     stage_props = [f'hs_v2_date_entered_{s["id"]}' for p in pipes.get('tickets', []) for s in p['stages']]

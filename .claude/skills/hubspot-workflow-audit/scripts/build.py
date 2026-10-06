@@ -26,6 +26,7 @@ ap.add_argument('--team', required=True)
 ap.add_argument('--out', required=True)
 ap.add_argument('--findings')
 ap.add_argument('--portal', default='45059701')
+ap.add_argument('--template', action='store_true', help='only the 5 core sheets (Process Overview, Detailed Action Map, Task & Subtask Logic, Workflow Inventory, Audit Findings), no Source column')
 ap.add_argument('--include-team-practice', action='store_true', help='also report overdue tasks and titles changed since creation')
 A = ap.parse_args()
 W = lambda n, d=None: json.load(open(os.path.join(A.work, n))) if os.path.exists(os.path.join(A.work, n)) else d
@@ -40,6 +41,7 @@ OTHER_TASKS = [t for t in ALL_TASKS if t.get('_flow') not in CFG]
 SCOPE = W('scope.json', {})
 COMPANIES = {c['id']: c for c in W('companies.json', [])}
 LISTS = W('lists.json', {})
+LIST_NAMES = W('list_names.json', {})
 HIST = W('history_tasks.json', [])
 TEAM_NAME, TEAM = rules.load_team(A.team)
 TRULES = (TEAM or {}).get('rules', {}) or {}
@@ -136,6 +138,16 @@ def filt(fb):
             parts.append(f'({inner})' if len(fb.get('filterBranches', [])) > 1 else inner)
     j = ' OR ' if fb.get('filterBranchType') == 'OR' else ' AND '
     return j.join(p for p in parts if p)
+
+
+def supp_text(cfg):
+    sb = rules.suppression(cfg)
+    if not sb:
+        return None
+    t = filt(sb)
+    for lid, nm in LIST_NAMES.items():
+        t = t.replace(f'list {lid}', f'list {lid} "{nm}"')
+    return t
 
 
 def event_filt(eb):
@@ -468,10 +480,10 @@ for wid in ORDER:
         if deltas:
             ok = sum(1 for d in deltas if -60 <= d <= 900)
             trec += f' {ok}/{len(deltas)} started {min(deltas):.0f}-{max(deltas):.0f} s after the ticket entered {STAGE.get(st)}.'
-    DAM.append([c['name'], wid, 'Trigger', '-', 0, 'Enrollment trigger', ttype, f'Enrolls a {obj.lower()} when: {ttext}.', obj, '-', '-', ttext,
+    DAM.append([c['name'], wid, 'Trigger', '-', 0, 'Enrollment trigger', ttype, f'Enrolls a {obj.lower()} when: {ttext}.' + (f' EXCEPT records where {supp_text(c)} (suppression).' if supp_text(c) else '') + (f' Enrollment is {rules.schedule_text(c)}.' if rules.schedule_text(c) else ''), obj, '-', '-', ttext,
                 'All listed conditions', 'None',
                 f'Re-enroll: {"ON" if e.get("shouldReEnroll") else "OFF"}. Unenroll if no longer meets criteria: {"ON" if e.get("unEnrollObjectsNotMeetingCriteria") else "OFF"}. '
-                f'Suppression / unenroll criteria: {"configured - " + json.dumps(e.get("suppressionListIds") or e.get("unEnrollmentCriteria"))[:150] if (e.get("suppressionListIds") or e.get("unEnrollmentCriteria")) else "none"}.',
+                f'Suppression (never enroll / unenroll): {("records where " + supp_text(c)) if supp_text(c) else "none"}.' + (f' Schedule: {rules.schedule_text(c)}.' if rules.schedule_text(c) else ''),
                 'Step 1', f'Config GET /automation/v4/flows/{wid} (revision {c.get("revisionId")}, updated {c.get("updatedAt", "")[:10]}). {WURL(wid)}', trec, 'VERIFIED (config)'])
     walked = walk(c)
     num = {}
@@ -479,7 +491,7 @@ for wid in ORDER:
         if '_end' not in a and '_goto' not in a:
             num[a['actionId']] = len(num) + 1
     pm, unmatched, linear = match_parents(wid, c)
-    PO.append([None, f'{obj} meets trigger', ttext + f'. Re-enroll {"ON" if e.get("shouldReEnroll") else "OFF"}.', c['name'], 'Enrollment trigger', trec or 'Enrolls', None])
+    PO.append([None, f'{obj} meets trigger', ttext + (f'. Not if: {supp_text(c)}' if supp_text(c) else '') + f'. Re-enroll {"ON" if e.get("shouldReEnroll") else "OFF"}.' + (f' {rules.schedule_text(c).capitalize()}.' if rules.schedule_text(c) else ''), c['name'], 'Enrollment trigger', trec or 'Enrolls', None])
     for a, br in walked:
         if '_end' in a:
             nxt = [l for l in LINKS if l[0] == wid]
@@ -610,7 +622,7 @@ if off:
     F('A02', 'Confirmed', names(off), 'All', f'{len(off)} in-scope workflow(s) are switched OFF: ' + ', '.join(CFG[w]['name'] for w in off) + '.', 'Config isEnabled = false.', 'They do nothing until turned on.', 'Confirm they should be off.')
 re_on = [w for w in CFG if CFG[w]['enrollmentCriteria'].get('shouldReEnroll')]
 F('A03', 'Confirmed', 'All in scope', 'Trigger', f'Re-enrollment is ON for {len(re_on)} and OFF for {len(CFG) - len(re_on)} workflows.' + (f' ON: {", ".join(CFG[w]["name"] for w in re_on)}.' if re_on else '') +
-  f' Suppression/unenroll criteria are configured on {sum(1 for w in CFG if CFG[w]["enrollmentCriteria"].get("suppressionListIds") or CFG[w]["enrollmentCriteria"].get("unEnrollmentCriteria"))}.',
+  f' Suppression is configured on {sum(1 for w in CFG if rules.suppression(CFG[w]))}.',
   'Config shouldReEnroll / suppression fields.', 'With re-enroll OFF a record that meets the trigger again (e.g. returns to a stage) gets nothing new; with it ON it can get duplicates.', 'Confirm each setting is intended.')
 subtask_flows = [w for w in CFG if any(t['sub'] for t in BYFLOW[w])]
 if subtask_flows:
@@ -755,20 +767,63 @@ if TRULES.get('owner_property'):
 if TRULES.get('exclusion_only_in'):
     rows_x = []
     for w in CFG:
-        ex = [l for l in rules.list_filters(CFG[w]) if l[1] == 'NOT_IN_LIST']
+        ex = [l for l in rules.list_filters(CFG[w]) if l[1] in ('NOT_IN_LIST', 'SUPPRESS')]
         allowed = TRULES['exclusion_only_in'].lower() in CFG[w]['name'].lower()
         if ex and not allowed:
-            rows_x.append(f'{CFG[w]["name"]} excludes list {", ".join(x[0] for x in ex)}')
+            rows_x.append(f'{CFG[w]["name"]} ({"ON" if CFG[w].get("isEnabled") else "switched OFF"}) excludes list {", ".join(x[0] + (" " + chr(34) + LIST_NAMES.get(x[0], "") + chr(34) if LIST_NAMES.get(x[0]) else "") for x in ex)}')
         if allowed and not ex:
             rows_x.append(f'{CFG[w]["name"]} has no list exclusion')
-    if rows_x:
-        F('T03', 'Confirmed', 'Several', 'Trigger', f'List-exclusion rule ("only {TRULES["exclusion_only_in"]} workflows"): ' + '; '.join(rows_x) + '.', 'Config list filters (NOT_IN_LIST) in triggers and branches.', 'Breaks the team exclusion rule.', 'Confirm which workflows should exclude the list.')
+    on_viol = [r for r in rows_x if '(ON)' in r or 'has no list exclusion' in r]
+    have = [CFG[w]['name'] for w in CFG if CFG[w].get('isEnabled') and any(l[1] in ('NOT_IN_LIST', 'SUPPRESS') for l in rules.list_filters(CFG[w]))]
+    if on_viol:
+        F('T03', 'Confirmed', 'Several', 'Suppression', f'Exclusion rule ("only {TRULES["exclusion_only_in"]} workflows exclude the segment") is broken: ' + '; '.join(on_viol) + '.', 'Config suppressionFilterBranch and NOT_IN_LIST filters.', 'Companies may be excluded (or included) against the team rule.', 'Confirm which workflows should exclude the list.')
+    else:
+        F('T03', 'No Issue Found', 'All in scope', 'Suppression', f'Exclusion rule holds for switched-on workflows: only {", ".join(have) or "none"} exclude the segment.' + (' Switched-off workflows that also carry it: ' + '; '.join(r for r in rows_x if 'switched OFF' in r) + '.' if any('switched OFF' in r for r in rows_x) else ''),
+          'Config suppressionFilterBranch (top-level) and NOT_IN_LIST filters of every in-scope workflow.', 'Confirms the rule.', 'n/a')
 if TRULES.get('flag_tasks_from_off_or_removed_actions'):
     stray = [t for t in OTHER_TASKS if t['properties'].get('hs_task_is_sub_task') != 'true'] + [t for t in TASKS if not t['sub'] and in_window(t) and not CFG[t['_flow']].get('isEnabled')]
     if stray and QIDS:
         F('T04', 'Confirmed', 'Team queue', 'Tasks', f'{len(stray)} tasks in the team queue come from workflows that are switched off or not in this audit: ' +
           '; '.join(f'{k} x{v}' for k, v in collections.Counter(t['properties'].get('hs_object_source_detail_1') or t['properties'].get('hs_object_source') for t in stray).most_common(6)) + '.',
           'Task records in the queue vs in-scope, switched-on workflows.', 'Turned-off or duplicate tasks are still reaching the queue.', 'Confirm where these tasks come from.')
+if TRULES.get('every_task_action_in_queue', True) and QIDS:
+    noq = []
+    for w in CFG:
+        for a in CFG[w].get('actions', []):
+            if akind(a) == '0-3' and str(a['fields'].get('queue_id', '')) not in QIDS:
+                noq.append((w, a))
+    if noq:
+        on = [(w, a) for w, a in noq if CFG[w].get('isEnabled')]
+        F('T06', 'Confirmed' if on else 'No Issue Found', names(list({w for w, _ in noq})), 'Create task actions',
+          (f'{len(on)} Create task action(s) in switched-on workflows do not use the team queue ({", ".join(QIDS)}): ' + '; '.join(f'{CFG[w]["name"]} "{a["fields"].get("subject", "").strip()}" (queue {a["fields"].get("queue_id", "none")})' for w, a in on[:10]) + '. ' if on else 'Every Create task action in the switched-on workflows uses the team queue. ')
+          + (f'Switched-off workflows without the queue: {", ".join(sorted({CFG[w]["name"] for w, _ in noq if not CFG[w].get("isEnabled")}))}.' if any(not CFG[w].get('isEnabled') for w, _ in noq) else ''),
+          'Config queue_id on every Create task action vs the team queue ID.', 'Tasks outside the queue are not seen by the team.', 'Confirm the queue on each listed action.')
+    else:
+        F('T06', 'No Issue Found', 'All in scope', 'Create task actions', f'Every Create task action in every in-scope workflow uses the team queue ({", ".join(QIDS)}).', 'Config queue_id on every Create task action.', 'Confirms the rule.', 'n/a')
+    unq = [t for t in TASKS if not t['sub'] and in_window(t) and CFG[t['_flow']].get('isEnabled') and not (set((t['properties'].get('hs_queue_membership_ids') or '').split(';')) & QIDS)]
+    if unq:
+        F('T07', 'Confirmed', names(list({t['_flow'] for t in unq})), 'Tasks', f'{len(unq)} tasks created on or after {SINCE} by switched-on workflows are not in the team queue.', 'Task records: Queue property.', 'Not visible to the team in the queue.', 'Confirm the queue setting.')
+if TRULES.get('flag_tasks_from_off_or_removed_actions'):
+    off_new = [t for t in HIST if t['properties'].get('hs_task_is_sub_task') != 'true' and (not SINCE or t['properties']['hs_createdate'][:10] >= SINCE) and not CFG.get(t['_flow'], {}).get('isEnabled', True) and not t.get('_alias')]
+    key = collections.defaultdict(list)
+    for t in HIST:
+        if t['properties'].get('hs_task_is_sub_task') == 'true' or (SINCE and t['properties']['hs_createdate'][:10] < SINCE):
+            continue
+        for x in TASSOC.get(t['id'], {}).get('companies', []):
+            key[(x['id'], rules.norm(re.sub(r'\s*[:|-]\s*', ' ', t['properties']['hs_task_subject'] or '')), t['properties']['hs_createdate'][:10])].append(t)
+    dups = {k: v for k, v in key.items() if len({x['_flow'] for x in v}) > 1 or len({x['id'] for x in v}) > 1}
+    if off_new:
+        F('T08', 'Confirmed', names(list({t['_flow'] for t in off_new})), 'Tasks', f'{len(off_new)} tasks were created on or after {SINCE} by workflows that are now switched off (turned-off tasks still being created): ' +
+          '; '.join(f'{CFG[w]["name"]} x{v}' for w, v in collections.Counter(t['_flow'] for t in off_new).most_common()) + '.', 'Task records (workflow name) vs config isEnabled.', 'Duplicates the team turned off are still reaching people.', 'Confirm when each workflow was switched off.')
+    else:
+        F('T08', 'No Issue Found', 'All in scope', 'Tasks', f'No task has been created on or after {SINCE} by any in-scope workflow that is now switched off.', 'Task records by workflow name, start date onward.', 'Confirms the rule.', 'n/a')
+    if dups:
+        ex = list(dups.items())[:6]
+        F('T09', 'Potential Issue', 'Several', 'Tasks', f'{len(dups)} cases where the same company got the same task more than once on the same day (since {SINCE}). Examples: ' +
+          '; '.join(f'company {k[0]} "{v[0]["properties"]["hs_task_subject"].strip()}" {k[2]} from {", ".join(sorted({CFG.get(x["_flow"], {}).get("name", "?") for x in v}))}' for k, v in ex) + '.',
+          'Task records: company + task title + creation date.', 'Duplicate work for the owner.', 'Confirm whether these are intended (e.g. separate SM/OM tasks).')
+    elif SINCE:
+        F('T09', 'No Issue Found', 'All in scope', 'Tasks', f'No company received the same task twice on the same day since {SINCE}.', 'Task records: company + task title + creation date.', 'Confirms the rule.', 'n/a')
 hist_flow = collections.defaultdict(set)
 for t in HIST:
     for x in TASSOC.get(t['id'], {}).get('companies', []):
@@ -781,7 +836,7 @@ for w in CFG:
     for cid, comp in COMPANIES.items():
         if rules.in_scope(comp['properties'], TEAM) is False:
             continue
-        if rules.eval_branch(c['enrollmentCriteria'].get('listFilterBranch'), comp['properties'], LISTS) and cid not in hist_flow[w] and rules.expected_task(c, comp['properties'], LISTS)[0]:
+        if rules.eval_branch(c['enrollmentCriteria'].get('listFilterBranch'), comp['properties'], LISTS) and rules.suppressed(c, comp['properties'], LISTS) is False and cid not in hist_flow[w] and rules.expected_task(c, comp['properties'], LISTS)[0]:
             CMISSED.append([c['name'], w, cid, comp['properties'].get('name'), f'https://app.hubspot.com/contacts/{PORTAL}/record/0-2/{cid}', 'Meets team scope + enrollment filter; no task from this workflow at any date', '-'])
 if CMISSED:
     F('T05', 'Potential Issue', names(list({m[1] for m in CMISSED})), 'Trigger', f'{len(CMISSED)} company/workflow pairs: the company meets the team scope and the workflow\'s enrollment filter but has no task from it (see Evidence - Missed Enrollments).',
@@ -836,6 +891,9 @@ def sheet(name, headers, widths, data, level=None, cls=None, links=()):
 
 ws = wb.active
 ws.title = 'Read Me'
+if A.template:
+    wb.remove(ws)
+    ws = Workbook().active
 lines = [(f'WLS {A.team} Workflow Audit', Font(name='Arial', size=14, bold=True)), (f'Data as of {AS_OF}. HubSpot portal {PORTAL}. Time zone {TZNAME}.', FN), ('', FN),
          ('SOURCES', BD), ('Workflow configuration: HubSpot Automation v4 API (GET /automation/v4/flows/{id}) - the source of truth for triggers, settings and actions. Labelled VERIFIED (config).', FN),
          ('Records: tasks each workflow created (HubSpot stamps the workflow name on each task), their associations, and ticket stage-entry dates. Used to check the configuration against what happened. Labelled VERIFIED (records).', FN),
@@ -855,6 +913,16 @@ for k in CL:
     ws.append([f'=CONCATENATE("{k}: ",COUNTIF(\'Audit Findings\'!B:B,"{k}"))'])
     ws.cell(row=ws.max_row, column=1).font = FN
 
+if A.template:
+    _sheet = sheet
+    KEEP = ['Process Overview', 'Detailed Action Map', 'Task & Subtask Logic', 'Workflow Inventory', 'Audit Findings']
+
+    def sheet(name, headers, widths, data, **kw):
+        if name not in KEEP:
+            return
+        if name == 'Audit Findings':
+            headers, widths, data = headers[:9], widths[:9], [r[:9] for r in data]
+        _sheet(name, headers, widths, data, **kw)
 sheet('Process Overview', ['Step #', 'Event', 'Condition', 'Workflow', 'Action', 'Result', 'Next Step'], [7, 60, 50, 40, 30, 70, 9], PO)
 sheet('Detailed Action Map', ['Workflow', 'Workflow ID', 'Workflow Step', 'Branch', 'Action #', 'Action Name', 'Action Type', 'What The Action Does', 'Object', 'Property / Record Affected',
                               'Current Value', 'New Value', 'Condition', 'Delay', 'Result', 'Next Action', 'Evidence', 'Notes', 'Evidence Level'],
@@ -863,7 +931,7 @@ sheet('Workflow Inventory', ['Workflow Name', 'Workflow ID', 'Object', 'Purpose 
       [40, 12, 9, 50, 60, 10, 26, 26, 60, 50, 50],
       [[CFG[w]['name'], w, OBJ.get(CFG[w]['objectTypeId'], CFG[w]['objectTypeId']), CFG[w].get('description') or '(no description)', ' - '.join(trigger_text(CFG[w]['enrollmentCriteria'])),
         'ON' if CFG[w]['enrollmentCriteria'].get('shouldReEnroll') else 'OFF',
-        'Configured' if (CFG[w]['enrollmentCriteria'].get('suppressionListIds') or CFG[w]['enrollmentCriteria'].get('unEnrollmentCriteria')) else 'None configured',
+        (f'Records where {supp_text(CFG[w])}' if supp_text(CFG[w]) else 'None configured') + (f'. Schedule: {rules.schedule_text(CFG[w])}' if rules.schedule_text(CFG[w]) else ''),
         f'{len(CFG[w].get("actions", []))} (' + ', '.join(f'{v} {k}' for k, v in collections.Counter(ATYPE.get(akind(a), akind(a)) for a in CFG[w].get('actions', [])).items()) + ')',
         '; '.join(describe(a)[0][:120] for a in CFG[w].get('actions', []))[:1500],
         '; '.join([f'Triggers {CFG[l[2]]["name"]} (sets {plabel(l[3])})' for l in LINKS if l[0] == w] + [f'Triggered by {CFG[l[0]]["name"]}' for l in LINKS if l[2] == w]) or 'None in scope',
@@ -884,6 +952,8 @@ if MISSED:
 if ADVEV:
     sheet('Evidence - Stage Moves', ['Workflow', 'Workflow ID', 'Watched Task Title', 'Task ID', 'Task Created By', 'Ticket ID', 'Ticket Name', 'Ticket Link', 'Task Completed',
                                      'Ticket Entered Target Stage (latest)', 'Seconds Between', 'Moved?'], [36, 12, 36, 14, 34, 14, 34, 22, 22, 24, 10, 14], ADVEV, links=(7,))
+if A.template:
+    wb._sheets.sort(key=lambda w: KEEP.index(w.title) if w.title in KEEP else 99)
 wb.calculation = CalcProperties(fullCalcOnLoad=True)
 os.makedirs(os.path.dirname(os.path.abspath(A.out)), exist_ok=True)
 wb.save(A.out)
