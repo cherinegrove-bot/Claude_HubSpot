@@ -1,0 +1,60 @@
+{
+  "_help": "Per-team settings used by fetch.py, weekly.py and build.py. queue_ids: HubSpot cannot return queue names through the API, so list the queue's numeric ID(s) here once known (an empty list means: use any queue_id the team's workflows set in their Create task actions). company_scope: filters in HubSpot's own format, using INTERNAL property values (e.g. live = 'Yes' is the 'Live' label). rules: team-specific checks; set a rule to null to switch it off.",
+  "CS Ops": {
+    "queue_name": "Ops Tasks",
+    "queue_ids": [
+      "13519269"
+    ],
+    "start_date": "2026-10-06",
+    "company_scope": {
+      "description": "Live, full management",
+      "filters": [
+        {
+          "property": "live",
+          "operator": "IS_ANY_OF",
+          "values": [
+            "Yes"
+          ]
+        },
+        {
+          "property": "mgt_type",
+          "operator": "IS_KNOWN"
+        }
+      ]
+    },
+    "rules": {
+      "subtasks_not_on_ticket": true,
+      "owner_property": "site_manager",
+      "owner_property_note": "Tasks go to the SM (company property site_manager), even if the facility has an OM (operations_manager).",
+      "exclusion_only_in": "Rate Review",
+      "flag_tasks_from_off_or_removed_actions": true,
+      "every_task_action_in_queue": true
+    }
+  },
+  "Transitions": {
+    "queue_name": "Transitions",
+    "queue_ids": [],
+    "start_date": "2026-10-06",
+    "company_scope": null,
+    "rules": {
+      "subtasks_not_on_ticket": true,
+      "owner_property": null,
+      "exclusion_only_in": null,
+      "flag_tasks_from_off_or_removed_actions": true,
+      "every_task_action_in_queue": true
+    }
+  },
+  "Marketing": {
+    "queue_name": "Marketing Services",
+    "queue_ids": [],
+    "start_date": null,
+    "company_scope": null,
+    "rules": {
+      "subtasks_not_on_ticket": true,
+      "owner_property": null,
+      "exclusion_only_in": null,
+      "flag_tasks_from_off_or_removed_actions": true,
+      "every_task_action_in_queue": true
+    }
+  }
+}
