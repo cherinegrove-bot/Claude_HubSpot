@@ -12,7 +12,9 @@ findings.json (optional, written by Claude after reviewing the auto output):
    "process_notes": ["optional extra lines for the Read Me sheet"]}
 Every statement in the workbook carries an evidence label: VERIFIED (config), VERIFIED (records), INFERENCE, NEEDS VERIFICATION.
 """
-import argparse, collections, datetime as dt, html, json, os, re
+import argparse, collections, datetime as dt, html, json, os, re, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import rules
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
@@ -24,12 +26,25 @@ ap.add_argument('--team', required=True)
 ap.add_argument('--out', required=True)
 ap.add_argument('--findings')
 ap.add_argument('--portal', default='45059701')
+ap.add_argument('--include-team-practice', action='store_true', help='also report overdue tasks and titles changed since creation')
 A = ap.parse_args()
 W = lambda n, d=None: json.load(open(os.path.join(A.work, n))) if os.path.exists(os.path.join(A.work, n)) else d
 
+if not os.path.exists(os.path.join(A.work, 'COMPLETE')):
+    sys.exit(f'STOP: {A.work} is incomplete (fetch.py did not finish). Re-run fetch.py - no workbook was produced.')
 CFG = W('configs.json', {})
 DENIED = W('denied.json', [])
-TASKS = W('tasks.json', [])
+ALL_TASKS = W('tasks.json', [])
+TASKS = [t for t in ALL_TASKS if t.get('_flow') in CFG]
+OTHER_TASKS = [t for t in ALL_TASKS if t.get('_flow') not in CFG]
+SCOPE = W('scope.json', {})
+COMPANIES = {c['id']: c for c in W('companies.json', [])}
+LISTS = W('lists.json', {})
+HIST = W('history_tasks.json', [])
+TEAM_NAME, TEAM = rules.load_team(A.team)
+TRULES = (TEAM or {}).get('rules', {}) or {}
+SINCE = SCOPE.get('since')
+QIDS = set(SCOPE.get('queue_ids') or [])
 TASSOC = W('task_assoc.json', {})
 TICKETS = {t['id']: t for t in W('tickets.json', [])}
 TKASSOC = W('ticket_assoc.json', {})
@@ -589,7 +604,7 @@ def F(key, cls, wf, act, finding, ev, why, verify):
 names = lambda ws: ', '.join(CFG[w]['name'] for w in ws) if len(ws) < 4 else f'{len(ws)} workflows'
 if DENIED:
     F('A01', 'Needs Verification', ', '.join(d['id'] for d in DENIED), 'All', f'{len(DENIED)} workflow(s) could not be read from the API and are NOT in this workbook.',
-      '; '.join(d['error'][:160] for d in DENIED), 'Their logic is unaudited.', 'Re-check scopes, or audit them from screenshots.')
+      '; '.join(d['error'][:160] for d in DENIED), 'Their logic is unaudited.', 'Re-check token scopes, or supply screenshots.')
 off = [w for w in CFG if not CFG[w].get('isEnabled')]
 if off:
     F('A02', 'Confirmed', names(off), 'All', f'{len(off)} in-scope workflow(s) are switched OFF: ' + ', '.join(CFG[w]['name'] for w in off) + '.', 'Config isEnabled = false.', 'They do nothing until turned on.', 'Confirm they should be off.')
@@ -611,9 +626,9 @@ if subtask_flows:
         F('A06', 'Potential Issue', names(subtask_flows), 'Subtasks', f'{len(oud)} subtasks are still open under a parent that is already Completed (' + ', '.join(f'{CFG[w]["name"]}: {v}' for w, v in collections.Counter(t["_flow"] for t in oud).items()) + ').',
           'Task records: subtask status vs parent status.', 'The parent looks done while work is unfinished.', 'Confirm the intended behaviour.')
 od = collections.Counter(t['_flow'] for t in TASKS if t['open'] and t['due'] and t['due'] < NOW)
-if od:
+if od and A.include_team_practice:
     F('A07', 'Potential Issue', names(list(od)), 'Create task actions', f'Open and past-due tasks on {AS_OF}: ' + ', '.join(f'{CFG[w]["name"]} {v}' for w, v in od.most_common()) + '.',
-      'Task records: status not Completed/Deferred and due date in the past.', 'Due dates may be unrealistic or tasks are not being closed.', 'Review with the task owners.')
+      'Task records: status not Completed/Deferred and due date in the past.', 'Due dates may be unrealistic or tasks are not being closed.', 'Confirm with the task owners.')
 static = collections.Counter()
 arch = set()
 for w in CFG:
@@ -628,7 +643,7 @@ if static:
     F('A08', 'Confirmed', 'All in scope', 'Owner settings', 'Tasks assigned to a fixed user: ' + ', '.join(f'{k} ({v} action{"s" if v > 1 else ""})' for k, v in static.most_common()) + '.',
       'Config owner_assignment = STATIC_VALUE.', 'If a person leaves or changes role, tasks keep going to them until each action is edited.', 'Review the list.')
 if arch:
-    F('A09', 'Confirmed', 'All in scope', 'Owner settings', 'Tasks are assigned to deactivated (archived) users: ' + ', '.join(sorted(arch)) + '.', 'Config static owner IDs vs archived owners.', 'Those tasks go to nobody active.', 'Reassign.')
+    F('A09', 'Confirmed', 'All in scope', 'Owner settings', 'Tasks are assigned to deactivated (archived) users: ' + ', '.join(sorted(arch)) + '.', 'Config static owner IDs vs archived owners.', 'Those tasks go to nobody active.', 'Confirm who should receive these tasks.')
 low = []
 for w in CFG:
     pm = stats[w]['pm']
@@ -645,7 +660,7 @@ for w in CFG:
                     low.append(f'{CFG[w]["name"]} step "{a["fields"].get("subject", "").strip()}" ({ASSOC.get(ss.get("associationTypeId"))}: {have}/{len(par)})')
 if low:
     F('A10', 'Confirmed', 'Several', 'Associations', f'Association copies that rely on an association LABEL almost never add anything ({len(low)} actions): ' + '; '.join(low[:8]) + ('...' if len(low) > 8 else '') + '.',
-      'Config: COPY_ASSOCIATION with a USER_DEFINED source label; records: tasks created by these actions that have that association.', 'The enrolled records rarely carry that label, so tasks do not show on the related record.', 'Label the records, or copy all associations instead.')
+      'Config: COPY_ASSOCIATION with a USER_DEFINED source label; records: tasks created by these actions that have that association.', 'The enrolled records rarely carry that label, so tasks do not show on the related record.', 'Confirm whether the label is meant to be set on these records.')
 for w in CFG:
     acts = [a for a in CFG[w].get('actions', []) if akind(a) == '0-3']
     if len(acts) < 2:
@@ -668,7 +683,7 @@ for w in CFG:
                 F(f'A12-{w}', 'Confirmed', CFG[w]['name'], 'Trigger', f'This workflow is triggered by completing a task titled "{tt}", but no in-scope workflow creates a task with that title. '
                   f'{len(wt)} such tasks exist, created by: ' + (', '.join(f'{k} ({v})' for k, v in srcs.most_common(3)) or 'none') + (f'; newest created {last:%Y-%m-%d}.' if last else '.'),
                   'Config refinement filter on Task title vs titles of every in-scope Create task action; records: tasks with that exact title.',
-                  'Once the old tasks are used up, this workflow never fires; whatever it does (e.g. move a stage) has to be done by hand.', 'Point the filter at a task the current workflows create, or retire it.')
+                  'Once the old tasks are used up, this workflow never fires; whatever it does (e.g. move a stage) has to be done by hand.', 'Confirm which task is meant to trigger this workflow.')
 stage_wfs = [w for w in CFG if stage_trigger(CFG[w])]
 if stage_wfs:
     nomover = [w for w in stage_wfs if not any(l[2] == w and l[3] == 'hs_pipeline_stage' for l in LINKS)]
@@ -680,17 +695,17 @@ if never:
     F('A14', 'Needs Verification', names(list({w for w, _ in never})), 'Create task actions', 'Create task actions with no matching task in the records: ' + '; '.join(f'{CFG[w]["name"]}: "{a["fields"].get("subject", "").strip()}"' for w, a in never[:10]) + '.',
       'Records matched by title (and owner), then by execution index.', 'Either the branch was never taken, the action was added recently, or titles were edited after creation.', 'Check the branch conditions / history.')
 um = [(w, t) for w in CFG for t in stats[w]['unmatched']]
-if um:
+if um and A.include_team_practice:
     ex = collections.Counter(f'{CFG[w]["name"]}: "{t["properties"]["hs_task_subject"].strip()}"' for w, t in um)
     F('A15', 'Confirmed', names(list({w for w, _ in um})), 'Task titles', f'{len(um)} parent tasks have titles that differ from the current config (manual renames, or the config changed). Most common: ' + '; '.join(f'{k} x{v}' for k, v in ex.most_common(6)) + '.',
-      'Task records vs config titles.', 'Reports by title split; older tickets carry older wording.', 'None - awareness.')
+      'Task records vs config titles.', 'Reports by title split; older tickets carry older wording.', 'Awareness only.')
 if MISSED:
     F('A16', 'Potential Issue', names(list({m[1] for m in MISSED})), 'Trigger', f'{len(MISSED)} ticket(s) entered a trigger stage after the workflow went live but got no tasks from it (see Evidence - Missed Enrollments).',
       'Ticket "Date entered <stage>" vs tasks created by the workflow.', 'Possible causes: moved through the stage within seconds (filter-based triggers evaluate a few seconds later), branches, or suppression.', 'Check each ticket\'s workflow history.')
 deps = [(w, a) for w in CFG for a in CFG[w].get('actions', []) if akind(a) == '0-3' and re.search(r'waiting for|depends on|after .* (is|are) complete', strip(a['fields'].get('body', '')), re.I)]
 if deps and not any(akind(a) in ('0-1', '0-35', '0-29') for w, _ in deps for a in CFG[w]['actions']):
     F('A17', 'Confirmed', names(list({w for w, _ in deps})), 'Task notes', f'{len(deps)} tasks describe dependencies in their notes ("Waiting for ...") but every task is created immediately; nothing in the workflow enforces the order.',
-      'Config task body text; no delay / wait actions in these workflows.', 'People get tasks before their inputs exist.', 'Awareness; consider due dates or staged creation.')
+      'Config task body text; no delay / wait actions in these workflows.', 'People get tasks before their inputs exist.', 'Confirm whether the order matters.')
 partial = []
 for w in CFG:
     lin_tasks = [x for x in stats[w]['linear'] if akind({a['actionId']: a for a in CFG[w]['actions']}[x]) == '0-3']
@@ -705,7 +720,7 @@ if partial:
       'Config: actions before the first branch always run; records per enrollment.', 'Tasks were probably deleted after creation, or the config changed.', 'Check those tickets.')
 noassoc = collections.Counter(t['_flow'] for t in TASKS if not (t['tickets'] or t['companies'] or t['contacts'] or t['deals']))
 if noassoc:
-    F('A19', 'Confirmed', names(list(noassoc)), 'Associations', f'{sum(noassoc.values())} workflow-created tasks are not associated with any record.', 'Task records with no associations.', 'They cannot be found from any record.', 'Clean up.')
+    F('A19', 'Confirmed', names(list(noassoc)), 'Associations', f'{sum(noassoc.values())} workflow-created tasks are not associated with any record.', 'Task records with no associations.', 'They cannot be found from any record.', 'Confirm whether these tasks should be linked to a record.')
 mism = []
 for w in CFG:
     for a in CFG[w].get('actions', []):
@@ -718,6 +733,60 @@ for w in CFG:
                     mism.append(f'{CFG[w]["name"]} "{a["fields"].get("subject", "").strip()}" ({ok}/{len(par)} at {delta} bd)')
 if mism:
     F('A20', 'Confirmed', 'Several', 'Due dates', 'Due dates on these tasks often differ from the configured rule (edited after creation, or the rule changed): ' + '; '.join(mism[:8]) + '.', 'Config due_time vs records.', 'Due-date reporting does not reflect the configured SLA.', 'Confirm the rules.')
+
+# ------------------------------------------------------------------ team rules (teams.json) and company enrollment
+in_window = lambda t: not SINCE or t['properties']['hs_createdate'][:10] >= SINCE
+if TRULES.get('subtasks_not_on_ticket'):
+    bad = [t for t in TASKS if t['sub'] and in_window(t) and t['tickets']]
+    if bad:
+        F('T01', 'Confirmed', names(list({t['_flow'] for t in bad})), 'Subtasks', f'{len(bad)} subtasks created on or after {SINCE or "(no start date)"} are associated with a ticket; the team rule says only main tasks should be (' +
+          ', '.join(f'{CFG[w]["name"]} {v}' for w, v in collections.Counter(t['_flow'] for t in bad).most_common()) + ').', 'Task records: subtask -> ticket associations.', 'Breaks the team rule for subtasks.', 'Confirm the subtask association setting.')
+if TRULES.get('owner_property'):
+    off = []
+    for w in CFG:
+        for a in CFG[w].get('actions', []):
+            if akind(a) == '0-3':
+                kind, val = rules.owner_spec(a['fields'])
+                if val != TRULES['owner_property']:
+                    off.append(f'{CFG[w]["name"]} "{a["fields"].get("subject", "").strip()}" ({"fixed user " + OWN.get(val, val) if kind == "static" else (val or "no owner")})')
+    if off:
+        F('T02', 'Confirmed', 'Several', 'Owner settings', f'{len(off)} Create task actions are not assigned from {TRULES["owner_property"]} as the team rule requires: ' + '; '.join(off[:10]) + ('...' if len(off) > 10 else '') + '.',
+          'Config owner_assignment per action vs teams.json owner_property.', TRULES.get('owner_property_note', 'Breaks the team owner rule.'), 'Confirm the owner setting on each listed action.')
+if TRULES.get('exclusion_only_in'):
+    rows_x = []
+    for w in CFG:
+        ex = [l for l in rules.list_filters(CFG[w]) if l[1] == 'NOT_IN_LIST']
+        allowed = TRULES['exclusion_only_in'].lower() in CFG[w]['name'].lower()
+        if ex and not allowed:
+            rows_x.append(f'{CFG[w]["name"]} excludes list {", ".join(x[0] for x in ex)}')
+        if allowed and not ex:
+            rows_x.append(f'{CFG[w]["name"]} has no list exclusion')
+    if rows_x:
+        F('T03', 'Confirmed', 'Several', 'Trigger', f'List-exclusion rule ("only {TRULES["exclusion_only_in"]} workflows"): ' + '; '.join(rows_x) + '.', 'Config list filters (NOT_IN_LIST) in triggers and branches.', 'Breaks the team exclusion rule.', 'Confirm which workflows should exclude the list.')
+if TRULES.get('flag_tasks_from_off_or_removed_actions'):
+    stray = [t for t in OTHER_TASKS if t['properties'].get('hs_task_is_sub_task') != 'true'] + [t for t in TASKS if not t['sub'] and in_window(t) and not CFG[t['_flow']].get('isEnabled')]
+    if stray and QIDS:
+        F('T04', 'Confirmed', 'Team queue', 'Tasks', f'{len(stray)} tasks in the team queue come from workflows that are switched off or not in this audit: ' +
+          '; '.join(f'{k} x{v}' for k, v in collections.Counter(t['properties'].get('hs_object_source_detail_1') or t['properties'].get('hs_object_source') for t in stray).most_common(6)) + '.',
+          'Task records in the queue vs in-scope, switched-on workflows.', 'Turned-off or duplicate tasks are still reaching the queue.', 'Confirm where these tasks come from.')
+hist_flow = collections.defaultdict(set)
+for t in HIST:
+    for x in TASSOC.get(t['id'], {}).get('companies', []):
+        hist_flow[t['_flow']].add(x['id'])
+CMISSED = []
+for w in CFG:
+    c = CFG[w]
+    if c.get('objectTypeId') != '0-2' or not c.get('isEnabled') or c['enrollmentCriteria'].get('type') != 'LIST_BASED' or not COMPANIES:
+        continue
+    for cid, comp in COMPANIES.items():
+        if rules.in_scope(comp['properties'], TEAM) is False:
+            continue
+        if rules.eval_branch(c['enrollmentCriteria'].get('listFilterBranch'), comp['properties'], LISTS) and cid not in hist_flow[w] and rules.expected_task(c, comp['properties'], LISTS)[0]:
+            CMISSED.append([c['name'], w, cid, comp['properties'].get('name'), f'https://app.hubspot.com/contacts/{PORTAL}/record/0-2/{cid}', 'Meets team scope + enrollment filter; no task from this workflow at any date', '-'])
+if CMISSED:
+    F('T05', 'Potential Issue', names(list({m[1] for m in CMISSED})), 'Trigger', f'{len(CMISSED)} company/workflow pairs: the company meets the team scope and the workflow\'s enrollment filter but has no task from it (see Evidence - Missed Enrollments).',
+      'Company properties and list memberships evaluated against the configured filter; records: tasks from the workflow at any date.', 'The company may not be getting the work the workflow should create.', 'Check the listed companies\' workflow history.')
+MISSED += CMISSED
 
 # ------------------------------------------------------------------ merge manual findings
 EXTRA = json.load(open(A.findings)) if A.findings else {}
@@ -773,6 +842,7 @@ lines = [(f'WLS {A.team} Workflow Audit', Font(name='Arial', size=14, bold=True)
          ('The API does not return subtasks: subtask details come from records only.', FN), ('', FN),
          ('EVIDENCE LABELS', BD), ('VERIFIED (config) | VERIFIED (records) | INFERENCE (derived, not directly visible) | NEEDS VERIFICATION (cannot be determined).', FN), ('', FN),
          ('ACTION NUMBERS', BD), ('Step numbers follow the workflow from its first action through each branch in order, as the HubSpot editor lists them.', FN), ('', FN),
+         ('TEAM SETTINGS', BD), (f'Team: {TEAM_NAME}. Queue: {", ".join(QIDS) or "not known (tasks matched by workflow name)"}. Start date: {SINCE or "none"} (tasks created before it are not reported). Company scope: {((TEAM or {}).get("company_scope") or {}).get("description", "all")}.', FN), ('', FN),
          (f'SCOPE - {len(CFG)} workflows', BD)] + [(f'{i}. {CFG[w]["name"]} ({w}) - {WURL(w)}', FN) for i, w in enumerate(ORDER, 1)]
 lines += [(f'NOT READABLE: {d["id"]} - {d["error"][:120]}', FN) for d in DENIED]
 lines += [('', FN)] + [(n, FN) for n in EXTRA.get('process_notes', [])] + [('', FN), ('FINDINGS SUMMARY (live count from Audit Findings)', BD)]
@@ -810,7 +880,7 @@ sheet('Audit Findings', ['Finding #', 'Classification', 'Workflow', 'Action #', 
 sheet('Evidence - Enrollments', ['Workflow', 'Workflow ID', 'Enrollment ID', 'Ticket ID', 'Ticket Name', 'Ticket Link', 'Ticket Stage Now', 'Ticket Entered Trigger Stage (latest)', 'First Task Created',
                                  'Seconds After Stage Entry', 'Tasks Created', 'Of Which Subtasks', 'Still Open'], [36, 12, 16, 14, 34, 22, 22, 24, 22, 10, 8, 8, 8], EV, links=(5,))
 if MISSED:
-    sheet('Evidence - Missed Enrollments', ['Workflow', 'Workflow ID', 'Ticket ID', 'Ticket Name', 'Ticket Link', 'Entered Trigger Stage', 'Stage Now'], [36, 12, 14, 34, 22, 22, 22], MISSED, links=(4,))
+    sheet('Evidence - Missed Enrollments', ['Workflow', 'Workflow ID', 'Record ID', 'Record Name', 'Link', 'Entered Trigger Stage / Evidence', 'Stage Now'], [36, 12, 14, 34, 22, 22, 22], MISSED, links=(4,))
 if ADVEV:
     sheet('Evidence - Stage Moves', ['Workflow', 'Workflow ID', 'Watched Task Title', 'Task ID', 'Task Created By', 'Ticket ID', 'Ticket Name', 'Ticket Link', 'Task Completed',
                                      'Ticket Entered Target Stage (latest)', 'Seconds Between', 'Moved?'], [36, 12, 36, 14, 34, 14, 34, 22, 22, 24, 10, 14], ADVEV, links=(7,))

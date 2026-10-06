@@ -5,11 +5,16 @@ Usage:
   python3 fetch.py --work DIR --list                       # list every workflow the API returns (id, object, on/off, name)
   python3 fetch.py --work DIR --ids 123 456 ...            # fetch these workflows + their records
   python3 fetch.py --work DIR --name-filter "Transitions"  # fetch workflows whose name matches the regex
+  options: --team "CS Ops"        load queue / start date / company scope from ../teams.json
+           --queue "CS Ops"|123   queue name (resolved through teams.json) or numeric queue ID(s), comma-separated
+           --since 2026-10-06     only tasks created on or after this date are in scope
 
 Needs HUBSPOT_ACCESS_TOKEN (private app with `automation` + read scopes for the objects involved,
 including the sensitive/highly-sensitive read scopes). Writes JSON files into DIR; nothing is changed in HubSpot.
 """
 import argparse, json, os, re, sys, time, urllib.request, urllib.error
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import rules
 
 API = 'https://api.hubapi.com'
 TOKEN = os.environ.get('HUBSPOT_ACCESS_TOKEN')
@@ -30,6 +35,9 @@ def req(path, body=None):
                 time.sleep(2 * (attempt + 1))
                 continue
             raise RuntimeError(f'{e.code} {url}: {e.read().decode()[:400]}')
+        except (urllib.error.URLError, ConnectionError, TimeoutError) as e:
+            time.sleep(3 * (attempt + 1))
+            continue
     raise RuntimeError(f'gave up on {url}')
 
 
@@ -90,6 +98,9 @@ def main():
     ap.add_argument('--list', action='store_true')
     ap.add_argument('--ids', nargs='*')
     ap.add_argument('--name-filter')
+    ap.add_argument('--team')
+    ap.add_argument('--queue')
+    ap.add_argument('--since')
     a = ap.parse_args()
     os.makedirs(a.work, exist_ok=True)
 
@@ -144,21 +155,113 @@ def main():
             props[obj] = {}
     save(a.work, 'properties.json', props)
 
-    # 3. records: every task each workflow created (HubSpot stamps the workflow name on the task)
-    tasks = []
+    # 3. records
+    team_name, team = rules.load_team(a.team or a.queue) if (a.team or a.queue) else (None, None)
+    since = a.since or (team or {}).get('start_date')
+    queue_ids = []
+    if a.queue:
+        queue_ids = [q.strip() for q in a.queue.split(',') if q.strip().isdigit()]
+        if not queue_ids and team:
+            queue_ids = [str(x) for x in team.get('queue_ids', [])]
+    elif team:
+        queue_ids = [str(x) for x in team.get('queue_ids', [])]
+    cfg_queues = sorted({str(x['fields']['queue_id']) for c in cfg.values() for x in c.get('actions', []) if x.get('fields', {}).get('queue_id')})
+    if (a.queue or team) and not queue_ids:
+        queue_ids = cfg_queues
+        print(f'queue: no ID in teams.json for "{a.queue or team_name}"; using queue IDs set in the workflows\' Create task actions: {cfg_queues or "NONE"}', file=sys.stderr)
+    save(a.work, 'scope.json', {'team': team_name, 'team_cfg': team, 'since': since, 'queue_ids': queue_ids, 'queue_ids_in_config': cfg_queues,
+                                'queue_requested': a.queue or (team or {}).get('queue_name')})
+    name2id = {c['name']: i for i, c in cfg.items()}
+    # 3a. history: every task each workflow ever created (by the workflow name HubSpot stamps on the task)
+    history = []
     for i, c in cfg.items():
         got = search_all('tasks', [{'propertyName': 'hs_object_source_detail_1', 'operator': 'EQ', 'value': c['name']}], TASK_PROPS)
         for t in got:
             t['_flow'] = i
-        tasks += got
-        print('tasks', i, len(got))
+        history += got
+        print('history tasks', i, len(got))
+    # renamed workflows: tasks made before a rename carry the OLD workflow name. Find candidate old names
+    # through the task titles each workflow creates, keep names that are not a current workflow's name.
+    current = {f['name'] for f in flows}
+    aliases = {}
+    for i, c in cfg.items():
+        names = set()
+        for t in {(x['fields'].get('subject') or '').strip() for x in c.get('actions', []) if x.get('actionTypeId') == '0-3'} - {''}:
+            for r in search_all('tasks', [{'propertyName': 'hs_task_subject', 'operator': 'EQ', 'value': t},
+                                          {'propertyName': 'hs_object_source', 'operator': 'EQ', 'value': 'AUTOMATION_PLATFORM'}], ['hs_object_source_detail_1'], cap=2000):
+                n = r['properties'].get('hs_object_source_detail_1')
+                if n and n not in current:
+                    names.add(n)
+        if names:
+            aliases[i] = sorted(names)
+    for i, names in aliases.items():
+        for n in names:
+            got = search_all('tasks', [{'propertyName': 'hs_object_source_detail_1', 'operator': 'EQ', 'value': n}], TASK_PROPS)
+            for t in got:
+                t['_flow'], t['_alias'] = i, n
+            history += got
+            print(f'history tasks {i} via old name "{n}": {len(got)}')
+    save(a.work, 'aliases.json', aliases)
+    save(a.work, 'history_tasks.json', history)
+    # 3b. in-scope tasks: in the team queue (if one is known) and created on/after the start date
+    sincef = [{'propertyName': 'hs_createdate', 'operator': 'GTE', 'value': since + 'T00:00:00Z'}] if since else []
+    if queue_ids:
+        tasks = []
+        for q in queue_ids:
+            tasks += search_all('tasks', [{'propertyName': 'hs_queue_membership_ids', 'operator': 'EQ', 'value': q}] + sincef, TASK_PROPS)
+        pids = [t['id'] for t in tasks if t['properties'].get('hs_task_is_sub_task') != 'true']
+        for k in range(0, len(pids), 100):
+            tasks += search_all('tasks', [{'propertyName': 'hs_task_parent_task_id', 'operator': 'IN', 'values': pids[k:k + 100]}], TASK_PROPS)
+        seen = set()
+        tasks = [t for t in tasks if not (t['id'] in seen or seen.add(t['id']))]
+        for t in tasks:
+            t['_flow'] = name2id.get(t['properties'].get('hs_object_source_detail_1'))
+        print(f'queue tasks (incl. subtasks of queued parents) since {since}: {len(tasks)}')
+    else:
+        tasks = [t for t in history if not since or t['properties']['hs_createdate'][:10] >= since]
+        if a.queue or team:
+            print('WARNING: no queue ID known - in-scope tasks are matched by workflow name only', file=sys.stderr)
     save(a.work, 'tasks.json', tasks)
-    tids = [t['id'] for t in tasks]
+    tids = sorted({t['id'] for t in tasks + history})
     assoc = {}
     for obj in ('tickets', 'companies', 'contacts', 'deals'):
         for k, v in batch_assoc('tasks', obj, tids).items():
             assoc.setdefault(k, {})[obj] = v
     save(a.work, 'task_assoc.json', assoc)
+
+    # 3c. companies in scope (for "should have enrolled" checks) and list memberships used by triggers
+    company_wfs = [c for c in cfg.values() if c.get('objectTypeId') == '0-2']
+    if company_wfs or (team or {}).get('company_scope'):
+        cprops = sorted({'name', 'hs_object_id', 'hubspot_owner_id'} | set(rules.scope_props(team)) |
+                        {p for c in company_wfs for p in rules.referenced_props(c)} |
+                        {p for c in company_wfs for p in rules.branch_props(c)} |
+                        {rules.owner_spec(x['fields'])[1] for c in company_wfs for x in c.get('actions', []) if x.get('actionTypeId') == '0-3' and rules.owner_spec(x['fields'])[0] == 'property'} |
+                        ({(team or {}).get('rules', {}).get('owner_property')} - {None}))
+        opmap = {'IS_ANY_OF': 'IN', 'IS_NONE_OF': 'NOT_IN', 'IS_KNOWN': 'HAS_PROPERTY', 'IS_UNKNOWN': 'NOT_HAS_PROPERTY', 'IS_EQUAL_TO': 'EQ', 'IS_NOT_EQUAL_TO': 'NEQ'}
+        cf = []
+        for f in ((team or {}).get('company_scope') or {}).get('filters', []):
+            x = {'propertyName': f['property'], 'operator': opmap[f['operator']]}
+            if f.get('values'):
+                x['values' if x['operator'] in ('IN', 'NOT_IN') else 'value'] = f['values'] if x['operator'] in ('IN', 'NOT_IN') else f['values'][0]
+            cf.append(x)
+        companies = search_all('companies', cf, cprops) if cf else search_all('companies', [{'propertyName': 'hs_object_id', 'operator': 'HAS_PROPERTY'}], cprops)
+        save(a.work, 'companies.json', companies)
+        print('companies in scope', len(companies))
+        lists = {}
+        for lid in sorted({l for c in company_wfs for l in rules.referenced_lists(c)}):
+            mem, after = [], None
+            try:
+                while True:
+                    d = req(f'/crm/v3/lists/{lid}/memberships?limit=250' + (f'&after={after}' if after else ''))
+                    mem += [str(r.get('recordId', r)) if isinstance(r, dict) else str(r) for r in d.get('results', [])]
+                    after = d.get('paging', {}).get('next', {}).get('after')
+                    if not after:
+                        break
+                lists[lid] = mem
+                print('list', lid, len(mem))
+            except RuntimeError as e:
+                print('list', lid, 'not readable:', str(e)[:120], file=sys.stderr)
+        save(a.work, 'lists.json', lists)
 
     # 4. tickets touched (by tasks or by triggers on ticket pipelines) with stage-entry dates
     stage_props = [f'hs_v2_date_entered_{s["id"]}' for p in pipes.get('tickets', []) for s in p['stages']]
@@ -203,6 +306,7 @@ def main():
         save(a.work, 'account.json', req('/account-info/v3/details'))
     except RuntimeError:
         save(a.work, 'account.json', {'timeZone': 'UTC'})
+    open(os.path.join(a.work, 'COMPLETE'), 'w').write(time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()))
     print(f'done: {len(cfg)} configs, {len(denied)} denied, {len(tasks)} tasks, {len(tickets)} tickets -> {a.work}')
 
 

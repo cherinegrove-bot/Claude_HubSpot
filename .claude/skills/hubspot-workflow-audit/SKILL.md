@@ -28,13 +28,18 @@ Never invent action names, conditions, owners, task names, timings or links betw
 
 ## Team settings
 
-Each team has its own queue and rules. Use the queue **name**: the scripts look up the queue ID each time they run, so nothing breaks if a queue is recreated.
+Each team has its own queue and rules. The machine-readable copy of this table is `teams.json` (in this skill's folder): the scripts read the queue, start date, company scope and team rules from it. **Keep the two in step** when a team's rules change.
+
+**Queue names can't be looked up through the API** (no public queue endpoint; the task Queue property only holds numeric IDs). So the scripts work with queue **IDs**:
+- If `teams.json` lists `queue_ids` for the team, those are used.
+- If it doesn't, the scripts use the queue ID(s) the team's Create task actions set in their configuration (`queue_id`), and say so. Confirm with the user that this ID is the queue named in the table, then add it to `teams.json`.
+- If neither exists, the "in the queue" check is skipped and tasks are matched by workflow name. The report says so as NEEDS VERIFICATION.
 
 | Team | Queue name | Start date | Companies in scope | Team-specific rules |
 |---|---|---|---|---|
-| CS Ops | `CS Ops` | 2026-10-06 | Live, full management | Tasks go to the SM, even if the facility has an OM. Only the Rate Review workflow has the segment exclusion. Tasks that were turned off as duplicates must not appear. |
+| CS Ops | `Ops Tasks` | 2026-10-06 | Live, full management | Tasks go to the SM, even if the facility has an OM. Only the Rate Review workflow has the segment exclusion. Tasks that were turned off as duplicates must not appear. |
 | Transitions | `Transitions` | Ask the user | Agree with the user before the first run | None yet |
-| Marketing | `Marketing` | Ask the user | Agree with the user before the first run | None yet |
+| Marketing | `Marketing Services` | Ask the user | Agree with the user before the first run | None yet |
 
 Rules for every team: subtasks created on or after the start date must **not** be associated with the ticket. Only main tasks are.
 
@@ -49,7 +54,7 @@ Start date: the date the queue was added to the team's workflows (see the table)
   - all `*.sensitive.read` and `*.highly_sensitive.read` scopes
 - Python packages `openpyxl` and `tzdata`. Install them with `pip install -q openpyxl tzdata` if an import fails.
 - The scripts are in `.claude/skills/hubspot-workflow-audit/scripts/`. They only **read** from HubSpot; they never change anything.
-- Queue property on tasks: believed to be `hs_queue_membership_ids` (NEEDS VERIFICATION: check Settings > Properties > Task properties > Queue).
+- Queue property on tasks: `hs_queue_membership_ids`, label "Queue" (VERIFIED: property metadata). It holds queue IDs, not names.
 
 ## Pick the mode
 
@@ -69,7 +74,7 @@ Tell the user, in one short message, the team, queue name, start date and compan
 ```bash
 SK=.claude/skills/hubspot-workflow-audit/scripts
 WK=<scratchpad>/<team>-weekly      # contains customer data: keep it in the scratchpad, never commit it
-python3 $SK/fetch.py --work $WK --name-filter "<confirmed regex>" --queue "<Queue name>" --since <YYYY-MM-DD>
+python3 $SK/fetch.py --work $WK --name-filter "<confirmed regex>" --team "<Team>"     # --queue <ID> and --since <YYYY-MM-DD> override teams.json
 ```
 
 ### 3. Run the checks
@@ -78,9 +83,11 @@ python3 $SK/fetch.py --work $WK --name-filter "<confirmed regex>" --queue "<Queu
 python3 $SK/weekly.py --work $WK --team "<Team>"
 ```
 
+Both `weekly.py` and `build.py` refuse to run if the fetch didn't finish (no `COMPLETE` marker in `$WK`), so a network error can never turn into a "no problems" report.
+
 It answers two questions per workflow:
 
-1. **Did the right companies go in?** Lists every company that meets the team's company rules (and the workflow's own enrollment rules) but was never enrolled.
+1. **Did the right companies go in?** Lists every company that meets the team's company scope **and** the workflow's own enrollment filter, **and** whose branch path (worked out from its current properties) ends in a task, but has no task from that workflow at any date. Companies whose filters can't be evaluated (association filters, unreadable lists, unsupported operators) are counted in a NEEDS VERIFICATION note, never reported as problems.
 2. **Did the tasks come out right?** For each enrolled company: is every task there, in the queue, assigned to the right person? Plus the team-specific rules from the table above.
 
 ### 4. Report
@@ -112,7 +119,7 @@ Show the user the matching workflows as a table: ID, object, ON/off, name. Ask t
 ### 2. Fetch
 
 ```bash
-python3 $SK/fetch.py --work $WK --ids <id> <id> ... --queue "<Queue name>" --since <YYYY-MM-DD>
+python3 $SK/fetch.py --work $WK --ids <id> <id> ... --team "<Team>"     # --queue <ID> and --since <YYYY-MM-DD> override teams.json
 ```
 
 The script saves the following to `$WK`:
@@ -209,7 +216,8 @@ Keep the three team audits in separate folders: `audits/marketing-workflow-audit
 ## Things that will trip you up
 
 - **Subtasks are not in the API.** Subtask titles, owners and due dates come only from records, or from screenshots. Say so.
-- **Queue first, workflow name second.** Tasks are found by queue. The workflow name HubSpot stamps on each task is still used to say which workflow made it. Tasks made before a workflow was renamed carry the old name. If a workflow's records look thin, ask whether it was renamed.
+- **Queue first, workflow name second.** Tasks are found by queue. The workflow name HubSpot stamps on each task is still used to say which workflow made it.
+- **Renamed workflows.** Tasks made before a rename carry the old workflow name. `fetch.py` finds candidate old names automatically: it looks up tasks with the same titles whose workflow name no longer exists, and counts them as the same workflow (saved in `aliases.json`). The weekly report lists these as INFERENCE; confirm them with the user. Example: "Create Tasks | Rate Review - Execution" is the old name of both Rate Review workflows.
 - **Old tasks are out of scope.** Anything created before the start date has no queue and may still have old subtask links. Do not report it.
 - **"Ticket status"** is HubSpot's label for `hs_pipeline_stage`. `hs_v2_date_entered_<stage>` holds the **latest** entry into that stage, so earlier entries are overwritten.
 - **Filter-based triggers** ("Records meet custom conditions") are evaluated a few seconds after a change. A record that passes through a stage in under about 10 s may never enroll.
