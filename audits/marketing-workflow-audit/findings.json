@@ -124,20 +124,6 @@
    ]
   },
   {
-   "classification": "Needs Verification",
-   "workflow": "All three workflows",
-   "action": "Create task actions",
-   "finding": "All 24 Create task actions use queue ID 13519272. HubSpot doesn't return queue names through the API, so it isn't confirmed that this ID is the \"Marketing Services\" queue. (It differs from the Ops Tasks queue, 13519269.)",
-   "evidence": "VERIFIED (config): queue_id 13519272 on every Create task action.",
-   "why": "The \"every task uses the Marketing Services queue\" check (F-14) relies on this ID being that queue.",
-   "verify": "Open the Marketing Services queue in HubSpot and confirm its ID is 13519272, then record it in teams.json.",
-   "workflow_ids": [
-    "1892197644",
-    "1892196753",
-    "1892165928"
-   ]
-  },
-  {
    "classification": "Potential Issue",
    "workflow": "Standalone Marketing | Monthly Performance Reviews | Marketing Services (UPDATED)",
    "action": "Workflow description",
@@ -152,7 +138,7 @@
  ],
  "process_notes": [
   "Purpose / Observed Function in the Workflow Inventory is the workflow's own HubSpot description (not verified against the configuration; see the findings for differences).",
-  "No task has been created in the Marketing Services queue (13519272) since the start date 2026-10-06. Record-based checks (owners, subtasks, ticket links) will have data after the next scheduled run on 5 November.",
+  "No task has been created in the Marketing Services queue (13519272, confirmed by WLS) since the start date 2026-10-06. Record-based checks (owners, subtasks, ticket links) will have data after the next scheduled run on 5 November.",
   "Mohammad Abudahab is a Portfolio Manager branch value and task owner in all three workflows; no company in scope currently has him as Portfolio Manager."
  ],
  "top": [
