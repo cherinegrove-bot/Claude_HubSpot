@@ -2,7 +2,9 @@
   "_help": "Per-team settings used by fetch.py, weekly.py and build.py. queue_ids: HubSpot cannot return queue names through the API, so list the queue's numeric ID(s) here once known (an empty list means: use any queue_id the team's workflows set in their Create task actions). company_scope: filters in HubSpot's own format, using INTERNAL property values (e.g. live = 'Yes' is the 'Live' label). rules: team-specific checks; set a rule to null to switch it off.",
   "CS Ops": {
     "queue_name": "Ops Tasks",
-    "queue_ids": [],
+    "queue_ids": [
+      "13519269"
+    ],
     "start_date": "2026-10-06",
     "company_scope": {
       "description": "Live, full management",

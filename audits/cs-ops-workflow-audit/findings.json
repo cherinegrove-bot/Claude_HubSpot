@@ -34,5 +34,5 @@
    "why": "Only matters if the workflow is switched back on.", "verify": "None while it stays off."}
  ],
  "process_notes": ["Scope: 23 readable workflows from the CS Ops folder list confirmed by WLS on 2026-10-06 (folder 451664132163 cannot be read through the API). 'Create Tasks | Respond to reviews at Storage Reach' could not be found.",
-                   "Team queue: ID 13519269, set on every Create task action of the switched-on workflows - assumed to be 'Ops Tasks' (queue names are not available through the API)."]
+                   "Team queue: Ops Tasks = ID 13519269 (confirmed by WLS on 2026-10-06), set on every Create task action of the switched-on workflows."]
 }

@@ -91,4 +91,3 @@ The list of workflows was confirmed by WLS. HubSpot's API doesn't return workflo
 - **F-04:** confirm the 89 companies on "Exclude from Ops tasks" should now receive these tasks.
 - **F-05:** confirm whether the R+S Reminders actions were removed on purpose today.
 - **F-08:** "Create Tasks \| Respond to reviews at Storage Reach" can't be found. Was it deleted or renamed? Its tasks were last created on 2026-09-30.
-- **Queue:** confirm that 13519269 is the Ops Tasks queue.
