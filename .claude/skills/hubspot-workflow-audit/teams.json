@@ -47,7 +47,7 @@
   "Marketing": {
     "queue_name": "Marketing Services",
     "queue_ids": [],
-    "start_date": null,
+    "start_date": "2026-10-06",
     "company_scope": null,
     "rules": {
       "subtasks_not_on_ticket": true,

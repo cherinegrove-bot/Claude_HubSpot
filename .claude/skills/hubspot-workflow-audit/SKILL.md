@@ -39,7 +39,7 @@ Each team has its own queue and rules. The machine-readable copy of this table i
 |---|---|---|---|---|
 | CS Ops | `Ops Tasks` | 2026-10-06 | Live, full management | Tasks go to the SM, even if the facility has an OM. Only the Rate Review workflow has the segment exclusion. Tasks that were turned off as duplicates must not appear. |
 | Transitions | `Transitions` | 2026-10-06 | Agree with the user before the first run | None yet |
-| Marketing | `Marketing Services` | Ask the user | Agree with the user before the first run | None yet |
+| Marketing | `Marketing Services` | 2026-10-06 | Agree with the user before the first run | None yet |
 
 Rules for every team: subtasks created on or after the start date must **not** be associated with the ticket. Only main tasks are.
 

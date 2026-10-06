@@ -1,0 +1,195 @@
+{
+ "suppress": [
+  "T05"
+ ],
+ "findings": [
+  {
+   "classification": "Potential Issue",
+   "workflow": "All three workflows",
+   "action": "Enrollment schedule + final Delay on every path",
+   "finding": "The workflows are scheduled to re-check companies monthly, on day 5 at 00:00. But every path ends with a 45-day Delay after the task is created. HubSpot does not re-enroll a record that is still in the workflow. So a company enrolled on the 5th is still waiting in the Delay on the next 5th (about 30 days later) and is skipped. This means reviews would come every other month, not monthly.",
+   "evidence": "VERIFIED (config): enrollmentSchedule = MONTHLY_SPECIFIC_DAYS, daysOfMonth [5]; shouldReEnroll = true with no re-enrollment triggers; Delay actions 64800 minutes (45 days): Standalone 23/48/50/52/54/56/58/60, Improving 13/23/25/28/30/32/34/36, At Risk 50/58/82/84/86/88/90/92. INFERENCE: HubSpot only re-enrolls records that are not currently enrolled.",
+   "why": "Companies may get a performance review every two months while the workflow names say monthly.",
+   "verify": "After the 5 November run, open one company enrolled in October and check its workflow history for a second enrollment. Or confirm whether the 45-day Delay is meant to space reviews out.",
+   "workflow_ids": [
+    "1892197644",
+    "1892196753",
+    "1892165928"
+   ]
+  },
+  {
+   "classification": "Potential Issue",
+   "workflow": "All three workflows",
+   "action": "All 24 Create task actions",
+   "finding": "Each \"Marketing Performance Review\" task is due 45 business days after creation, at 08:00. That is about 9 weeks, for a review the workflow names call monthly.",
+   "evidence": "VERIFIED (config): due_time delta 45 DAYS, daysOfWeek Monday to Friday, timeOfDay 08:00, on every Create task action.",
+   "why": "The task won't show as overdue until well after the next month's review should have happened.",
+   "verify": "Confirm the intended due date (e.g. 45 calendar days, or end of the month).",
+   "workflow_ids": [
+    "1892197644",
+    "1892196753",
+    "1892165928"
+   ]
+  },
+  {
+   "classification": "Confirmed",
+   "workflow": "All three workflows",
+   "action": "Branch on SpareFoot (Y/N) (action 2)",
+   "finding": "Both SpareFoot paths (true and false) create the same task: same title, body, owner per Portfolio Manager, queue, associations and due date. So the SpareFoot branch doesn't change the result. The branch also has no default path, so a company with SpareFoot (Y/N) empty would get no task at all.",
+   "evidence": "VERIFIED (config): action 2 STATIC_BRANCH on sparefoot__y_n_, branches true/false, no defaultBranch; one distinct task body per workflow across all 8 Create task actions. VERIFIED (records): all 93 companies that currently meet one of the three filters have SpareFoot set to true or false, so none are affected today.",
+   "why": "The branch makes the workflows twice as long without effect, and an empty SpareFoot value would quietly stop a review.",
+   "verify": "Confirm whether SpareFoot was meant to change the task (e.g. a SpareFoot subtask). If not, confirm what should happen when SpareFoot is empty.",
+   "workflow_ids": [
+    "1892197644",
+    "1892196753",
+    "1892165928"
+   ]
+  },
+  {
+   "classification": "Potential Issue",
+   "workflow": "Standalone Marketing | Monthly Performance Reviews | Marketing Services (UPDATED)",
+   "action": "Branch on Portfolio Mgr, SpareFoot = false path (action 16)",
+   "finding": "In Standalone, the SpareFoot = false branch on Portfolio Manager (action 16) has no default path. If the Portfolio Manager is empty or is anyone other than Brock, Sarah, Mohammad or \"Not Assigned\", the company gets no task. Its SpareFoot = true twin (action 15) and both branches in At Risk and Improving send those companies to the \"Not Assigned\" task.",
+   "evidence": "VERIFIED (config): Standalone action 15 defaultBranch -> action 51; action 16 defaultBranch = none. Improving actions 4/7 default -> 27/35; At Risk actions 15/16 default -> 51/59. VERIFIED (records): all 7 companies that currently meet the Standalone filter have SpareFoot = false and a Portfolio Manager of Sarah Schlosberg (6) or Brock Hegr (1), so none are affected today.",
+   "why": "A Standalone company whose Portfolio Manager is cleared or changed to someone new would stop getting reviews without anyone noticing.",
+   "verify": "Confirm whether action 16 should have the same default path (to action 59) as action 15.",
+   "workflow_ids": [
+    "1892197644"
+   ]
+  },
+  {
+   "classification": "Confirmed",
+   "workflow": "All three workflows",
+   "action": "\"Not Assigned\" and default paths (Standalone 51/59, Improving 27/35, At Risk 51/59)",
+   "finding": "When the company's Marketing Portfolio Manager is \"Not Assigned\" (or empty, where a default path exists), the \"Marketing Performance Review\" task is created with no owner. It goes into the Marketing Services queue unassigned.",
+   "evidence": "VERIFIED (config): these Create task actions have no owner_assignment; queue_id 13519272. VERIFIED (records): 12 of the 69 companies that currently meet the At Risk filter would take these paths (10 with Portfolio Manager \"Not Assigned\", 2 with it empty).",
+   "why": "Unowned tasks only get worked if someone picks them up from the queue.",
+   "verify": "Confirm that picking these up from the queue is the intended process, and who does it.",
+   "workflow_ids": [
+    "1892197644",
+    "1892196753",
+    "1892165928"
+   ]
+  },
+  {
+   "classification": "Potential Issue",
+   "workflow": "Standalone Marketing | Monthly Performance Reviews | Marketing Services (UPDATED); At Risk Monthly Performance Reviews | Marketing Services (UPDATED)",
+   "action": "Trigger",
+   "finding": "Climate Smart Self Storage (31201467651) currently meets both the Standalone filter and the At Risk filter. Nothing in either workflow excludes the other, so it can get two \"Marketing Performance Review\" tasks in the same cycle.",
+   "evidence": "VERIFIED (config): Standalone trigger = Standalone Services is Marketing AND Live AND PPC Enrolled Yes; At Risk trigger = Tier in list AND Live AND PPC Enrolled Yes AND Trend to Goal At Risk; no suppression on either. VERIFIED (records): company 31201467651 has Standalone Services = Marketing, Tier and Trend to Goal = At Risk.",
+   "why": "Duplicate review tasks for one company, possibly for two different owners.",
+   "verify": "Confirm whether a Standalone Marketing company should ever also get the At Risk or Improving review.",
+   "workflow_ids": [
+    "1892197644",
+    "1892165928"
+   ]
+  },
+  {
+   "classification": "Potential Issue",
+   "workflow": "Improving Monthly Performance Reviews | Marketing Services (UPDATED); At Risk Monthly Performance Reviews | Marketing Services (UPDATED)",
+   "action": "Trigger",
+   "finding": "2 companies meet the workflow's filter today but have no task from it at any date: A Affordable Storage Waxahachie (48889029662) in Improving, and Climate Smart Self Storage (31201467651) in At Risk.",
+   "evidence": "VERIFIED (records): company properties evaluated against the configured filter; no task from the workflow on either company. INFERENCE: the company's properties may have changed since the last scheduled run (5 October), in which case it will enroll on 5 November.",
+   "why": "The company may not be getting its review.",
+   "verify": "Check each company's workflow history and the date its Trend to Goal / Tier / PPC value last changed.",
+   "workflow_ids": [
+    "1892196753",
+    "1892165928"
+   ]
+  },
+  {
+   "classification": "Needs Verification",
+   "workflow": "Improving Monthly Performance Reviews | Marketing Services (UPDATED)",
+   "action": "Trigger",
+   "finding": "Improving only takes Enterprise, Tier 1 and Tier 2 - L1, while At Risk also takes Tier 2 - L2 and Tier 3. 15 Live, PPC-enrolled companies with Trend to Goal = Improving are in Tier 2 - L2 or Tier 3, so none of the three workflows creates a review for them.",
+   "evidence": "VERIFIED (config): Improving customer_tier IS_ANY_OF Enterprise, TIER 2, TIER 1; At Risk adds Tier 2 - L2, TIER 3. VERIFIED (records): 15 companies, e.g. Crown Outdoor Storage 19578791467 (Tier 3), Raymond Clinton Mini Storage 38958261120 (Tier 2 - L2).",
+   "why": "If these tiers should get an Improving review, they currently get none.",
+   "verify": "Confirm the tiers that should get the Improving review.",
+   "workflow_ids": [
+    "1892196753"
+   ]
+  },
+  {
+   "classification": "Needs Verification",
+   "workflow": "All three workflows",
+   "action": "Subtasks / associations",
+   "finding": "Team rule \"subtasks are not linked to the ticket\" can't be checked yet. Subtasks aren't in the workflow API, and no task has been created in the Marketing Services queue since 2026-10-06. The main task is linked to the company and, by design, to the ticket: the action copies the company's \"Marketing\" ticket association. The task body says the subtasks cover Berat's items (Google Business Profile, SpareFoot, website content). Their owners and links aren't visible in the configuration.",
+   "evidence": "VERIFIED (config): associations = ENROLLED_OBJECT (type 192, task to company) + COPY_ASSOCIATION from company-to-ticket label \"Marketing\" (USER_DEFINED 64) to task-to-ticket (type 230), on all 24 Create task actions. VERIFIED (records): 0 tasks in queue 13519272 since 2026-10-06.",
+   "why": "The team rule is that only main tasks are linked to the ticket.",
+   "verify": "Send a screenshot of one Create task action's subtask settings, or re-run the audit after the 5 November run, when the records will show the subtasks' associations.",
+   "workflow_ids": [
+    "1892197644",
+    "1892196753",
+    "1892165928"
+   ]
+  },
+  {
+   "classification": "Needs Verification",
+   "workflow": "All three workflows",
+   "action": "Create task actions",
+   "finding": "All 24 Create task actions use queue ID 13519272. HubSpot doesn't return queue names through the API, so it isn't confirmed that this ID is the \"Marketing Services\" queue. (It differs from the Ops Tasks queue, 13519269.)",
+   "evidence": "VERIFIED (config): queue_id 13519272 on every Create task action.",
+   "why": "The \"every task uses the Marketing Services queue\" check (F-14) relies on this ID being that queue.",
+   "verify": "Open the Marketing Services queue in HubSpot and confirm its ID is 13519272, then record it in teams.json.",
+   "workflow_ids": [
+    "1892197644",
+    "1892196753",
+    "1892165928"
+   ]
+  },
+  {
+   "classification": "Potential Issue",
+   "workflow": "Standalone Marketing | Monthly Performance Reviews | Marketing Services (UPDATED)",
+   "action": "Workflow description",
+   "finding": "The HubSpot description for Standalone says it is \"for at-risk customers\". It matches At Risk's description word for word. The trigger has no Trend to Goal filter: it enrolls Live, PPC-enrolled companies with Standalone Services = Marketing.",
+   "evidence": "VERIFIED (config): description field of 1892197644 vs its enrollmentCriteria.",
+   "why": "Documentation only. Anyone reading the description will misread who the workflow is for.",
+   "verify": "Confirm the intended audience.",
+   "workflow_ids": [
+    "1892197644"
+   ]
+  }
+ ],
+ "process_notes": [
+  "Purpose / Observed Function in the Workflow Inventory is the workflow's own HubSpot description (not verified against the configuration; see the findings for differences).",
+  "No task has been created in the Marketing Services queue (13519272) since the start date 2026-10-06. Record-based checks (owners, subtasks, ticket links) will have data after the next scheduled run on 5 November.",
+  "Mohammad Abudahab is a Portfolio Manager branch value and task owner in all three workflows; no company in scope currently has him as Portfolio Manager."
+ ],
+ "top": [
+  {
+   "id": "F-05",
+   "text": "Every path ends with a 45-day wait. A company still waiting on the next monthly run (the 5th) can't re-enroll, so reviews would likely come every other month.",
+   "next": "After 5 November, check one October company's workflow history for a second enrollment."
+  },
+  {
+   "id": "F-04",
+   "text": "Companies whose Marketing Portfolio Manager is \"Not Assigned\" or empty get a review task with no owner. 12 At Risk companies would take this path today.",
+   "next": "Confirm who picks unowned tasks up from the Marketing Services queue."
+  },
+  {
+   "id": "F-08",
+   "text": "Climate Smart Self Storage meets both the Standalone and the At Risk filter, so it can get two review tasks in the same cycle.",
+   "next": "Decide whether Standalone companies should ever get the At Risk or Improving review too."
+  },
+  {
+   "id": "F-07",
+   "text": "In Standalone, one Portfolio Manager branch has no default path. A company with an empty or new Portfolio Manager would get no task. None are affected today.",
+   "next": "Confirm whether action 16 should default to the Not Assigned task, like action 15."
+  },
+  {
+   "id": "F-03",
+   "text": "The SpareFoot branch makes no difference: both paths create the same task. A company with SpareFoot empty would get nothing.",
+   "next": "Confirm what SpareFoot was meant to change."
+  },
+  {
+   "id": "F-11",
+   "text": "Improving skips Tier 2 - L2 and Tier 3, but At Risk includes them. 15 Improving companies in those tiers get no review.",
+   "next": "Confirm which tiers should get the Improving review."
+  },
+  {
+   "id": "F-12",
+   "text": "The \"subtasks not linked to the ticket\" rule can't be checked yet. Subtasks aren't in the API, and no tasks have been created in the queue since 6 October.",
+   "next": "Send a screenshot of one task's subtask settings, or re-run after 5 November."
+  }
+ ]
+}
