@@ -127,7 +127,7 @@ $('#nav').addEventListener('click', e => { if (e.target.dataset.t) { $('#q').val
 (function(){
  const types = D.types;
  let h = `<h2>Tasks created, by task type</h2><select id="typeSel" aria-label="Task type">${types.map((t, i) => {
-   const m = Object.keys(t.missing).length, s = Object.keys(t.shouldnt).length;
+   const m = Object.values(t.missing).filter(x => !/Waiting on|went live/.test(x.reason)).length, s = Object.keys(t.shouldnt).length;
    return `<option value="${i}">${esc(t.name)} — ${t.runs.length ? (m || s ? (m + s) + ' problem(s)' : 'all good') : 'no run this week'}</option>`; }).join('')}</select><div id="typeView"></div>`;
  const other = D.problems.filter(p => p.q === 1 && !['missing', 'shouldnt'].includes(p.kind));
  h += `<h2>Other task problems</h2>` + table(['Problem', 'Facility', 'Label'], other.map(p => [esc(p.text), coLink(p.company_id), `<span class="lbl">${esc(p.label)}</span>`]));
@@ -157,8 +157,10 @@ $('#nav').addEventListener('click', e => { if (e.target.dataset.t) { $('#q').val
 
 // ---------------------------------------------------------------- Company links
 (function(){
- const bad = D.links.filter(l => l.status !== 'ok');
+ const bad = D.links.filter(l => l.status !== 'ok' && !l.known), known = D.links.filter(l => l.status !== 'ok' && l.known);
  let h = `<h2>Main tasks and their company</h2><p>${D.links.length} main tasks created in the window; ${bad.length} with a problem.</p>`;
+ const kn = {}; known.forEach(l => { const k = JSON.stringify([l.known, l.workflow, l.status]); kn[k] = (kn[k] || 0) + 1; });
+ Object.entries(kn).forEach(([k, n]) => { const [id, wf, st] = JSON.parse(k); h += `<p class="muted">Known issue ${esc(id)}: ${n} task(s) from ${esc(wf)} — ${esc(st)}. Reported once, not as new problems.</p>`; });
  h += table(['Task', 'Type', 'Workflow', 'Company', 'Problem', 'Label'], bad.map(l => [esc(l.title) + ` <span class="lbl">${esc(l.task)}</span>`, esc(l.type || ''), esc(l.workflow), l.companies.map(c => coLink(c.id)).join('<br>') || '<span class="muted">none</span>', pill(l.status, 'bad'), `<span class="lbl">${esc(l.label)}</span>`]));
  const sb = D.subtasks.filter(s => s.status !== 'ok');
  h += `<h2>Subtasks</h2><p>${D.subtasks.length} subtasks found through their main tasks; ${sb.length} linked to a ticket.</p>`;

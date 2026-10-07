@@ -93,6 +93,13 @@ Report these once per run, in their own section, not as new problems every week.
 5. **Tier 2 - L1 SM gap.**
    - In Update Customer Sentiment (Ent, Tier 1, Tier 2.1) the "Tier 2 - L1 SM" branch ends with no task.
    - So a Tier 2 - L1 facility with an SM but no OM gets no Update Customer Sentiment task.
+6. **Set task queue moves BOG tasks from Ops Tasks to BOG - Run and Sustain.**
+   - The task workflow "Set task queue" (1677143128) puts any new task whose title contains "BOG" into queue 9999918, "BOG - Run and Sustain", replacing Ops Tasks.
+   - Seen on 2026-10-07 for all 52 BOG Oversight tasks. BOG Weekly Walkthrough tasks will very likely be moved the same way.
+   - Should CS Ops BOG tasks stay in Ops Tasks?
+7. **demo Facility (44541671248): test record?**
+   - Live, Full TPM, Tier 2 - L1, with no SM and no OM, so it gets no tasks from the OM/SM branches.
+   - Should it be excluded from the audit?
 
 ## Changes not yet confirmed
 
@@ -109,7 +116,8 @@ Report each once, as a known issue.
 
 - **F-03:** in 13 workflows the OM branch is checked before the SM branch, so tasks go to the OM when both exist. Cherine is deciding the fix.
 - **F-05:** `R+S - Reminders: Respond within 1 day to external emails` (1689020435) creates no tasks. It only branches and waits, then loops back. Flagged by the 2026-10-06 full-map audit.
-- **F-08:** "Create Tasks | Respond to reviews at Storage Reach" didn't come back from the API. It's a User workflow, which may be why.
+- **F-08:** "Create Tasks | Respond to reviews at Storage Reach" didn't come back from the API. It's a User workflow, which may be why. Its tasks are in Ops Tasks but are not linked to any company. The audit reports this as one line, with the week's count, not one problem per task.
+- **BOG-Q:** "Set task queue" (1677143128) moves BOG tasks from Ops Tasks to queue 9999918 "BOG - Run and Sustain" (queue name VERIFIED (screenshot), 2026-10-07; the move VERIFIED (records) and (config)). Waiting on Cherine (item 6). The audit reports it as one line with the week's count, not one problem per task.
 - **5 workflows are switched off.** That's expected unless WLS says otherwise:
   - 1774165521 OM | RISK within the first 90 days
   - 1697631666 Create Tasks | Storage Reach
@@ -190,16 +198,23 @@ The scripts read this block. Keep it in step with the text above.
     {"id": "W-2", "title": "Weekly KPI workflow making Weekly Call tasks", "detail": "Its Tier 2 - L1, Tier 2 - L2 and Tier 3 branches create the same Weekly Call task as the Weekly calls workflow. Duplicates found are listed here, not as a broken rule.", "duplicate_task_type": "Weekly Call: First 90 days"},
     {"id": "W-3", "title": "First-90-days tasks before a facility is live", "detail": "The first-90-days workflows check the go-live date, not Status = Live. Tasks for facilities that aren't live are flagged as a Potential Issue under rule 1.", "task_types": ["Weekly Call: First 90 days", "Weekly KPI Review: First 90 days"]},
     {"id": "W-4", "title": "R+S - Reminders: should it create a task?", "detail": "R+S - Reminders: Respond within 1 day to external emails (1689020435) only branches and waits; it creates nothing (known issue F-05)."},
-    {"id": "W-5", "title": "Tier 2 - L1 SM gap", "detail": "In Update Customer Sentiment (Ent, Tier 1, Tier 2.1) the Tier 2 - L1 SM branch ends with no task, so a Tier 2 - L1 facility with an SM but no OM gets no Update Customer Sentiment task."}
+    {"id": "W-5", "title": "Tier 2 - L1 SM gap", "detail": "In Update Customer Sentiment (Ent, Tier 1, Tier 2.1) the Tier 2 - L1 SM branch ends with no task, so a Tier 2 - L1 facility with an SM but no OM gets no Update Customer Sentiment task."},
+    {"id": "W-6", "title": "Set task queue moves BOG tasks from Ops Tasks to BOG - Run and Sustain", "detail": "The task workflow Set task queue (1677143128) puts any new task whose title contains BOG into queue 9999918 BOG - Run and Sustain, replacing Ops Tasks. Should CS Ops BOG tasks stay in Ops Tasks?", "queue_move": "9999918"},
+    {"id": "W-7", "title": "demo Facility (44541671248): test record?", "detail": "Live, Full TPM, Tier 2 - L1, with no SM and no OM. Should it be excluded from the audit? Until then, anything the audit finds for it is listed here, not as a problem.", "company_ids": ["44541671248"]}
   ],
   "changes_not_confirmed": [
     {"workflow": "1838568062", "what": "switched off", "first_seen": "2026-10-07", "status": "checking with Cherine"},
     {"workflow": "1838565644", "what": "revision 39 -> 41, no change in the compared settings", "first_seen": "2026-10-07", "status": "checking with Cherine"}
   ],
+  "queue_names": {"9999918": {"name": "BOG - Run and Sustain", "label": "VERIFIED (screenshot)", "confirmed": "2026-10-07"}},
+  "known_queue_moves": [
+    {"queue": "9999918", "workflow": "1677143128", "known_issue": "BOG-Q", "waiting_on": "W-6"}
+  ],
   "known_issues": [
     {"id": "F-03", "text": "In 13 workflows the OM branch is checked before the SM branch, so tasks go to the OM when both exist. Cherine is deciding the fix."},
     {"id": "F-05", "text": "R+S - Reminders: Respond within 1 day to external emails (1689020435) creates no tasks: it only branches and waits, then loops back."},
-    {"id": "F-08", "text": "\"Create Tasks | Respond to reviews at Storage Reach\" didn't come back from the API. It's a User workflow, which may be why."},
+    {"id": "F-08", "text": "\"Create Tasks | Respond to reviews at Storage Reach\" didn't come back from the API. It's a User workflow, which may be why. Its tasks are in Ops Tasks but are not linked to any company.", "no_company_tasks": true},
+    {"id": "BOG-Q", "text": "Set task queue moves BOG tasks from Ops Tasks to BOG - Run and Sustain, waiting on Cherine.", "label": "VERIFIED (screenshot) for the queue name; VERIFIED (records) and (config) for the move"},
     {"id": "OFF-5", "text": "5 workflows are switched off. That's expected unless WLS says otherwise."}
   ]
 }

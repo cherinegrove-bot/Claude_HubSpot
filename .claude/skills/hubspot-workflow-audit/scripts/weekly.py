@@ -100,6 +100,9 @@ def moved_by(r):
     who = f'workflow "{m[0]["name"]}" ({m[0]["id"]}, {"ON" if m[0]["enabled"] else "off"}) sets queue {last["value"]} in action {m[0]["actionId"]}' if len(m) == 1 else \
           (f'{len(m)} task workflows set queue {last["value"]}' if m else 'no task workflow found that sets this queue')
     secs = (P(last['timestamp']) - P(first['timestamp'])).total_seconds()
+    qn = (TEAM.get('queue_names') or {}).get(last.get('value'))
+    if qn:
+        who += f' Queue {last["value"]} is "{qn["name"]}" ({qn.get("label", "VERIFIED (screenshot)")}).'
     return {'text': f'It was created in {TEAM.get("queue_name")}, then moved to queue {last["value"]} by automation ({last.get("sourceType")}) {secs:.0f} s later; {who}.',
             'workflow': m[0]['id'] if len(m) == 1 else None, 'workflow_name': m[0]['name'] if len(m) == 1 else None, 'queue': last['value']}
 
@@ -390,9 +393,11 @@ for r in MAIN:
         note = ' (from known issue ' + next((n.get('known_issue', '') for n in TEAM.get('not_readable', []) if n['name'] == r['source']), '') + ')' if isinstance(r['flow'], str) and r['flow'].startswith('not_readable') else ''
         problem(2, 'link', f'Task "{r["title"]}" ({r["id"]}): {st}{note}.', label, 'Confirmed' if label.startswith('VERIFIED') else 'Potential Issue', r['type'],
                 (r['companies'] or [None])[0], r['id'], r['flow'] if r['flow'] in M else None, st, group=f'link:{st}:{r["source"]}',
-                source=(wfname(r['flow']) if r['flow'] in M else r['source']) + note)
+                source=(wfname(r['flow']) if r['flow'] in M else r['source']) + note,
+                extra={'nr_issue': r['flow'].split(':', 1)[1]} if isinstance(r['flow'], str) and r['flow'].startswith('not_readable:') else None)
+    r['known'] = r['flow'].split(':', 1)[1] if isinstance(r['flow'], str) and r['flow'].startswith('not_readable:') and st != 'ok' else None
     LINK_ROWS.append({'task': r['id'], 'title': r['title'], 'type': r['type'], 'workflow': wfname(r['flow']) if r['flow'] in M else r['source'],
-                      'companies': [{'id': c, 'name': cname(c)} for c in r['companies']], 'status': st, 'label': label})
+                      'companies': [{'id': c, 'name': cname(c)} for c in r['companies']], 'status': st, 'label': label, 'known': r.get('known')})
 SUB_ROWS = []
 for r in SUBS:
     bad = links.get('subtask_ticket_forbidden') and r['tickets']
@@ -433,6 +438,38 @@ for wid, e in sorted(M.items(), key=lambda x: wfname(x[0]).lower()):
                 extra={'pending': bool(pend)})
     if rule2:
         problem(3, 'rule2', f'{wfname(wid)} {rule2}.', 'VERIFIED (config)', 'Confirmed', workflow=wid, group=f'rule2:{wid}')
+
+# ------------------------------------------------------------------ known issues and open decisions: one line each, not one problem per task
+FOLDED = collections.defaultdict(list)
+known_moves = {m['queue']: m for m in TEAM.get('known_queue_moves', [])}
+wait_cos = {cid: wid for wid, w in WAIT.items() for cid in w.get('company_ids', [])}
+keep = []
+for p in PROBLEMS:
+    mv = (p.get('moved_by') or {}).get('queue')
+    if p['kind'] == 'not_in_queue' and mv in known_moves:
+        FOLDED[('known', known_moves[mv]['known_issue'])].append(p)
+        if known_moves[mv].get('waiting_on'):
+            FOLDED[('wait', known_moves[mv]['waiting_on'])].append(p)
+    elif p['kind'] == 'link' and p.get('nr_issue'):
+        FOLDED[('known', p['nr_issue'])].append(p)
+    elif p.get('company_id') in wait_cos:
+        FOLDED[('wait', wait_cos[p['company_id']])].append(p)
+    else:
+        keep.append(p)
+PROBLEMS[:] = keep
+for tr in TYPE_RESULTS:                       # same facilities in the task-type view: mark them as waiting, not as new problems
+    for cid, m in tr['missing'].items():
+        if cid in wait_cos:
+            m['reason'] += f' (Waiting on {OWNER}: {wait_cos[cid]})'
+            m['waiting_on'] = wait_cos[cid]
+
+
+def folded_text(ps):
+    by = collections.Counter(re.sub(r' \(from known issue [^)]*\)', '', p.get('source') or wfname(p.get('workflow'))) for p in ps)
+    kinds = {p['kind'] for p in ps}
+    what = 'moved out of the ' + TEAM.get('queue_name', 'team') + ' queue' if kinds == {'not_in_queue'} else 'not linked to any company' if kinds == {'link'} else 'affected'
+    return f'{len(ps)} task(s) {what} (' + '; '.join(f'{k}: {v}' for k, v in by.most_common()) + ').'
+
 
 # ------------------------------------------------------------------ summary
 q_counts = {q: len([p for p in PROBLEMS if p['q'] == q]) for q in (1, 2, 3)}
@@ -487,7 +524,15 @@ for wid_, w in WAIT.items():
     elif w.get('task_types'):
         item['found'] = W3
     else:
-        item['found'] = [{'type': tr['name'], 'company_id': cid, 'company': cname(cid)} for tr in TYPE_RESULTS for cid, m in tr['missing'].items() if m.get('waiting_on') == wid_]
+        item['found'] = [{'type': tr['name'], 'company_id': cid, 'company': cname(cid), 'reason': m['reason']} for tr in TYPE_RESULTS for cid, m in tr['missing'].items()
+                         if m.get('waiting_on') == wid_ and cid not in wait_cos]
+    fp = FOLDED.get(('wait', wid_), [])
+    if w.get('queue_move') and fp:
+        qn = ((TEAM.get('queue_names') or {}).get(w['queue_move']) or {}).get('name')
+        item['found'] = item.get('found', []) + [{'type': src, 'reason': f'{n} task(s) from {src} moved to queue {w["queue_move"]}' + (f' "{qn}"' if qn else '')} for src, n in
+                                                 collections.Counter(p.get('source') for p in fp).most_common()]
+    elif fp:
+        item['found'] = item.get('found', []) + [{'type': p.get('type'), 'company_id': p.get('company_id'), 'company': p.get('company'), 'reason': p['text']} for p in fp]
     waiting.append(item)
 known = list(TEAM.get('known_issues', []))
 if KNOWN_NR:
@@ -495,8 +540,14 @@ if KNOWN_NR:
         for n in TEAM.get('not_readable', []):
             if n.get('known_issue') == k['id'] and n['name'] in KNOWN_NR:
                 k = dict(k)
-                k['this_week'] = f'{KNOWN_NR[n["name"]]} task(s) from it were created this week.'
+                k['this_week'] = f'{KNOWN_NR[n["name"]]} task(s) from it were created.'
                 known[known.index(next(x for x in known if x['id'] == n['known_issue']))] = k
+for i, k in enumerate(known):
+    fp = FOLDED.get(('known', k['id']))
+    if fp:
+        k = dict(k)
+        k['this_week'] = ((k.get('this_week') or '') + ' ' + folded_text(fp)).strip()
+        known[i] = k
 off_state = [{'id': w, 'name': wfname(w), 'live': 'ON' if (LIVE.get(w) or {}).get('isEnabled') else 'OFF'} for w in EXPECTED_OFF]
 
 RESULT = {
@@ -523,7 +574,10 @@ if TOP:
     print('\n**Top problems**')
     for i, t in enumerate(TOP, 1):
         print(f'{i}. {t["text"]} [{t["label"]}]')
+print('\n**Known issues** (reported once)')
+for k in known:
+    print(f'- {k["id"]}: {k["text"]}' + (f' This week: {k["this_week"]}' if k.get('this_week') else ''))
 print(f'\n**Waiting on {OWNER}**')
 for w in waiting:
-    print(f'- {w["title"]}' + (f' — {len(w["found"])} this week' if w.get('found') else ''))
+    print(f'- {w["id"]} {w["title"]}' + (f' — this week: ' + '; '.join(f.get('reason') or f.get('company') or '' for f in w['found'][:3]) if w.get('found') else ''))
 print(f'\nresults: {os.path.join(A.work, "results.json")}')
