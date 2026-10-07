@@ -1,186 +1,500 @@
 #!/usr/bin/env python3
-"""Weekly check: for one team, answer two questions per workflow and print a short problem list.
+"""Weekly audit for one team: answers the three questions from data fetch.py --weekly saved.
 
-  1. Did the right companies go in?  Companies that meet the team's company scope AND the workflow's own
-     enrollment filter, but have no task from that workflow at any date.
-  2. Did the tasks come out right?   For tasks in the team queue created on/after the start date: every
-     unconditional task present, in the queue, assigned to the right person, plus the team rules.
+  1. Were the tasks created?          per task type: should have / did get / missing (with reason) / shouldn't have,
+                                       plus new facilities (became live this week)
+  2. Are they linked to the right company?   main task -> company; subtask -> no ticket (per team settings)
+  3. Did anyone change the workflows?        live settings vs the team's master rules file
 
-Usage: python3 weekly.py --work DIR --team "CS Ops" [--json out.json]
-Report only - this script never changes anything and never recommends changes.
+Usage:
+  python3 weekly.py --team cs-ops --work DIR            # writes DIR/results.json and prints the chat summary
+
+Who "should have" a task is worked out from the MASTER RULES FILE settings (not the live workflows) and the team
+rules in team-rules.md, using each company's property values at the time of the scheduled run (from property
+history). Everything the team decides lives in team-rules.md; nothing team-specific is in this script.
 """
-import argparse, collections, json, os, sys
+import argparse, collections, datetime as dt, json, os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import rules
+import rules, describe, master
 
 ap = argparse.ArgumentParser()
-ap.add_argument('--work', required=True)
 ap.add_argument('--team', required=True)
-ap.add_argument('--json')
+ap.add_argument('--work', required=True)
 A = ap.parse_args()
 W = lambda n, d=None: json.load(open(os.path.join(A.work, n))) if os.path.exists(os.path.join(A.work, n)) else d
-
 if not os.path.exists(os.path.join(A.work, 'COMPLETE')):
-    sys.exit(f'STOP: {A.work} is incomplete (fetch.py did not finish). Re-run fetch.py - no results were produced.')
-TEAM_NAME, TEAM = rules.load_team(A.team)
+    sys.exit(f'STOP: {A.work} is incomplete (fetch.py --weekly did not finish). Re-run the fetch - no report was produced.')
 SCOPE = W('scope.json', {})
-CFG = W('configs.json', {})
-TASKS = W('tasks.json', [])
-HIST = W('history_tasks.json', [])
-TASSOC = W('task_assoc.json', {})
-COMPANIES = {c['id']: c for c in W('companies.json', [])}
-LISTS = W('lists.json', {})
-OWN = {str(o['id']): ((o.get('firstName', '') + ' ' + o.get('lastName', '')).strip() or o.get('email')) for o in W('owners.json', [])}
-TICKETS = {t['id']: t for t in W('tickets.json', [])}
-R = (TEAM or {}).get('rules', {}) or {}
-QIDS = set(SCOPE.get('queue_ids') or [])
-SINCE = SCOPE.get('since')
-problems, notes = [], []
-
-
-def add(cid, wf, problem, label):
-    c = COMPANIES.get(cid, {}).get('properties', {})
-    problems.append({'company_id': cid or '-', 'company': c.get('name', '-') if cid else '-', 'workflow': wf, 'problem': problem, 'label': label})
-
-
-def companies_of(t):
-    return [x['id'] for x in TASSOC.get(t['id'], {}).get('companies', [])]
-
-
-def tickets_of(t):
-    return [x['id'] for x in TASSOC.get(t['id'], {}).get('tickets', [])]
-
-
+if SCOPE.get('mode') != 'weekly':
+    sys.exit(f'STOP: {A.work} was not made by fetch.py --weekly.')
+TEAM_NAME, TEAM = rules.load_team(A.team)
 if not TEAM:
-    notes.append(f'Team "{A.team}" is not in teams.json - only generic checks were run.')
-if not QIDS:
-    notes.append('NEEDS VERIFICATION: no queue ID is known for this team (teams.json queue_ids is empty and no in-scope Create task action sets a queue). '
-                 'Tasks were matched by workflow name, and the "in the queue" check was skipped.')
-ALIASES = W('aliases.json', {})
-if ALIASES:
-    notes.append('Old workflow names were counted as the same workflow (renames detected from task titles - INFERENCE; confirm): ' +
-                 '; '.join(f'{CFG[w]["name"]} <- {", ".join(n)}' for w, n in ALIASES.items() if w in CFG))
-if not SINCE:
-    notes.append('NEEDS VERIFICATION: no start date - every task date is in scope.')
+    sys.exit(f'STOP: no team-rules.md for "{A.team}".')
+describe.init(A.work)
+M, _ = master.read_master(os.path.join(TEAM['_dir'], TEAM['master_rules_file']))
+LIVE = W('configs.json', {})
+DENIED = W('denied.json', [])
+TASKS = W('tasks.json', [])
+TASSOC = W('task_assoc.json', {})
+COMP = {c['id']: c for c in W('companies.json', [])}
+LISTS = W('lists.json', {})
+LIST_NAMES = W('list_names.json', {})
+ACCT = W('account.json', {})
+from zoneinfo import ZoneInfo
+TZ = ZoneInfo(ACCT.get('timeZone') or 'UTC')
+P = rules.parse_date
+FIRST, LAST = [dt.date.fromisoformat(x) for x in SCOPE['window']]
+T0, T1 = [P(x) for x in SCOPE['window_utc']]
+NOW = P(SCOPE['fetched_at'])
+QIDS = set(SCOPE.get('queue_ids') or [])
+OWNER = TEAM.get('decision_owner', 'the team lead')
+TYPES = TEAM.get('task_types', [])
+TYPE_NAMES = [t['name'] for t in TYPES]
+EXPECTED_OFF = set(TEAM.get('expected_off', []))
+WAIT = {w['id']: w for w in TEAM.get('waiting_on', [])}
+GOLIVE = TEAM.get('went_live') or {}
+local = lambda x: x.astimezone(TZ)
+fmt_dt = lambda x: local(x).strftime('%Y-%m-%d %H:%M')
+cname = lambda cid: (COMP.get(cid, {}).get('properties', {}).get('name') or f'company {cid}')
+wfname = lambda w: (M.get(w, {}).get('row', {}).get('Workflow Name') or LIVE.get(w, {}).get('name') or str(w))
+PROBLEMS = []
 
-hist_by_flow = collections.defaultdict(list)
-for t in HIST:
-    hist_by_flow[t['_flow']].append(t)
-scope_tasks = [t for t in TASKS if not SINCE or t['properties']['hs_createdate'][:10] >= SINCE]
-in_scope_companies = {cid for cid, c in COMPANIES.items() if rules.in_scope(c['properties'], TEAM) is not False}
-checked = set()
 
-for wid, c in CFG.items():
-    name = c['name']
-    e = c.get('enrollmentCriteria', {})
-    # ---------- Q1: did the right companies go in?
-    if c.get('objectTypeId') == '0-2' and c.get('isEnabled'):
-        enrolled = {cid for t in hist_by_flow[wid] for cid in companies_of(t)}
-        _, delay_first = rules.linear_task_actions(c)
-        unknown = 0
-        if e.get('type') == 'LIST_BASED':
-            for cid in sorted(in_scope_companies):
-                checked.add(cid)
-                props = COMPANIES[cid]['properties']
-                ok = rules.eval_branch(e.get('listFilterBranch'), props, LISTS)
-                if ok is None:
-                    unknown += 1
-                    continue
-                if not ok or cid in enrolled:
-                    continue
-                expect, delayed = rules.expected_task(c, props, LISTS)
-                if expect is None:
-                    unknown += 1
-                elif expect:
-                    add(cid, name, 'Meets the team scope and this workflow\'s enrollment filter, and its branch path ends in a task, but it has no task from this workflow (any date, old workflow names included).' +
-                        (' A delay sits before the task, so it may still be waiting.' if delayed else ''),
-                        'INFERENCE' if delayed else 'VERIFIED (config + records)')
-            if unknown:
-                notes.append(f'NEEDS VERIFICATION: {name} - {unknown} companies could not be checked because the filter uses dates, associations or lists that could not be read.')
-        else:
-            notes.append(f'NEEDS VERIFICATION: {name} - trigger type {e.get("type")} cannot be checked against company data (only filter-based triggers can).')
-    # ---------- Q2: did the tasks come out right?
-    mine = [t for t in scope_tasks if t.get('_flow') == wid]
-    if not mine:
-        continue
-    lin, _ = rules.linear_task_actions(c)
-    titles_cfg = {rules.norm(x['fields'].get('subject')) for x in c.get('actions', []) if (x.get('actionTypeId') == '0-3')}
-    actions_by_title = {rules.norm(x['fields'].get('subject')): x for x in c.get('actions', []) if x.get('actionTypeId') == '0-3'}
-    enr = collections.defaultdict(list)
-    for t in mine:
-        m = (t['properties'].get('hs_object_source_id') or '').split(';')[0]
-        enr[m].append(t)
-    for k, ts in enr.items():
-        cids = sorted({cid for t in ts for cid in companies_of(t)})
-        cid = cids[0] if cids else None
-        checked.update(cids)
-        parents = [t for t in ts if t['properties'].get('hs_task_is_sub_task') != 'true']
-        got = {rules.norm(t['properties']['hs_task_subject']) for t in parents}
-        for a in lin:
-            if rules.norm(a['fields'].get('subject')) not in got:
-                add(cid, name, f'Task "{a["fields"].get("subject", "").strip()}" is missing (it runs for every enrolled record).', 'VERIFIED (config + records)')
-        for t in ts:
-            p = t['properties']
-            title = (p.get('hs_task_subject') or '').strip()
-            sub = p.get('hs_task_is_sub_task') == 'true'
-            if QIDS and not sub and not (set((p.get('hs_queue_membership_ids') or '').split(';')) & QIDS):
-                add(cid, name, f'Task "{title}" is not in the team queue.', 'VERIFIED (records)')
-            if sub and R.get('subtasks_not_on_ticket') and tickets_of(t):
-                add(cid, name, f'Subtask "{title}" is associated with ticket {tickets_of(t)[0]} (subtasks must not be).', 'VERIFIED (records)')
-            if sub:
-                continue
-            a = actions_by_title.get(rules.norm(title))
-            if not a:
-                if R.get('flag_tasks_from_off_or_removed_actions'):
-                    add(cid, name, f'Task "{title}" does not match any Create task action in the current workflow (removed or turned-off action?).', 'VERIFIED (config + records)')
-                continue
-            kind, val = rules.owner_spec(a['fields'])
-            owner = p.get('hubspot_owner_id')
-            if kind == 'static' and owner != val:
-                add(cid, name, f'Task "{title}" is owned by {OWN.get(owner, owner or "nobody")}; the action assigns {OWN.get(val, val)}.', 'VERIFIED (config + records)')
-            if kind == 'property':
-                rec = COMPANIES.get(cid, {}).get('properties', {}) if c.get('objectTypeId') == '0-2' else TICKETS.get((tickets_of(t) or [None])[0], {}).get('properties', {})
-                want = rec.get(val)
-                if want and owner != want:
-                    add(cid, name, f'Task "{title}" is owned by {OWN.get(owner, owner or "nobody")}; the record\'s {val} is now {OWN.get(want, want)} (it may have changed after the task was created).', 'INFERENCE')
-                if R.get('owner_property') and val != R['owner_property']:
-                    add(cid, name, f'Task "{title}" is assigned from {val}; the team rule says {R["owner_property"]}.', 'VERIFIED (config)')
-            if R.get('owner_property') and kind == 'static':
-                add(cid, name, f'Task "{title}" goes to a fixed user; the team rule says {R["owner_property"]}.', 'VERIFIED (config)')
-    # ---------- team rule: exclusion only where allowed
-    if R.get('exclusion_only_in'):
-        excl = [l for l in rules.list_filters(c) if l[1] == 'NOT_IN_LIST']
-        allowed = R['exclusion_only_in'].lower() in name.lower()
-        if excl and not allowed:
-            add(None, name, f'Has a list exclusion (list {", ".join(x[0] for x in excl)}); the team rule says only "{R["exclusion_only_in"]}" workflows should.', 'VERIFIED (config)')
-        if allowed and not excl:
-            add(None, name, f'No list exclusion found; the team rule says "{R["exclusion_only_in"]}" workflows should have one.', 'VERIFIED (config)')
+def problem(q, kind, text, label, cls='Confirmed', type_=None, cid=None, task=None, workflow=None, reason=None, group=None, source=None):
+    PROBLEMS.append({'q': q, 'kind': kind, 'text': text, 'label': label, 'class': cls, 'type': type_, 'company_id': cid,
+                     'company': cname(cid) if cid else None, 'task_id': task, 'workflow': workflow, 'reason': reason, 'group': group or kind,
+                     'source': source or (wfname(workflow) if workflow else None)})
 
-# tasks in the queue from workflows outside scope / switched off
-if R.get('flag_tasks_from_off_or_removed_actions') and QIDS:
-    for t in scope_tasks:
-        p = t['properties']
-        if p.get('hs_task_is_sub_task') == 'true':
+
+# ------------------------------------------------------------------ tasks in the window
+def task_row(t):
+    p = t['properties']
+    comps = [x['id'] for x in TASSOC.get(t['id'], {}).get('companies', [])]
+    tix = [x['id'] for x in TASSOC.get(t['id'], {}).get('tickets', [])]
+    flow = t.get('_flow')
+    return {'id': t['id'], 'title': (p.get('hs_task_subject') or '').strip(), 'flow': flow, 'source': p.get('hs_object_source_detail_1') or p.get('hs_object_source'),
+            'created': P(p['hs_createdate']), 'due': P(p.get('hs_timestamp')), 'sub': p.get('hs_task_is_sub_task') == 'true',
+            'parent': p.get('hs_task_parent_task_id'), 'companies': comps, 'tickets': tix,
+            'queues': [q for q in (p.get('hs_queue_membership_ids') or '').split(';') if q],
+            'in_queue': bool(set((p.get('hs_queue_membership_ids') or '').split(';')) & QIDS),
+            'type': rules.task_type_of(TEAM, flow, p.get('hs_task_subject')) if flow in M else None, 'problems': []}
+
+
+ROWS = [task_row(t) for t in TASKS if T0 <= P(t['properties']['hs_createdate']) < T1]
+MAIN = [r for r in ROWS if not r['sub']]
+SUBS = [r for r in ROWS if r['sub']]
+
+
+# ------------------------------------------------------------------ who should get what
+def scope_reason(props):
+    """Why a company is outside the team scope, in words built from the team's scope filters."""
+    out = []
+    for f in (TEAM.get('company_scope') or {}).get('filters', []):
+        ok = rules.eval_filter({'filterType': 'PROPERTY', 'property': f['property'], 'operation': {'operator': f['operator'], 'values': f.get('values')}}, props)
+        if ok is False:
+            lbl = describe.plabel(f['property'])
+            out.append(f'{lbl} is {describe.pval(f["property"], props.get(f["property"])) or "empty"}')
+    return '; '.join(out) or 'outside the team scope'
+
+
+def branch_reason(path):
+    for b in TEAM.get('branch_reasons', []):
+        if re.search(b['branch'], path or ''):
+            return b
+    return None
+
+
+def evaluate(cid, wid, when, type_name):
+    """Would this company get this task type from this workflow at `when`, by the master settings?
+    Returns dict(state, reason, label, path). state: expected | missing_reason | not_expected | out_of_scope | unknown."""
+    c = COMP.get(cid)
+    cfg = M.get(wid, {}).get('cfg')
+    if not c or not cfg:
+        return {'state': 'unknown', 'reason': 'no data', 'label': 'NEEDS VERIFICATION'}
+    props = rules.props_at(c, when)
+    sc = rules.in_scope(props, TEAM)
+    if sc is False:
+        return {'state': 'out_of_scope', 'reason': scope_reason(props), 'label': 'VERIFIED (records)'}
+    trig = cfg.get('enrollmentCriteria', {}).get('listFilterBranch')
+    if trig:
+        ok = rules.eval_branch(trig, props, LISTS)
+        if ok is None:
+            return {'state': 'unknown', 'reason': "the workflow's trigger could not be checked from the data", 'label': 'NEEDS VERIFICATION'}
+        if not ok:
+            return {'state': 'not_expected', 'reason': "doesn't meet the workflow trigger", 'label': 'VERIFIED (config)'}
+    elif cfg.get('enrollmentCriteria', {}).get('type') != 'LIST_BASED':
+        return {'state': 'unknown', 'reason': 'event or manual trigger', 'label': 'NEEDS VERIFICATION'}
+    sup = rules.suppression(cfg)
+    if sup:
+        s = rules.eval_branch(sup, props, LISTS)
+        if s:
+            lst = ', '.join(f'list {l} "{LIST_NAMES.get(l, "")}"' for l in rules.referenced_lists({'s': sup}))
+            return {'state': 'not_expected', 'reason': f'excluded by rule: on {lst or "the suppression"}', 'label': 'VERIFIED (config)', 'excluded': True}
+    outcome, action, path = rules.task_path(cfg, props, LISTS)
+    if outcome is None:
+        return {'state': 'unknown', 'reason': f'branch could not be checked ({path})', 'label': 'NEEDS VERIFICATION'}
+    if outcome == 'task':
+        t = rules.task_type_of(TEAM, wid, action.get('fields', {}).get('subject'))
+        if t == type_name:
+            return {'state': 'expected', 'path': path, 'label': 'INFERENCE'}
+        return {'state': 'not_expected', 'reason': f'gets "{t or action.get("fields", {}).get("subject")}" instead ({path})', 'label': 'VERIFIED (config)'}
+    b = branch_reason(path)
+    if b and b.get('kind') == 'missing':
+        return {'state': 'missing_reason', 'reason': b['reason'], 'label': b.get('label', 'VERIFIED (config)'), 'path': path, 'waiting_on': b.get('waiting_on')}
+    if b:
+        return {'state': 'not_expected', 'reason': b['reason'], 'label': b.get('label', 'VERIFIED (config)'), 'path': path, 'excluded': True}
+    where = 'no branch matched at the first check' if path in ('', 'None met') else f'branch {path} has no task'
+    return {'state': 'not_expected', 'reason': f'by the workflow settings: {where}', 'label': 'VERIFIED (config)', 'path': path}
+
+
+def trigger_props(cfg):
+    return set(rules.referenced_props(cfg))
+
+
+def changed_in_window(c, props):
+    for k in props:
+        for h in (c.get('propertiesWithHistory') or {}).get(k, []) or []:
+            ts = P(h.get('timestamp'))
+            if ts and T0 <= ts < T1:
+                return ts
+    return None
+
+
+def went_live(c):
+    """(moment Status changed to the live value inside the window, or None)."""
+    sp, lv = GOLIVE.get('status_property', 'live'), GOLIVE.get('live_value', 'Yes')
+    hist = sorted((c.get('propertiesWithHistory') or {}).get(sp, []) or [], key=lambda h: h['timestamp'])
+    prev = None
+    for h in hist:
+        ts = P(h['timestamp'])
+        if h.get('value') == lv and prev != lv and T0 <= ts < T1:
+            return ts
+        prev = h.get('value')
+    return None
+
+
+# ------------------------------------------------------------------ Question 1
+TYPE_RESULTS = []
+TASKS_BY_TYPE_CO = collections.defaultdict(list)
+for r in MAIN:
+    if r['type']:
+        for cid in r['companies'] or [None]:
+            TASKS_BY_TYPE_CO[(r['type'], cid)].append(r)
+LIVE_NOW = {cid for cid, c in COMP.items() if rules.in_scope(c.get('properties', {}), TEAM)}
+
+for tt in TYPES:
+    name = tt['name']
+    runs, notes = [], []
+    should, missing, shouldnt, not_exp = {}, {}, {}, collections.Counter()
+    for wid in tt['workflows']:
+        mc = M.get(wid, {}).get('cfg')
+        if not mc:
+            notes.append(f'{wfname(wid)} is not in the master rules file.')
             continue
-        if t.get('_flow') is None or not CFG.get(t['_flow'], {}).get('isEnabled', True):
-            cids = companies_of(t)
-            add(cids[0] if cids else None, p.get('hs_object_source_detail_1') or p.get('hs_object_source') or '-',
-                f'Task "{(p.get("hs_task_subject") or "").strip()}" is in the queue but comes from a workflow that is switched off or not part of this team\'s workflows.', 'VERIFIED (records)')
+        live = LIVE.get(wid)
+        sched = rules.schedule_runs(mc, FIRST, LAST, TZ, NOW)
+        off_now = live is not None and not live.get('isEnabled') and mc.get('isEnabled')
+        if not mc.get('isEnabled'):
+            continue
+        if sched is None:          # no schedule: enrolls when a company newly meets the trigger
+            tp = trigger_props(mc)
+            for cid, c in COMP.items():
+                ts = changed_in_window(c, tp)
+                if not ts:
+                    continue
+                e = evaluate(cid, wid, NOW, name)
+                if e['state'] in ('expected', 'missing_reason'):
+                    should.setdefault(cid, {'wf': wid, 'run': ts, 'eval': e})
+            runs.append({'workflow': wid, 'name': wfname(wid), 'when': 'when a company newly meets the trigger', 'off': off_now})
+            continue
+        for run in sched:
+            runs.append({'workflow': wid, 'name': wfname(wid), 'when': fmt_dt(run), 'at': run.isoformat(), 'off': off_now})
+            for cid in COMP:
+                e = evaluate(cid, wid, run, name)
+                if e['state'] in ('expected', 'missing_reason'):
+                    should.setdefault(cid, {'wf': wid, 'run': run, 'eval': e, 'off': off_now})
+                elif e['state'] == 'not_expected' and cid in LIVE_NOW:
+                    not_exp[e['reason']] += 1
+    got = {cid for (n, cid) in TASKS_BY_TYPE_CO if n == name and cid}
+    for cid, s in should.items():
+        if cid in got:
+            continue
+        e = s['eval']
+        if e['state'] == 'missing_reason':
+            missing[cid] = {'reason': e['reason'], 'label': e['label'], 'waiting_on': e.get('waiting_on'), 'workflow': s['wf'], 'run': fmt_dt(s['run'])}
+        elif s.get('off'):
+            missing[cid] = {'reason': 'workflow off', 'label': 'VERIFIED (config)', 'workflow': s['wf'], 'run': fmt_dt(s['run'])}
+        else:
+            missing[cid] = {'reason': 'unknown', 'label': 'INFERENCE', 'workflow': s['wf'], 'run': fmt_dt(s['run'])}
+    # companies that qualify now but did not at the run (became live / full management after it)
+    if any(x.get('at') for x in runs):
+        for cid in LIVE_NOW - set(should) - got:
+            wid = next((w for w in tt['workflows'] if M.get(w, {}).get('cfg', {}).get('isEnabled')), None)
+            if not wid:
+                continue
+            e = evaluate(cid, wid, NOW, name)
+            if e['state'] in ('expected', 'missing_reason'):
+                gl = went_live(COMP[cid])
+                first_run = next((P(x['at']) for x in runs if x.get('at')), NOW)
+                missing[cid] = {'reason': 'went live this week' if gl else f'outside the team scope at the run ({scope_reason(rules.props_at(COMP[cid], first_run))})', 'label': 'VERIFIED (records)',
+                                'workflow': wid, 'run': 'after the run' + (f' (live since {fmt_dt(gl)})' if gl else '')}
+    for cid in got:
+        for r in TASKS_BY_TYPE_CO[(name, cid)]:
+            if cid in should:
+                continue
+            e = evaluate(cid, r['flow'], r['created'], name)
+            if e['state'] in ('expected', 'missing_reason'):
+                continue
+            shouldnt[cid] = {'reason': e.get('reason'), 'label': e.get('label'), 'task': r['id'], 'workflow': r['flow'], 'created': fmt_dt(r['created'])}
+    # problems
+    for cid, m in missing.items():
+        if m['reason'] == 'went live this week':
+            continue                                                # shown under New facilities
+        problem(1, 'missing', f'{cname(cid)} did not get "{name}" ({m["reason"]}).', m['label'], 'Potential Issue' if m['reason'] == 'unknown' else 'Confirmed',
+                name, cid, None, m['workflow'], m['reason'], group=f'missing:{name}:{m["reason"]}')
+    for cid, s in shouldnt.items():
+        problem(1, 'shouldnt', f'{cname(cid)} got "{name}" but should not have ({s["reason"]}).', s['label'], 'Potential Issue', name, cid, s['task'], s['workflow'], s['reason'],
+                group=f'shouldnt:{name}:{s["reason"]}')
+    TYPE_RESULTS.append({'name': name, 'workflows': [{'id': w, 'name': wfname(w), 'on_master': M.get(w, {}).get('cfg', {}).get('isEnabled'),
+                                                       'on_live': (LIVE.get(w) or {}).get('isEnabled')} for w in tt['workflows']],
+                         'runs': runs, 'notes': notes,
+                         'should': sorted(should, key=cname), 'got': sorted(got, key=cname),
+                         'missing': {cid: missing[cid] for cid in sorted(missing, key=cname)},
+                         'shouldnt': {cid: shouldnt[cid] for cid in sorted(shouldnt, key=cname)},
+                         'not_expected': dict(not_exp.most_common()),
+                         'tasks': [r['id'] for r in MAIN if r['type'] == name]})
 
-# ---------- output
-seen, uniq = set(), []
-for p in problems:
-    key = (p['company_id'], p['workflow'], p['problem'])
-    if key not in seen:
-        seen.add(key)
-        uniq.append(p)
-print(f'## Weekly check - {TEAM_NAME}  (queue: {", ".join(QIDS) or "unknown"}; start date: {SINCE or "none"}; scope: {((TEAM or {}).get("company_scope") or {}).get("description", "all companies")})\n')
-if uniq:
-    print('| Company ID | Company name | Workflow | Problem | Evidence label |\n|---|---|---|---|---|')
-    for p in uniq:
-        print(f'| {p["company_id"]} | {p["company"]} | {p["workflow"]} | {p["problem"]} | {p["label"]} |', flush=True)
-print(f'\n{len(checked)} companies checked, {len(uniq)} problems found.' if uniq else f'\n{len(checked)} companies checked, no problems found.')
-for n in notes:
-    print('- ' + n)
-if A.json:
-    json.dump({'problems': uniq, 'notes': notes, 'companies_checked': len(checked)}, open(A.json, 'w'), indent=1)
+# other task-level checks (Question 1)
+DUPES, W3 = [], []
+by_day = collections.defaultdict(list)
+for r in MAIN:
+    if r['type']:
+        for cid in r['companies']:
+            by_day[(r['type'], cid, local(r['created']).date())].append(r)
+dup_type = {w.get('duplicate_task_type'): wid for wid, w in WAIT.items() if w.get('duplicate_task_type')}
+for (tname, cid, day), rs in by_day.items():
+    if len(rs) < 2:
+        continue
+    flows = sorted({r['flow'] for r in rs})
+    entry = {'type': tname, 'company_id': cid, 'company': cname(cid), 'day': day.isoformat(), 'tasks': [r['id'] for r in rs], 'workflows': [wfname(f) for f in flows]}
+    if tname in dup_type and len(flows) > 1:
+        entry['waiting_on'] = dup_type[tname]
+        DUPES.append(entry)
+    else:
+        problem(1, 'duplicate', f'{cname(cid)} got "{tname}" {len(rs)} times on {day} (rule 4: duplicates should not be created).', 'VERIFIED (records)', 'Potential Issue', tname, cid, rs[0]['id'],
+                flows[0], group=f'duplicate:{tname}')
+w3 = next((w for w in WAIT.values() if w.get('task_types')), None)
+for r in MAIN:
+    if w3 and r['type'] in w3['task_types']:
+        for cid in r['companies']:
+            if cid in COMP and rules.in_scope(rules.props_at(COMP[cid], r['created']), TEAM) is False:
+                W3.append({'type': r['type'], 'company_id': cid, 'company': cname(cid), 'task': r['id'], 'reason': scope_reason(rules.props_at(COMP[cid], r['created']))})
+                problem(1, 'not_live_90', f'{cname(cid)} got "{r["type"]}" while {scope_reason(rules.props_at(COMP[cid], r["created"]))} (rule 1; {w3["id"]}).', 'VERIFIED (records)', 'Potential Issue',
+                        r['type'], cid, r['id'], r['flow'], group=f'not_live_90:{r["type"]}')
+for r in MAIN:
+    if r['flow'] in EXPECTED_OFF:
+        problem(1, 'off_task', f'Task "{r["title"]}" was created by {wfname(r["flow"])}, which is switched off as a duplicate (rule 4).', 'VERIFIED (records)', 'Confirmed',
+                None, (r['companies'] or [None])[0], r['id'], r['flow'], group=f'off_task:{r["flow"]}')
+    elif r['flow'] is None:
+        problem(1, 'unknown_source', f'Task "{r["title"]}" in the queue comes from "{r["source"]}", which is not in the master rules file.', 'NEEDS VERIFICATION', 'Needs Verification',
+                None, (r['companies'] or [None])[0], r['id'], None, group=f'unknown_source:{r["source"]}')
+    elif r['flow'] in M and QIDS and not r['in_queue']:
+        cq = sorted({str(a.get('fields', {}).get('queue_id')) for a in M[r['flow']]['cfg'].get('actions', []) if describe.akind(a) == '0-3'})
+        problem(1, 'not_in_queue', f'Task "{r["title"]}" from {wfname(r["flow"])} is in queue {", ".join(r["queues"]) or "none"}, not {TEAM.get("queue_name")} '
+                f'({", ".join(sorted(QIDS))}); the workflow settings say queue {", ".join(cq)}.', 'VERIFIED (records)', 'Confirmed',
+                r['type'], (r['companies'] or [None])[0], r['id'], r['flow'], reason=f'in queue {", ".join(r["queues"]) or "none"}',
+                group=f'not_in_queue:{r["flow"]}:{",".join(r["queues"])}')
+    elif r['flow'] in M and not r['type'] and M[r['flow']]['cfg'].get('isEnabled'):
+        problem(1, 'unknown_type', f'Task "{r["title"]}" from {wfname(r["flow"])} does not match any task type in team-rules.md.', 'VERIFIED (records)', 'Needs Verification',
+                None, (r['companies'] or [None])[0], r['id'], r['flow'], group=f'unknown_type:{r["flow"]}')
+KNOWN_NR = collections.Counter(r['source'] for r in MAIN if isinstance(r['flow'], str) and r['flow'].startswith('not_readable'))
+
+# new facilities
+NEW = []
+for cid, c in COMP.items():
+    gl = went_live(c)
+    if not gl or cid not in LIVE_NOW:
+        continue
+    gld = c['properties'].get(GOLIVE.get('go_live_date_property', 'go_live_date'))
+    gap = None
+    if gld:
+        gap = abs((local(gl).date() - dt.date.fromisoformat(gld[:10])).days)
+    types = []
+    for tr in TYPE_RESULTS:
+        if cid in tr['got']:
+            st = 'got it'
+        elif cid in tr['missing']:
+            st = 'missing: ' + tr['missing'][cid]['reason']
+        else:
+            wid = next((w for w in next(t for t in TYPES if t['name'] == tr['name'])['workflows'] if M.get(w, {}).get('cfg', {}).get('isEnabled')), None)
+            e = evaluate(cid, wid, NOW, tr['name']) if wid else {'state': 'not_expected', 'reason': 'workflow switched off'}
+            if e['state'] in ('expected', 'missing_reason'):
+                nxt = None
+                for w in next(t for t in TYPES if t['name'] == tr['name'])['workflows']:
+                    mc = M.get(w, {}).get('cfg') or {}
+                    if mc.get('isEnabled') and mc.get('enrollmentSchedule'):
+                        rs = rules.schedule_runs(mc, LAST + dt.timedelta(days=1), LAST + dt.timedelta(days=62), TZ)
+                        if rs:
+                            nxt = min(nxt or rs[0], rs[0])
+                st = 'not yet' + (f': next run {fmt_dt(nxt)}' if nxt else ' (no schedule: when the trigger is met)')
+            else:
+                st = 'not for this facility: ' + e.get('reason', '')
+        types.append({'type': tr['name'], 'status': st})
+    NEW.append({'company_id': cid, 'company': cname(cid), 'went_live': fmt_dt(gl), 'go_live_date': gld, 'days_apart': gap,
+                'flag': gap is not None and gap > int(GOLIVE.get('max_days_apart', 7)), 'types': types})
+    if gap is not None and gap > int(GOLIVE.get('max_days_apart', 7)):
+        problem(1, 'golive_gap', f'{cname(cid)}: Status changed to Live on {local(gl).date()} but the go-live date is {gld} ({gap} days apart).', 'VERIFIED (records)', 'Potential Issue',
+                None, cid, group='golive_gap')
+NEW.sort(key=lambda x: x['company'])
+
+# ------------------------------------------------------------------ Question 2
+links = TEAM.get('links') or {}
+LINK_ROWS = []
+for r in MAIN:
+    st, label = 'ok', 'VERIFIED (records)'
+    if links.get('main_task_company', True):
+        if not r['companies']:
+            st = 'no company'
+        elif len(r['companies']) > 1:
+            st = f'{len(r["companies"])} companies'
+        elif r['type']:
+            cid = r['companies'][0]
+            tr = next(t for t in TYPE_RESULTS if t['name'] == r['type'])
+            if cid in tr['shouldnt']:
+                st, label = "company doesn't qualify", 'INFERENCE'
+    if st == 'ok' and links.get('main_task_ticket') and not r['tickets']:
+        st = 'no ticket'
+    r['link'] = st
+    if st != 'ok':
+        note = ' (from known issue ' + next((n.get('known_issue', '') for n in TEAM.get('not_readable', []) if n['name'] == r['source']), '') + ')' if isinstance(r['flow'], str) and r['flow'].startswith('not_readable') else ''
+        problem(2, 'link', f'Task "{r["title"]}" ({r["id"]}): {st}{note}.', label, 'Confirmed' if label.startswith('VERIFIED') else 'Potential Issue', r['type'],
+                (r['companies'] or [None])[0], r['id'], r['flow'] if r['flow'] in M else None, st, group=f'link:{st}:{r["source"]}',
+                source=(wfname(r['flow']) if r['flow'] in M else r['source']) + note)
+    LINK_ROWS.append({'task': r['id'], 'title': r['title'], 'type': r['type'], 'workflow': wfname(r['flow']) if r['flow'] in M else r['source'],
+                      'companies': [{'id': c, 'name': cname(c)} for c in r['companies']], 'status': st, 'label': label})
+SUB_ROWS = []
+for r in SUBS:
+    bad = links.get('subtask_ticket_forbidden') and r['tickets']
+    SUB_ROWS.append({'task': r['id'], 'title': r['title'], 'parent': r['parent'], 'tickets': r['tickets'], 'status': 'linked to a ticket' if bad else 'ok'})
+    if bad:
+        problem(2, 'subtask_ticket', f'Subtask "{r["title"]}" ({r["id"]}) is associated with ticket {", ".join(r["tickets"])}.', 'VERIFIED (records)', 'Confirmed',
+                None, None, r['id'], r['flow'], group='subtask_ticket')
+
+# ------------------------------------------------------------------ Question 3
+CHANGES = []
+excl = TEAM.get('exclusion') or {}
+excl_wfs = set(rules.load_team(A.team)[1]['rules'].get('exclusion_only_in_workflows') or [])
+for wid, e in sorted(M.items(), key=lambda x: wfname(x[0]).lower()):
+    live = LIVE.get(wid)
+    if not live:
+        err = next((d['error'] for d in DENIED if d['id'] == wid), 'not returned')
+        CHANGES.append({'workflow': wid, 'name': wfname(wid), 'status': 'not returned by the API', 'diffs': [], 'label': 'NEEDS VERIFICATION', 'error': err[:200]})
+        problem(3, 'not_returned', f'{wfname(wid)} ({wid}) was not returned by the API.', 'NEEDS VERIFICATION', 'Needs Verification', workflow=wid, group='not_returned')
+        continue
+    diffs = master.compare(e['cfg'], live, TEAM) if e.get('cfg') else []
+    only_rev = diffs and all(d['column'] == 'Revision' for d in diffs)
+    rule2 = None
+    if excl.get('list_id'):
+        has = excl['list_id'] in json.dumps(rules.suppression(live) or {}) or any(l[0] == excl['list_id'] and l[1] == 'NOT_IN_LIST' for l in rules.list_filters(live))
+        if live.get('isEnabled') and has and wid not in excl_wfs:
+            rule2 = f'now excludes list {excl["list_id"]}, which only {", ".join(excl.get("only_in_task_types", []))} workflows should (rule 2)'
+        if live.get('isEnabled') and not has and wid in excl_wfs:
+            rule2 = f'no longer excludes list {excl["list_id"]} (rule 2 says it should)'
+    CHANGES.append({'workflow': wid, 'name': wfname(wid), 'status': 'changed' if diffs else 'same', 'diffs': diffs, 'label': 'VERIFIED (config)',
+                    'revision': [e['row'].get('Revision'), str(live.get('revisionId'))], 'updated': (live.get('updatedAt') or '')[:16].replace('T', ' ') + ' UTC',
+                    'only_revision': bool(only_rev), 'rule2': rule2})
+    if diffs:
+        what = 'only the revision number changed (no change found in the compared settings)' if only_rev else ', '.join(d['column'] for d in diffs) + ' changed'
+        problem(3, 'changed', f'{wfname(wid)}: {what}. Confirm it was planned.', 'VERIFIED (config)', 'Needs Verification', workflow=wid, group=f'changed:{wid}')
+    if rule2:
+        problem(3, 'rule2', f'{wfname(wid)} {rule2}.', 'VERIFIED (config)', 'Confirmed', workflow=wid, group=f'rule2:{wid}')
+
+# ------------------------------------------------------------------ summary
+q_counts = {q: len([p for p in PROBLEMS if p['q'] == q]) for q in (1, 2, 3)}
+groups = collections.OrderedDict()
+for p in PROBLEMS:
+    groups.setdefault(p['group'], []).append(p)
+WEIGHT = {'missing': 4, 'link': 5, 'subtask_ticket': 5, 'rule2': 5, 'off_task': 5, 'changed': 4, 'not_in_queue': 5, 'shouldnt': 3, 'duplicate': 3,
+          'not_returned': 3, 'unknown_source': 2, 'unknown_type': 2, 'not_live_90': 2, 'golive_gap': 1}
+
+
+def headline(g, ps):
+    p = ps[0]
+    n = len(ps)
+    k = p['kind']
+    if k == 'missing':
+        r = p['reason']
+        return f'{n} facilit{"y" if n == 1 else "ies"} did not get "{p["type"]}" — reason: {r}.'
+    if k == 'shouldnt':
+        return f'{n} facilit{"y" if n == 1 else "ies"} got "{p["type"]}" but should not have ({p["reason"]}).'
+    if k == 'link':
+        return f'{n} main task{"s" if n > 1 else ""} from {p["source"]}: {p["reason"]}.'
+    if k == 'not_in_queue':
+        return f'{n} task{"s" if n > 1 else ""} from {p["source"]} {"are" if n > 1 else "is"} {p["reason"]}, not the {TEAM.get("queue_name")} queue, although the workflow settings say {TEAM.get("queue_name")}.'
+    if n == 1:
+        return p['text']
+    return f'{n} × {p["text"]}'
+
+
+def score(ps):
+    p = ps[0]
+    s = WEIGHT.get(p['kind'], 1) + min(len(ps), 50) / 25
+    if p['kind'] == 'missing' and p.get('reason') in ('unknown', 'workflow off'):
+        s += 3                                        # tasks nobody can explain go first
+    if 'Waiting on' in (p.get('reason') or ''):
+        s -= 3                                        # already with the decision owner
+    return s
+
+
+ranked = sorted(groups.items(), key=lambda kv: -score(kv[1]))
+TOP = [{'text': headline(g, ps), 'label': ps[0]['label'], 'q': ps[0]['q'], 'count': len(ps)} for g, ps in ranked[:5]]
+
+in_scope_count = len(LIVE_NOW)
+waiting = []
+for wid_, w in WAIT.items():
+    item = dict(w)
+    if w.get('duplicate_task_type'):
+        item['found'] = [d for d in DUPES if d.get('waiting_on') == wid_]
+    elif w.get('task_types'):
+        item['found'] = W3
+    else:
+        item['found'] = [{'type': tr['name'], 'company_id': cid, 'company': cname(cid)} for tr in TYPE_RESULTS for cid, m in tr['missing'].items() if m.get('waiting_on') == wid_]
+    waiting.append(item)
+known = list(TEAM.get('known_issues', []))
+if KNOWN_NR:
+    for k in known:
+        for n in TEAM.get('not_readable', []):
+            if n.get('known_issue') == k['id'] and n['name'] in KNOWN_NR:
+                k = dict(k)
+                k['this_week'] = f'{KNOWN_NR[n["name"]]} task(s) from it were created this week.'
+                known[known.index(next(x for x in known if x['id'] == n['known_issue']))] = k
+off_state = [{'id': w, 'name': wfname(w), 'live': 'ON' if (LIVE.get(w) or {}).get('isEnabled') else 'OFF'} for w in EXPECTED_OFF]
+
+RESULT = {
+    'team': TEAM_NAME, 'team_slug': rules.team_slug(A.team), 'decision_owner': OWNER, 'portal': str(ACCT.get('portalId', '')), 'queue': TEAM.get('queue_name'), 'queue_ids': sorted(QIDS),
+    'window': [FIRST.isoformat(), LAST.isoformat()], 'report_day': rules.report_day(TEAM, LAST).isoformat(), 'time_zone': ACCT.get('timeZone'),
+    'fetched_at': fmt_dt(NOW), 'start_date': TEAM.get('start_date'),
+    'counts': {'facilities_in_scope': in_scope_count, 'main_tasks': len(MAIN), 'subtasks': len(SUBS), 'workflows': len(M),
+               'q1': q_counts[1], 'q2': q_counts[2], 'q3': q_counts[3]},
+    'top': TOP, 'types': TYPE_RESULTS, 'new_facilities': NEW, 'links': LINK_ROWS, 'subtasks': SUB_ROWS, 'changes': CHANGES,
+    'waiting_on': waiting, 'known_issues': known, 'expected_off': off_state, 'problems': PROBLEMS,
+    'companies': {cid: cname(cid) for cid in {x for tr in TYPE_RESULTS for x in tr['should'] + tr['got'] + list(tr['missing']) + list(tr['shouldnt'])} | {c for r in MAIN for c in r['companies']}},
+    'tasks': [{'id': r['id'], 'title': r['title'], 'type': r['type'], 'workflow': wfname(r['flow']) if r['flow'] in M else r['source'], 'created': fmt_dt(r['created']),
+               'due': fmt_dt(r['due']) if r['due'] else '', 'companies': r['companies'], 'link': r.get('link'), 'in_queue': r['in_queue']} for r in MAIN],
+}
+json.dump(RESULT, open(os.path.join(A.work, 'results.json'), 'w'), indent=1, default=str)
+
+line = lambda n, what: 'all good' if n == 0 else f'{n} problem{"s" if n > 1 else ""} found'
+print(f'## {TEAM_NAME} weekly audit — {FIRST} to {LAST}' + (' (window shortened by the start date)' if FIRST.isoformat() == TEAM.get('start_date') else ''))
+print(f'Checked {in_scope_count} companies in scope ({(TEAM.get("company_scope") or {}).get("description", "all companies")}), {len(MAIN)} main tasks and {len(SUBS)} subtasks created in the window, and {len(M)} workflows.\n')
+print(f'1. **Were the tasks created?** {line(q_counts[1], "")}' + (f' ({len(NEW)} new facilit{"y" if len(NEW) == 1 else "ies"} this week)' if NEW else ''))
+print(f'2. **Are they linked to the right company?** {line(q_counts[2], "")}')
+print(f'3. **Did anyone change the workflows?** ' + ('no changes' if not q_counts[3] else f'{sum(1 for c in CHANGES if c["status"] != "same")} workflow(s) differ from the master rules file'))
+if TOP:
+    print('\n**Top problems**')
+    for i, t in enumerate(TOP, 1):
+        print(f'{i}. {t["text"]} [{t["label"]}]')
+print(f'\n**Waiting on {OWNER}**')
+for w in waiting:
+    print(f'- {w["title"]}' + (f' — {len(w["found"])} this week' if w.get('found') else ''))
+print(f'\nresults: {os.path.join(A.work, "results.json")}')

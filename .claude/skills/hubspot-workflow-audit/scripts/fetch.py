@@ -5,9 +5,12 @@ Usage:
   python3 fetch.py --work DIR --list                       # list every workflow the API returns (id, object, on/off, name)
   python3 fetch.py --work DIR --ids 123 456 ...            # fetch these workflows + their records
   python3 fetch.py --work DIR --name-filter "Transitions"  # fetch workflows whose name matches the regex
-  options: --team "CS Ops"        load queue / start date / company scope from ../teams.json
-           --queue "CS Ops"|123   queue name (resolved through teams.json) or numeric queue ID(s), comma-separated
+  python3 fetch.py --work DIR --weekly --team cs-ops        # weekly audit: the team's workflows (from its master rules file),
+                                                           # tasks in the audit window, and the companies they concern
+  options: --team cs-ops          load queue / start date / company scope from audits/<team>-workflow-audit/team-rules.md
+           --queue 123            numeric queue ID(s), comma-separated (overrides team-rules.md)
            --since 2026-10-06     only tasks created on or after this date are in scope
+           --from / --to          weekly mode: window dates (YYYY-MM-DD, portal time zone); default = the team's window
 
 Needs HUBSPOT_ACCESS_TOKEN (private app with `automation` + read scopes for the objects involved,
 including the sensitive/highly-sensitive read scopes). Writes JSON files into DIR; nothing is changed in HubSpot.
@@ -101,10 +104,17 @@ def main():
     ap.add_argument('--team')
     ap.add_argument('--queue')
     ap.add_argument('--since')
+    ap.add_argument('--weekly', action='store_true')
+    ap.add_argument('--from', dest='start')
+    ap.add_argument('--to', dest='end')
     a = ap.parse_args()
     os.makedirs(a.work, exist_ok=True)
+    if os.path.exists(os.path.join(a.work, 'COMPLETE')):
+        os.remove(os.path.join(a.work, 'COMPLETE'))
 
     flows = list_flows()
+    if a.weekly:
+        return fetch_weekly(a, flows)
     save(a.work, 'all_flows.json', flows)
     if a.list:
         for f in sorted(flows, key=lambda f: f['name']):
@@ -168,7 +178,7 @@ def main():
     cfg_queues = sorted({str(x['fields']['queue_id']) for c in cfg.values() for x in c.get('actions', []) if x.get('fields', {}).get('queue_id')})
     if (a.queue or team) and not queue_ids:
         queue_ids = cfg_queues
-        print(f'queue: no ID in teams.json for "{a.queue or team_name}"; using queue IDs set in the workflows\' Create task actions: {cfg_queues or "NONE"}', file=sys.stderr)
+        print(f'queue: no queue ID in team-rules.md for "{a.queue or team_name}"; using queue IDs set in the workflows\' Create task actions: {cfg_queues or "NONE"}', file=sys.stderr)
     save(a.work, 'scope.json', {'team': team_name, 'team_cfg': team, 'since': since, 'queue_ids': queue_ids, 'queue_ids_in_config': cfg_queues,
                                 'queue_requested': a.queue or (team or {}).get('queue_name')})
     name2id = {c['name']: i for i, c in cfg.items()}
@@ -314,6 +324,154 @@ def main():
         save(a.work, 'account.json', {'timeZone': 'UTC'})
     open(os.path.join(a.work, 'COMPLETE'), 'w').write(time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()))
     print(f'done: {len(cfg)} configs, {len(denied)} denied, {len(tasks)} tasks, {len(tickets)} tickets -> {a.work}')
+
+
+def reference_data(work):
+    save(work, 'owners.json', req('/crm/v3/owners?limit=500')['results'] + req('/crm/v3/owners?limit=500&archived=true')['results'])
+    pipes = {}
+    for obj in ('tickets', 'deals'):
+        try:
+            pipes[obj] = req(f'/crm/v3/pipelines/{obj}')['results']
+        except RuntimeError:
+            pipes[obj] = []
+    save(work, 'pipelines.json', pipes)
+    labels = {}
+    for pair in ['tasks/tickets', 'tasks/companies', 'tasks/contacts', 'tasks/deals', 'companies/tickets']:
+        try:
+            labels[pair] = req(f'/crm/v4/associations/{pair}/labels')['results']
+        except RuntimeError:
+            labels[pair] = []
+    save(work, 'assoc_labels.json', labels)
+    props = {}
+    for obj in ('tickets', 'companies', 'tasks'):
+        try:
+            props[obj] = {p['name']: {'label': p['label'], 'options': {o['value']: o['label'] for o in p.get('options', [])}} for p in req(f'/crm/v3/properties/{obj}')['results']}
+        except RuntimeError:
+            props[obj] = {}
+    save(work, 'properties.json', props)
+    try:
+        acct = req('/account-info/v3/details')
+    except RuntimeError:
+        acct = {'timeZone': 'UTC'}
+    save(work, 'account.json', acct)
+    return acct
+
+
+def batch_read_history(obj, ids, props, hist):
+    out = []
+    for i in range(0, len(ids), 50):
+        out += req(f'/crm/v3/objects/{obj}/batch/read', {'inputs': [{'id': x} for x in ids[i:i + 50]], 'properties': props,
+                                                         'propertiesWithHistory': hist})['results']
+        time.sleep(0.12)
+    return out
+
+
+def fetch_weekly(a, flows):
+    """Weekly audit data: live settings of the workflows in the team's master rules file, the tasks created in the
+    window (queue tasks + their subtasks + any task those workflows made outside the queue), their associations,
+    and the companies involved with the property history needed to know who qualified when."""
+    import datetime as dt
+    from zoneinfo import ZoneInfo
+    import master
+    team_name, team = rules.load_team(a.team)
+    if not team:
+        sys.exit(f'STOP: no team-rules.md for team "{a.team}". Set the team up first (SKILL.md, "Set up a new team").')
+    M, _ = master.read_master(os.path.join(team['_dir'], team['master_rules_file']))
+    acct = reference_data(a.work)
+    tz = ZoneInfo(acct.get('timeZone') or 'UTC')
+    today = dt.datetime.now(tz).date()
+    first, last = rules.week_window(team, today, dt.date.fromisoformat(a.start) if a.start else None,
+                                    dt.date.fromisoformat(a.end) if a.end else None)
+    if last < first:
+        sys.exit(f'STOP: the window {first}..{last} ends before the team start date {team.get("start_date")}. Nothing to audit.')
+    t0 = dt.datetime(first.year, first.month, first.day, tzinfo=tz).astimezone(dt.timezone.utc)
+    t1 = (dt.datetime(last.year, last.month, last.day, tzinfo=tz) + dt.timedelta(days=1)).astimezone(dt.timezone.utc)
+    iso = lambda x: x.strftime('%Y-%m-%dT%H:%M:%SZ')
+    print(f'window {first}..{last} ({acct.get("timeZone")}) = {iso(t0)}..{iso(t1)}')
+
+    # 1. live settings of every workflow in the master file
+    cfg, denied = {}, []
+    for i in M:
+        try:
+            cfg[i] = req(f'/automation/v4/flows/{i}')
+        except RuntimeError as e:
+            denied.append({'id': i, 'error': str(e)})
+            print('NOT RETURNED', i, str(e)[:160], file=sys.stderr)
+    save(a.work, 'configs.json', cfg)
+    save(a.work, 'denied.json', denied)
+    names = {}
+    for i, e in M.items():
+        names.setdefault(e['row'].get('Workflow Name'), i)
+        if i in cfg:
+            names.setdefault(cfg[i]['name'], i)
+    for n in team.get('not_readable', []):
+        names.setdefault(n['name'], 'not_readable:' + n.get('known_issue', ''))
+
+    # 2. tasks created in the window: queue tasks, their subtasks, and tasks the workflows made outside the queue
+    queue_ids = [q.strip() for q in (a.queue or '').split(',') if q.strip()] or [str(q) for q in team.get('queue_ids', [])]
+    win = [{'propertyName': 'hs_createdate', 'operator': 'GTE', 'value': iso(t0)}, {'propertyName': 'hs_createdate', 'operator': 'LT', 'value': iso(t1)}]
+    tasks = []
+    for q in queue_ids:
+        tasks += search_all('tasks', [{'propertyName': 'hs_queue_membership_ids', 'operator': 'EQ', 'value': q}] + win, TASK_PROPS)
+    for n in names:
+        tasks += search_all('tasks', [{'propertyName': 'hs_object_source_detail_1', 'operator': 'EQ', 'value': n}] + win, TASK_PROPS)
+    pids = sorted({t['id'] for t in tasks if t['properties'].get('hs_task_is_sub_task') != 'true'})
+    for k in range(0, len(pids), 100):
+        tasks += search_all('tasks', [{'propertyName': 'hs_task_parent_task_id', 'operator': 'IN', 'values': pids[k:k + 100]}], TASK_PROPS)
+    seen = set()
+    tasks = [t for t in tasks if not (t['id'] in seen or seen.add(t['id']))]
+    for t in tasks:
+        t['_flow'] = names.get(t['properties'].get('hs_object_source_detail_1'))
+    save(a.work, 'tasks.json', tasks)
+    print('tasks in window (incl. subtasks):', len(tasks))
+    assoc = {}
+    tids = [t['id'] for t in tasks]
+    for obj in ('companies', 'tickets'):
+        for k, v in batch_assoc('tasks', obj, tids).items():
+            assoc.setdefault(k, {})[obj] = v
+    save(a.work, 'task_assoc.json', assoc)
+
+    # 3. companies: every live company, every company changed during the window, and every company a task is linked to
+    mcfgs = [e['cfg'] for e in M.values() if e.get('cfg')] + list(cfg.values())
+    hist = sorted(set(rules.scope_props(team)) | {p for c in mcfgs for p in rules.referenced_props_all(c)} |
+                  {p for c in mcfgs for p in rules.branch_props(c)} | {(team.get('went_live') or {}).get(k) for k in ('status_property', 'go_live_date_property')} - {None, 'hs_name', 'hs_value'})
+    cprops = sorted(set(hist) | {'name', 'hs_object_id'})
+    sp = (team.get('went_live') or {}).get('status_property', 'live')
+    lv = (team.get('went_live') or {}).get('live_value', 'Yes')
+    cids = {c['id'] for c in search_all('companies', [{'propertyName': sp, 'operator': 'EQ', 'value': lv}], ['name'])}
+    cids |= {c['id'] for c in search_all('companies', [{'propertyName': 'hs_lastmodifieddate', 'operator': 'GTE', 'value': iso(t0)},
+                                                       {'propertyName': sp, 'operator': 'HAS_PROPERTY'}], ['name'])}
+    cids |= {x['id'] for v in assoc.values() for x in v.get('companies', [])}
+    companies = batch_read_history('companies', sorted(cids), cprops, hist)
+    save(a.work, 'companies.json', companies)
+    print('companies fetched (with property history):', len(companies))
+    lists, lnames = {}, {}
+    for lid in sorted({l for c in mcfgs for l in rules.referenced_lists(c)}):
+        mem, after = [], None
+        try:
+            while True:
+                d = req(f'/crm/v3/lists/{lid}/memberships?limit=250' + (f'&after={after}' if after else ''))
+                mem += [str(r.get('recordId', r)) if isinstance(r, dict) else str(r) for r in d.get('results', [])]
+                after = d.get('paging', {}).get('next', {}).get('after')
+                if not after:
+                    break
+            lists[lid] = mem
+            try:
+                meta = req(f'/crm/v3/lists/{lid}')
+                lnames[lid] = (meta.get('list') or meta).get('name')
+            except RuntimeError:
+                pass
+        except RuntimeError as e:
+            print('list', lid, 'not readable:', str(e)[:120], file=sys.stderr)
+    save(a.work, 'lists.json', lists)
+    save(a.work, 'list_names.json', lnames)
+    tix = sorted({x['id'] for v in assoc.values() for x in v.get('tickets', [])})
+    save(a.work, 'tickets.json', batch_read('tickets', tix, ['subject', 'hs_pipeline', 'hs_pipeline_stage']) if tix else [])
+    save(a.work, 'scope.json', {'mode': 'weekly', 'team': team_name, 'team_slug': rules.team_slug(a.team), 'queue_ids': queue_ids,
+                                'window': [first.isoformat(), last.isoformat()], 'window_utc': [iso(t0), iso(t1)],
+                                'fetched_at': iso(dt.datetime.now(dt.timezone.utc)), 'history_props': hist})
+    open(os.path.join(a.work, 'COMPLETE'), 'w').write(time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()))
+    print(f'done: {len(cfg)} workflows ({len(denied)} not returned), {len(tasks)} tasks, {len(companies)} companies -> {a.work}')
 
 
 if __name__ == '__main__':

@@ -746,7 +746,7 @@ for w in CFG:
 if mism:
     F('A20', 'Confirmed', 'Several', 'Due dates', 'Due dates on these tasks often differ from the configured rule (edited after creation, or the rule changed): ' + '; '.join(mism[:8]) + '.', 'Config due_time vs records.', 'Due-date reporting does not reflect the configured SLA.', 'Confirm the rules.')
 
-# ------------------------------------------------------------------ team rules (teams.json) and company enrollment
+# ------------------------------------------------------------------ team rules (team-rules.md) and company enrollment
 in_window = lambda t: not SINCE or t['properties']['hs_createdate'][:10] >= SINCE
 if TRULES.get('subtasks_not_on_ticket'):
     bad = [t for t in TASKS if t['sub'] and in_window(t) and t['tickets']]
@@ -763,12 +763,12 @@ if TRULES.get('owner_property'):
                     off.append(f'{CFG[w]["name"]} "{a["fields"].get("subject", "").strip()}" ({"fixed user " + OWN.get(val, val) if kind == "static" else (val or "no owner")})')
     if off:
         F('T02', 'Confirmed', 'Several', 'Owner settings', f'{len(off)} Create task actions are not assigned from {TRULES["owner_property"]} as the team rule requires: ' + '; '.join(off[:10]) + ('...' if len(off) > 10 else '') + '.',
-          'Config owner_assignment per action vs teams.json owner_property.', TRULES.get('owner_property_note', 'Breaks the team owner rule.'), 'Confirm the owner setting on each listed action.')
-if TRULES.get('exclusion_only_in'):
+          'Config owner_assignment per action vs the team owner_property (team-rules.md).', TRULES.get('owner_property_note', 'Breaks the team owner rule.'), 'Confirm the owner setting on each listed action.')
+if TRULES.get('exclusion_only_in_workflows') is not None:
     rows_x = []
     for w in CFG:
         ex = [l for l in rules.list_filters(CFG[w]) if l[1] in ('NOT_IN_LIST', 'SUPPRESS')]
-        allowed = TRULES['exclusion_only_in'].lower() in CFG[w]['name'].lower()
+        allowed = w in TRULES['exclusion_only_in_workflows']
         if ex and not allowed:
             rows_x.append(f'{CFG[w]["name"]} ({"ON" if CFG[w].get("isEnabled") else "switched OFF"}) excludes list {", ".join(x[0] + (" " + chr(34) + LIST_NAMES.get(x[0], "") + chr(34) if LIST_NAMES.get(x[0]) else "") for x in ex)}')
         if allowed and not ex:
@@ -776,7 +776,7 @@ if TRULES.get('exclusion_only_in'):
     on_viol = [r for r in rows_x if '(ON)' in r or 'has no list exclusion' in r]
     have = [CFG[w]['name'] for w in CFG if CFG[w].get('isEnabled') and any(l[1] in ('NOT_IN_LIST', 'SUPPRESS') for l in rules.list_filters(CFG[w]))]
     if on_viol:
-        F('T03', 'Confirmed', 'Several', 'Suppression', f'Exclusion rule ("only {TRULES["exclusion_only_in"]} workflows exclude the segment") is broken: ' + '; '.join(on_viol) + '.', 'Config suppressionFilterBranch and NOT_IN_LIST filters.', 'Companies may be excluded (or included) against the team rule.', 'Confirm which workflows should exclude the list.')
+        F('T03', 'Confirmed', 'Several', 'Suppression', f'Exclusion rule ("only {names(TRULES["exclusion_only_in_workflows"]) if all(x in CFG for x in TRULES["exclusion_only_in_workflows"]) else "the listed"} workflows exclude the segment") is broken: ' + '; '.join(on_viol) + '.', 'Config suppressionFilterBranch and NOT_IN_LIST filters.', 'Companies may be excluded (or included) against the team rule.', 'Confirm which workflows should exclude the list.')
     else:
         F('T03', 'No Issue Found', 'All in scope', 'Suppression', f'Exclusion rule holds for switched-on workflows: only {", ".join(have) or "none"} exclude the segment.' + (' Switched-off workflows that also carry it: ' + '; '.join(r for r in rows_x if 'switched OFF' in r) + '.' if any('switched OFF' in r for r in rows_x) else ''),
           'Config suppressionFilterBranch (top-level) and NOT_IN_LIST filters of every in-scope workflow.', 'Confirms the rule.', 'n/a')

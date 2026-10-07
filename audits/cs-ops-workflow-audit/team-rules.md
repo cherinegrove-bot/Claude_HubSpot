@@ -51,7 +51,7 @@ One task type can be made by several workflows, for example split by tier. Each 
 | 16 | NPS Detractor Recovery Actions | 1770961042 | No schedule: when NPS Customer Service Score drops below 6 | All tiers, not SOA |
 
 **Not task types:**
-- `R+S - Reminders: Respond within 1 day to external emails` (1689020435) creates nothing.
+- `R+S - Reminders: Respond within 1 day to external emails` (1689020435) creates nothing (known issue F-05, Waiting on Cherine 4).
 - The 5 switched-off workflows (see Known issues): any task they create counts as one that shouldn't exist.
 
 ## Decisions so far
@@ -68,6 +68,7 @@ One task type can be made by several workflows, for example split by tier. Each 
   - Not "excluded by rule": there's no confirmed rule yet.
   - Not "unknown": we know why.
 - **Duplicate Weekly Call tasks** (from both the Weekly calls and Weekly KPI workflows) go under Waiting on Cherine, not as a broken rule 4.
+- **No SM or OM on the facility:** a facility that should get a task but whose OM/SM branch matches neither is shown as missing, with the reason "no SM or OM on the facility", labelled VERIFIED (records).
 - **Wrong company** (Question 2):
   - A main task with **no company** is flagged, VERIFIED (records).
   - A main task with **more than one company** is flagged, VERIFIED (records).
@@ -86,12 +87,15 @@ Report these once per run, in their own section, not as new problems every week.
 3. **First-90-days tasks before a facility is live.**
    - The two first-90-days workflows check the go-live date, not Status = Live.
    - Should they create tasks before a facility is live?
+4. **R+S - Reminders: should it create a task?**
+   - `R+S - Reminders: Respond within 1 day to external emails` (1689020435) only branches and waits; it creates nothing (F-05).
 
 ## Known issues
 
 Report each once, as a known issue.
 
 - **F-03:** in 13 workflows the OM branch is checked before the SM branch, so tasks go to the OM when both exist. Cherine is deciding the fix.
+- **F-05:** `R+S - Reminders: Respond within 1 day to external emails` (1689020435) creates no tasks. It only branches and waits, then loops back. Flagged by the 2026-10-06 full-map audit.
 - **F-08:** "Create Tasks | Respond to reviews at Storage Reach" didn't come back from the API. It's a User workflow, which may be why.
 - **5 workflows are switched off.** That's expected unless WLS says otherwise:
   - 1774165521 OM | RISK within the first 90 days
@@ -110,6 +114,7 @@ The scripts read this block. Keep it in step with the text above.
 {
   "team": "cs-ops",
   "team_name": "CS Ops",
+  "decision_owner": "Cherine",
   "master_rules_file": "CS_Ops_Master_Rules.xlsx",
   "queue_name": "Ops Tasks",
   "queue_ids": ["13519269"],
@@ -146,19 +151,20 @@ The scripts read this block. Keep it in step with the text above.
   "no_task_workflows": ["1689020435"],
   "expected_off": ["1774165521", "1697631666", "1682549368", "1682101413", "1682545542"],
   "not_readable": [{"name": "Create Tasks | Respond to reviews at Storage Reach", "known_issue": "F-08"}],
-  "excluded_by_rule": [
-    {"branch": "^\"SOA\"|> \"SOA\"", "reason": "excluded by rule: SOA facility", "label": "VERIFIED (config)"}
-  ],
-  "missing_reason_overrides": [
-    {"branch": "\"(T1|Tier 1) SM\"", "reason": "Tier 1 SM gap (Waiting on Cherine)", "waiting_on": "W-1"}
+  "branch_reasons": [
+    {"branch": "^\"SOA\"", "kind": "excluded", "reason": "excluded by rule: SOA facility", "label": "VERIFIED (config)"},
+    {"branch": "> \"(T1|Tier 1) SM\"$", "kind": "missing", "reason": "Tier 1 SM gap (Waiting on Cherine)", "label": "VERIFIED (config)", "waiting_on": "W-1"},
+    {"branch": "^\"[^\"]+\" > None met$", "kind": "missing", "reason": "no SM or OM on the facility", "label": "VERIFIED (records)"}
   ],
   "waiting_on": [
     {"id": "W-1", "title": "Tier 1 SM gap", "detail": "In 7 workflows the T1 SM branch ends with no task, so a Tier 1 facility with an SM but no OM gets none of those tasks."},
     {"id": "W-2", "title": "Weekly KPI workflow making Weekly Call tasks", "detail": "Its Tier 2 - L1, Tier 2 - L2 and Tier 3 branches create the same Weekly Call task as the Weekly calls workflow. Duplicates found are listed here, not as a broken rule.", "duplicate_task_type": "Weekly Call: First 90 days"},
-    {"id": "W-3", "title": "First-90-days tasks before a facility is live", "detail": "The first-90-days workflows check the go-live date, not Status = Live. Tasks for facilities that aren't live are flagged as a Potential Issue under rule 1.", "task_types": ["Weekly Call: First 90 days", "Weekly KPI Review: First 90 days"]}
+    {"id": "W-3", "title": "First-90-days tasks before a facility is live", "detail": "The first-90-days workflows check the go-live date, not Status = Live. Tasks for facilities that aren't live are flagged as a Potential Issue under rule 1.", "task_types": ["Weekly Call: First 90 days", "Weekly KPI Review: First 90 days"]},
+    {"id": "W-4", "title": "R+S - Reminders: should it create a task?", "detail": "R+S - Reminders: Respond within 1 day to external emails (1689020435) only branches and waits; it creates nothing (known issue F-05)."}
   ],
   "known_issues": [
     {"id": "F-03", "text": "In 13 workflows the OM branch is checked before the SM branch, so tasks go to the OM when both exist. Cherine is deciding the fix."},
+    {"id": "F-05", "text": "R+S - Reminders: Respond within 1 day to external emails (1689020435) creates no tasks: it only branches and waits, then loops back."},
     {"id": "F-08", "text": "\"Create Tasks | Respond to reviews at Storage Reach\" didn't come back from the API. It's a User workflow, which may be why."},
     {"id": "OFF-5", "text": "5 workflows are switched off. That's expected unless WLS says otherwise."}
   ]
