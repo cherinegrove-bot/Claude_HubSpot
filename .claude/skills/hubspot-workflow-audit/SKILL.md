@@ -173,11 +173,12 @@ Open `$WK/results.json` and look over the top problems.
    - the **5 most important problems**
    - **Waiting on \<decision owner\>**
    - known issues, mentioned once
-2. **HTML page**, one self-contained file per report day, in `audits/<team>-workflow-audit/weekly/`.
-   - **Tabs:** Summary, Tasks created, Company links, Workflow changes, Waiting on \<decision owner\>
-   - **Tasks created** has a task-type dropdown showing should have, did get, missing (with reason) and shouldn't have. New facilities are on the same tab.
-   - **Facility search** in the header shows every task a facility got this week, with type, due date, company link and any problems, plus the types it is missing.
-   - **Colours:** from the team's `team-rules.md` (`page_colours`: `navy` for the title bar and headings, `grey` for table headers and labels, `red` for problems only, `white` for cards and tables, `background` for the page). Red marks problems only, never "all good" items.
+2. **HTML page**, one file per report day, in `audits/<team>-workflow-audit/weekly/`.
+   - **Layout:** `weekly_html.py` fills the skill's template, `templates/weekly_check_template.html`, by putting the results data object in place of `__DATA__`. The layout is the same for every team; don't build a page by hand.
+   - **Tabs:** Overview (the three questions, what needs attention, known issues), Tasks created (one row per task type; click for should have / got it / missing with reason), Company links, Workflow changes, Waiting on \<decision owner\>.
+   - **Facility search** in the header opens a facility's tasks this week, with created and due dates, queue, and any problems.
+   - **Queue names:** the API can't return them, so the page uses the team's `queue_names` from `team-rules.md`.
+   - **Colours:** the template's base colours are replaced by the team's `page_colours` from `team-rules.md`, if set (`navy` title bar and headings, `grey` headers and labels, `red` problems only, `white` cards and tables, `background` page).
    - **Content:** company names and record IDs only. No customer contact details.
 3. **Send the HTML page to the user** with SendUserFile.
 4. **Commit and push** the page only when the user wants it kept. Never commit `$WK`. A test run is not sent anywhere.

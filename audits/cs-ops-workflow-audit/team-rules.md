@@ -125,6 +125,15 @@ Report each once, as a known issue.
   - 1682101413 Create Tasks | Prepare Month End Report
   - 1682545542 Create Tasks | Playbook Review/Maintenance T1 OM
 
+## Queue names
+
+HubSpot's API can't return queue names, only their IDs. These were confirmed by WLS in HubSpot:
+
+| Queue ID | Name | Confirmed |
+|---|---|---|
+| 13519269 | Ops Tasks | 2026-10-06 |
+| 9999918 | BOG - Run and Sustain | 2026-10-07 (seen in a task's queue history) |
+
 ## Page colours
 
 The weekly HTML page uses the WLS brand colours (set 2026-10-07):
@@ -206,7 +215,10 @@ The scripts read this block. Keep it in step with the text above.
     {"workflow": "1838568062", "what": "switched off", "first_seen": "2026-10-07", "status": "checking with Cherine"},
     {"workflow": "1838565644", "what": "revision 39 -> 41, no change in the compared settings", "first_seen": "2026-10-07", "status": "checking with Cherine"}
   ],
-  "queue_names": {"9999918": {"name": "BOG - Run and Sustain", "label": "VERIFIED (screenshot)", "confirmed": "2026-10-07"}},
+  "queue_names": {
+    "13519269": {"name": "Ops Tasks", "label": "confirmed by WLS", "confirmed": "2026-10-06"},
+    "9999918": {"name": "BOG - Run and Sustain", "label": "VERIFIED (screenshot)", "confirmed": "2026-10-07"}
+  },
   "known_queue_moves": [
     {"queue": "9999918", "workflow": "1677143128", "known_issue": "BOG-Q", "waiting_on": "W-6"}
   ],

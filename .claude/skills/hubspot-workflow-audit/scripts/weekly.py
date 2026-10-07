@@ -529,8 +529,11 @@ for wid_, w in WAIT.items():
     fp = FOLDED.get(('wait', wid_), [])
     if w.get('queue_move') and fp:
         qn = ((TEAM.get('queue_names') or {}).get(w['queue_move']) or {}).get('name')
-        item['found'] = item.get('found', []) + [{'type': src, 'reason': f'{n} task(s) from {src} moved to queue {w["queue_move"]}' + (f' "{qn}"' if qn else '')} for src, n in
-                                                 collections.Counter(p.get('source') for p in fp).most_common()]
+        item['found'] = item.get('found', []) + [{'type': p.get('type'), 'company_id': p.get('company_id'), 'company': p.get('company'), 'task': p.get('task_id'),
+                                                  'reason': f'moved to queue {w["queue_move"]}' + (f' "{qn}"' if qn else '') + f' by {(p.get("moved_by") or {}).get("workflow_name", "another workflow")}'}
+                                                 for p in fp]
+        item['summary'] = '; '.join(f'{n} task(s) from {src} moved to queue {w["queue_move"]}' + (f' "{qn}"' if qn else '')
+                                    for src, n in collections.Counter(p.get('source') for p in fp).most_common())
     elif fp:
         item['found'] = item.get('found', []) + [{'type': p.get('type'), 'company_id': p.get('company_id'), 'company': p.get('company'), 'reason': p['text']} for p in fp]
     waiting.append(item)
@@ -579,5 +582,5 @@ for k in known:
     print(f'- {k["id"]}: {k["text"]}' + (f' This week: {k["this_week"]}' if k.get('this_week') else ''))
 print(f'\n**Waiting on {OWNER}**')
 for w in waiting:
-    print(f'- {w["id"]} {w["title"]}' + (f' — this week: ' + '; '.join(f.get('reason') or f.get('company') or '' for f in w['found'][:3]) if w.get('found') else ''))
+    print(f'- {w["id"]} {w["title"]}' + (f' — this week: ' + (w.get('summary') or '; '.join(f.get('reason') or f.get('company') or '' for f in w['found'][:3])) if w.get('found') else ''))
 print(f'\nresults: {os.path.join(A.work, "results.json")}')
