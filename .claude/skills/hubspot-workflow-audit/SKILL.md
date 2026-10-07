@@ -177,7 +177,7 @@ Open `$WK/results.json` and look over the top problems.
    - **Tabs:** Summary, Tasks created, Company links, Workflow changes, Waiting on \<decision owner\>
    - **Tasks created** has a task-type dropdown showing should have, did get, missing (with reason) and shouldn't have. New facilities are on the same tab.
    - **Facility search** in the header shows every task a facility got this week, with type, due date, company link and any problems, plus the types it is missing.
-   - **Colours:** navy `#263449`, slate blue `#3F5066`, light grey `#F3F5F7`.
+   - **Colours:** from the team's `team-rules.md` (`page_colours`: `navy` for the title bar and headings, `grey` for table headers and labels, `red` for problems only, `white` for cards and tables, `background` for the page). Red marks problems only, never "all good" items.
    - **Content:** company names and record IDs only. No customer contact details.
 3. **Send the HTML page to the user** with SendUserFile.
 4. **Commit and push** the page only when the user wants it kept. Never commit `$WK`. A test run is not sent anywhere.
@@ -210,7 +210,8 @@ A new team only needs its two files. Do this with the user, one checkpoint at a 
    | Key | Meaning |
    |---|---|
    | `team`, `team_name`, `decision_owner` | Short name (folder), display name, who decides open questions (names the "Waiting on" tab) |
-   | `master_rules_file` | File name of the master rules workbook in the team folder |
+   | `page_colours` | Colours of the weekly HTML page: `navy`, `grey`, `red` (problems only), `white`, `background` |
+| `master_rules_file` | File name of the master rules workbook in the team folder |
    | `queue_name`, `queue_ids`, `start_date`, `window` | `window` = `{"ends_on": "Thursday", "days": 7}` |
    | `company_scope` | Filters on company properties using **internal** values, e.g. `{"property": "live", "operator": "IS_ANY_OF", "values": ["Yes"]}`; `{}`/omitted = all companies |
    | `went_live` | `status_property`, `live_value`, `go_live_date_property`, `max_days_apart` |
@@ -364,7 +365,7 @@ If the user supplies screenshots, add what they show as findings or process note
      ```
      It reads only the workbook, `findings.json` and the saved fetch data; nothing is fetched.
    - **Sections:** header, headline numbers, top findings (from `"top"`), all findings, workflows, and a footer with the evidence labels and "Read only".
-   - **Colours:** the same as the weekly page.
+   - **Colours:** fixed in `summary_html.py`; it does not read the team's `page_colours` yet.
    - **Content:** no customer contact details.
 3. **Commit** the workbook, `findings.json`, the README and the HTML page. Never commit `$WK`. Push to the session's branch, and **send the workbook and the HTML page to the user** (SendUserFile).
 4. **Summarise in chat:**

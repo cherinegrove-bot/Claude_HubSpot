@@ -5,7 +5,7 @@ Usage:
   python3 weekly_html.py --work DIR [--out FILE]
 Default output: audits/<team>-workflow-audit/weekly/<team>-weekly-audit-<report day>.html
 
-Same layout for every team: tabs Summary, Tasks created, Company links, Workflow changes, Waiting on <decision owner>;
+Colours come from the team's team-rules.md (page_colours). Same layout for every team: tabs Summary, Tasks created, Company links, Workflow changes, Waiting on <decision owner>;
 a task-type dropdown; a facility search. Company names and record IDs only - no customer contact details.
 """
 import argparse, json, os, sys
@@ -26,46 +26,49 @@ data = {k: R[k] for k in ('team', 'decision_owner', 'portal', 'queue', 'queue_id
                           'problems', 'companies', 'tasks')}
 blob = json.dumps(data, default=str).replace('</', '<\\/')
 title = f'{R["team"]} weekly audit {R["report_day"]}'
+# Page colours come from the team's settings (team-rules.md "page_colours"); neutral defaults otherwise.
+COL = {'navy': '#1F2A3C', 'grey': '#666F7A', 'red': '#D62828', 'white': '#FFFFFF', 'background': '#F7F8FA'}
+COL.update((rules.load_team(R['team_slug'])[1] or {}).get('page_colours') or {})
 
 PAGE = r'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>__TITLE__</title>
 <style>
-:root{--navy:#263449;--slate:#3F5066;--grey:#F3F5F7;--line:#D9DEE5;--text:#1E2633;--muted:#5B6678;--bad:#B3261E;--badbg:#FCEDEC;--warn:#8A5A00;--warnbg:#FFF4DC;--ok:#1E6B3A;--okbg:#E8F4EC;--info:#3F5066;--infobg:#E9EDF3}
+:root{--navy:__NAVY__;--grey:__GREY__;--red:__RED__;--white:__WHITE__;--bg:__BG__;--line:color-mix(in srgb,var(--grey) 22%,var(--white));--text:var(--navy)}
 *{box-sizing:border-box}
-body{margin:0;font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--text);background:var(--grey)}
-header{background:var(--navy);color:#fff;padding:18px 24px 0}
+body{margin:0;font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--text);background:var(--bg)}
+header{background:var(--navy);color:var(--white);padding:18px 24px 0}
 header h1{margin:0;font-size:20px;font-weight:600}
-header .sub{color:#C9D1DD;font-size:13px;margin:4px 0 14px}
+header .sub{color:color-mix(in srgb,var(--white) 75%,var(--navy));font-size:13px;margin:4px 0 14px}
 .bar{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between}
 nav{display:flex;flex-wrap:wrap;gap:2px}
-nav button{background:transparent;color:#C9D1DD;border:0;padding:10px 14px;font:inherit;cursor:pointer;border-radius:6px 6px 0 0}
-nav button.on{background:var(--grey);color:var(--navy);font-weight:600}
-nav button:hover:not(.on){color:#fff;background:var(--slate)}
+nav button{background:transparent;color:color-mix(in srgb,var(--white) 75%,var(--navy));border:0;padding:10px 14px;font:inherit;cursor:pointer;border-radius:6px 6px 0 0}
+nav button.on{background:var(--bg);color:var(--navy);font-weight:600}
+nav button:hover:not(.on){color:var(--white);background:color-mix(in srgb,var(--white) 12%,var(--navy))}
 .search{position:relative;margin-bottom:10px;flex:0 1 340px}
-.search input{width:100%;padding:8px 10px;border-radius:6px;border:1px solid var(--slate);font:inherit}
+.search input{width:100%;padding:8px 10px;border-radius:6px;border:1px solid var(--grey);font:inherit;background:var(--white);color:var(--navy)}
 main{padding:20px 24px 48px;max-width:1280px}
 section{display:none}section.on{display:block}
 h2{font-size:16px;color:var(--navy);margin:22px 0 8px}h2:first-child{margin-top:0}
-h3{font-size:14px;color:var(--slate);margin:16px 0 6px}
+h3{font-size:14px;color:var(--navy);margin:16px 0 6px}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
-.card{background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px 14px}
-.card .n{font-size:24px;font-weight:600;color:var(--navy)}.card .l{color:var(--muted);font-size:12px}
-.q{background:#fff;border:1px solid var(--line);border-left:4px solid var(--slate);border-radius:6px;padding:10px 14px;margin:8px 0}
-.q.good{border-left-color:var(--ok)}.q.bad{border-left-color:var(--bad)}
-table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:6px;overflow:hidden;margin:6px 0 14px}
-th{background:var(--slate);color:#fff;text-align:left;font-weight:600;padding:7px 9px;font-size:13px}
-td{padding:7px 9px;border-top:1px solid var(--line);vertical-align:top}
-tr:nth-child(even) td{background:#FAFBFC}
-.pill{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;white-space:nowrap}
-.p-bad{background:var(--badbg);color:var(--bad)}.p-warn{background:var(--warnbg);color:var(--warn)}.p-ok{background:var(--okbg);color:var(--ok)}.p-info{background:var(--infobg);color:var(--info)}
-.lbl{font-size:11px;color:var(--muted);white-space:nowrap}
-.muted{color:var(--muted)}
-select{padding:7px 9px;border-radius:6px;border:1px solid var(--line);font:inherit;min-width:320px;max-width:100%}
+.card{background:var(--white);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.card .n{font-size:24px;font-weight:600;color:var(--navy)}.card .l{color:var(--grey);font-size:12px}
+.card.bad .n{color:var(--red)}
+.q{background:var(--white);border:1px solid var(--line);border-left:4px solid var(--grey);border-radius:6px;padding:10px 14px;margin:8px 0}
+.q.bad{border-left-color:var(--red)}
+table{width:100%;border-collapse:collapse;background:var(--white);border:1px solid var(--line);border-radius:6px;overflow:hidden;margin:6px 0 14px}
+th{background:var(--grey);color:var(--white);text-align:left;font-weight:600;padding:7px 9px;font-size:13px}
+td{padding:7px 9px;border-top:1px solid var(--line);vertical-align:top;background:var(--white)}
+.pill{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;white-space:nowrap;border:1px solid var(--line);color:var(--grey);background:var(--white)}
+.p-bad{border-color:var(--red);color:var(--red);font-weight:600}
+.lbl{font-size:11px;color:var(--grey);white-space:nowrap}
+.muted{color:var(--grey)}
+select{padding:7px 9px;border-radius:6px;border:1px solid var(--line);font:inherit;min-width:320px;max-width:100%;background:var(--white);color:var(--navy)}
 pre{white-space:pre-wrap;margin:0;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace}
-a{color:var(--slate)}
+a{color:var(--navy)}
 ol li,ul li{margin:4px 0}
-.empty{background:#fff;border:1px dashed var(--line);border-radius:6px;padding:12px;color:var(--muted)}
+.empty{background:var(--white);border:1px dashed var(--line);border-radius:6px;padding:12px;color:var(--grey)}
 .tablewrap{overflow-x:auto}
 @media (max-width:640px){header,main{padding-left:16px;padding-right:16px}select{min-width:0;width:100%}}
 </style></head><body>
@@ -89,7 +92,7 @@ const co = id => D.companies[id] || ('company ' + id);
 const coLink = id => id ? `<a href="https://app.hubspot.com/contacts/${D.portal}/record/0-2/${esc(id)}" target="_blank" rel="noopener">${esc(co(id))}</a> <span class="lbl">${esc(id)}</span>` : '<span class="muted">none</span>';
 const wfLink = (id, name) => id ? `<a href="https://app.hubspot.com/workflows/${D.portal}/platform/flow/${esc(id)}/edit" target="_blank" rel="noopener">${esc(name)}</a>` : esc(name);
 const pill = (t, k) => `<span class="pill p-${k}">${esc(t)}</span>`;
-const reasonPill = r => pill(r, r === 'unknown' ? 'bad' : /Waiting on/.test(r) ? 'info' : /went live/.test(r) ? 'ok' : 'warn');
+const reasonPill = r => pill(r, /Waiting on|went live/.test(r) ? 'info' : 'bad');
 const table = (head, rows) => rows.length ? `<div class="tablewrap"><table><thead><tr>${head.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : '<div class="empty">Nothing to show.</div>';
 const TABS = [['summary','Summary'],['tasks','Tasks created'],['links','Company links'],['changes','Workflow changes'],['waiting','Waiting on ' + D.decision_owner]];
 
@@ -101,7 +104,7 @@ $('#nav').addEventListener('click', e => { if (e.target.dataset.t) { $('#q').val
 
 // ---------------------------------------------------------------- Summary
 (function(){
- const c = D.counts, ch = D.changes.filter(x => x.status !== 'same').length;
+ const c = D.counts, chAll = D.changes.filter(x => x.status !== 'same'), ch = chAll.length, chNew = chAll.filter(x => !x.pending).length;
  const q = (n, title, good, bad) => `<div class="q ${n ? 'bad' : 'good'}"><b>${esc(title)}</b><br>${n ? esc(bad) : esc(good)}</div>`;
  let h = `<div class="cards">
   <div class="card"><div class="n">${c.facilities_in_scope}</div><div class="l">facilities in scope</div></div>
@@ -111,7 +114,7 @@ $('#nav').addEventListener('click', e => { if (e.target.dataset.t) { $('#q').val
  <h2>The three questions</h2>
  ${q(c.q1, '1. Were the tasks created?', 'All good.', c.q1 + ' problem(s). See Tasks created.')}
  ${q(c.q2, '2. Are they linked to the right company?', 'All good.', c.q2 + ' problem(s). See Company links.')}
- ${q(ch, '3. Did anyone change the workflows?', 'No changes.', ch + ' workflow(s) differ from the master rules file. See Workflow changes.')}
+ ${q(chNew, '3. Did anyone change the workflows?', ch ? ch + ' workflow(s) differ from the master rules file, all already listed as not yet confirmed. See Workflow changes.' : 'No changes.', ch + ' workflow(s) differ from the master rules file (' + chNew + ' new). See Workflow changes.')}
  <h2>Top problems</h2>` + (D.top.length ? `<ol>${D.top.map(t => `<li>${esc(t.text)} <span class="lbl">${esc(t.label)}</span></li>`).join('')}</ol>` : '<div class="empty">No problems found.</div>');
  h += `<h2>Waiting on ${esc(D.decision_owner)}</h2><ul>${D.waiting_on.map(w => `<li>${esc(w.title)}${w.found && w.found.length ? ' — ' + w.found.length + ' this week' : ''}</li>`).join('')}</ul>`;
  h += `<h2>Known issues</h2><ul>${D.known_issues.map(k => `<li><b>${esc(k.id)}</b>: ${esc(k.text)}${k.this_week ? ' <span class="muted">' + esc(k.this_week) + '</span>' : ''}</li>`).join('')}</ul>`;
@@ -137,7 +140,7 @@ $('#nav').addEventListener('click', e => { if (e.target.dataset.t) { $('#q').val
   let v = `<h3>Made by</h3><ul>${t.workflows.map(w => `<li>${wfLink(w.id, w.name)} ${w.on_live === false && w.on_master ? pill('switched off now', 'bad') : w.on_master === false ? pill('off (expected)', 'info') : ''}</li>`).join('')}</ul>`;
   v += `<h3>Runs in the window</h3>` + (t.runs.length ? `<ul>${t.runs.map(r => `<li>${esc(r.when)} — ${esc(r.name)}${r.off ? ' ' + pill('workflow now off', 'bad') : ''}</li>`).join('')}</ul>` : '<div class="empty">No scheduled run of this task type fell in the window, so nobody was due to get it.</div>');
   t.notes.forEach(n => v += `<p class="muted">${esc(n)}</p>`);
-  v += `<div class="cards" style="margin:10px 0"><div class="card"><div class="n">${t.should.length}</div><div class="l">should have got it</div></div><div class="card"><div class="n">${t.got.length}</div><div class="l">did get it</div></div><div class="card"><div class="n">${Object.keys(t.missing).length}</div><div class="l">missing</div></div><div class="card"><div class="n">${Object.keys(t.shouldnt).length}</div><div class="l">shouldn't have</div></div></div>`;
+  v += `<div class="cards" style="margin:10px 0"><div class="card"><div class="n">${t.should.length}</div><div class="l">should have got it</div></div><div class="card"><div class="n">${t.got.length}</div><div class="l">did get it</div></div><div class="card${Object.keys(t.missing).length ? ' bad' : ''}"><div class="n">${Object.keys(t.missing).length}</div><div class="l">missing</div></div><div class="card${Object.keys(t.shouldnt).length ? ' bad' : ''}"><div class="n">${Object.keys(t.shouldnt).length}</div><div class="l">shouldn't have</div></div></div>`;
   v += `<h3>Missing</h3>` + table(['Facility', 'Reason', 'Workflow', 'Run', 'Label'], Object.entries(t.missing).map(([id, m]) => [coLink(id), reasonPill(m.reason), esc((t.workflows.find(w => w.id === m.workflow) || {}).name || m.workflow), esc(m.run), `<span class="lbl">${esc(m.label)}</span>`]));
   v += `<h3>Created for facilities that shouldn't have them</h3>` + table(['Facility', 'Why not', 'Created', 'Task ID', 'Label'], Object.entries(t.shouldnt).map(([id, m]) => [coLink(id), esc(m.reason), esc(m.created), esc(m.task), `<span class="lbl">${esc(m.label)}</span>`]));
   const ne = Object.entries(t.not_expected);
@@ -211,5 +214,7 @@ $('#q').addEventListener('input', e => {
 let start = 'summary'; try{ start = localStorage.getItem('wa-tab') || 'summary' }catch(e){}
 show(TABS.some(t => t[0] === start) ? start : 'summary');
 </script></body></html>'''
+for k, v in (('__NAVY__', COL['navy']), ('__GREY__', COL['grey']), ('__RED__', COL['red']), ('__WHITE__', COL['white']), ('__BG__', COL['background'])):
+    PAGE = PAGE.replace(k, v)
 open(out, 'w').write(PAGE.replace('__TITLE__', title).replace('__DATA__', blob))
 print(f'Wrote {out} ({os.path.getsize(out) // 1024} KB)')

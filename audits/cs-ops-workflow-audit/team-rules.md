@@ -117,6 +117,20 @@ Report each once, as a known issue.
   - 1682101413 Create Tasks | Prepare Month End Report
   - 1682545542 Create Tasks | Playbook Review/Maintenance T1 OM
 
+## Page colours
+
+The weekly HTML page uses the WLS brand colours (set 2026-10-07):
+
+| Colour | Hex | Used for |
+|---|---|---|
+| Navy | `#00173C` | Title bar and headings |
+| Grey | `#646F79` | Table headers and labels |
+| Red | `#E62222` | Problems only |
+| White | `#FFFFFF` | Cards and tables |
+| Light grey | `#F7F9FA` | Page background |
+
+No green: rows and items that are fine are shown in the normal colours.
+
 ## Settings for the scripts
 
 The scripts read this block. Keep it in step with the text above.
@@ -128,6 +142,7 @@ The scripts read this block. Keep it in step with the text above.
   "team": "cs-ops",
   "team_name": "CS Ops",
   "decision_owner": "Cherine",
+  "page_colours": {"navy": "#00173C", "grey": "#646F79", "red": "#E62222", "white": "#FFFFFF", "background": "#F7F9FA"},
   "master_rules_file": "CS_Ops_Master_Rules.xlsx",
   "queue_name": "Ops Tasks",
   "queue_ids": ["13519269"],
