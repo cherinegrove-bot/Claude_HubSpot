@@ -220,8 +220,10 @@ A new team only needs its two files. Do this with the user, one checkpoint at a 
    | `task_types` | `[{"name", "workflows": [ids], "title": regex on the lower-cased task title}]` |
    | `no_task_workflows`, `expected_off`, `not_readable` | Workflows that create nothing / are off on purpose / can't be read (with their known issue ID) |
    | `branch_reasons` | `[{"branch": regex on the branch path, e.g. "\"Branch A\" > \"Branch B\"", "kind": "missing" or "excluded", "reason", "label", "waiting_on"}]`: what to say when a company's path through the branches ends with no task |
-   | `waiting_on` | `[{"id", "title", "detail", optional "duplicate_task_type" or "task_types"}]` |
-   | `known_issues` | `[{"id", "text"}]` |
+   | `waiting_on` | `[{"id", "title", "detail", optional "duplicate_task_type", "task_types", "queue_move" (queue ID) or "company_ids"}]`. Problems for those companies, or tasks moved to that queue, are listed under the item instead of as new problems |
+   | `known_issues` | `[{"id", "text", optional "label"}]`. Each is reported once, with this week's count of the tasks it covers |
+   | `queue_names` | `{"<queue ID>": {"name", "label", "confirmed"}}`: queue names the user confirmed (the API can't return them) |
+   | `known_queue_moves` | `[{"queue", "workflow", "known_issue", "waiting_on"}]`: a known workflow that moves the team's tasks to another queue; those tasks are reported as one known-issue line, not one problem per task |
 3. **Build the master rules file once,** from a saved settings snapshot the user agrees is correct:
    ```bash
    python3 $SK/fetch.py --work $WK --ids <id> <id> ...           # snapshot of the agreed workflows
