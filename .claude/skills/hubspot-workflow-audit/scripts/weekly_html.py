@@ -167,7 +167,8 @@ $('#nav').addEventListener('click', e => { if (e.target.dataset.t) { $('#q').val
 (function(){
  const ch = D.changes.filter(c => c.status !== 'same'), same = D.changes.filter(c => c.status === 'same');
  let h = `<h2>Live workflows compared with the master rules file</h2><p>${ch.length} of ${D.changes.length} workflows differ. A change isn't automatically wrong: confirm whether it was planned, and only then update the master rules file.</p>`;
- h += ch.length ? ch.map(c => `<h3>${wfLink(c.workflow, c.name)} ${c.status === 'changed' ? pill('changed', 'warn') : pill(c.status, 'bad')}</h3>` +
+ h += ch.length ? ch.map(c => `<h3>${wfLink(c.workflow, c.name)} ${c.status === 'change, not yet confirmed' ? pill('change, not yet confirmed', 'warn') : pill(c.status, 'bad')}</h3>` +
+   (c.pending ? `<p>${pill('first seen ' + c.pending.first_seen + ' · ' + c.pending.status, 'info')}</p>` : '') +
    (c.revision ? `<p class="muted">Revision ${esc(c.revision[0])} → ${esc(c.revision[1])} · last updated ${esc(c.updated)}${c.only_revision ? ' · no change found in the compared settings (trigger, schedule, re-enrollment, suppression, branches, task actions, queue)' : ''}</p>` : `<p class="muted">${esc(c.error || '')}</p>`) +
    (c.rule2 ? `<p>${pill(c.rule2, 'bad')}</p>` : '') +
    (c.only_revision ? '' : table(['Setting', 'Was (master rules file)', 'Now (live)'], c.diffs.filter(d => d.column !== 'Revision').map(d => [esc(d.column), `<pre>${esc(d.was)}</pre>`, `<pre>${esc(d.now)}</pre>`])))).join('') : '<div class="empty">No changes.</div>';

@@ -113,6 +113,7 @@ def main():
         os.remove(os.path.join(a.work, 'COMPLETE'))
 
     flows = list_flows()
+    save(a.work, 'all_flows.json', flows)
     if a.weekly:
         return fetch_weekly(a, flows)
     save(a.work, 'all_flows.json', flows)
@@ -465,6 +466,26 @@ def fetch_weekly(a, flows):
             print('list', lid, 'not readable:', str(e)[:120], file=sys.stderr)
     save(a.work, 'lists.json', lists)
     save(a.work, 'list_names.json', lnames)
+    # 4. tasks from the team's workflows that are not in the team queue: who moved them? (queue history + workflows that set a queue)
+    outq = [t['id'] for t in tasks if t.get('_flow') in M and not set((t['properties'].get('hs_queue_membership_ids') or '').split(';')) & set(queue_ids)]
+    qhist, movers = {}, []
+    if outq:
+        for r in batch_read_history('tasks', outq, ['hs_queue_membership_ids'], ['hs_queue_membership_ids']):
+            qhist[r['id']] = (r.get('propertiesWithHistory') or {}).get('hs_queue_membership_ids', [])
+        for f in flows:
+            if f.get('objectTypeId') != '0-27':
+                continue
+            try:
+                c = req(f'/automation/v4/flows/{f["id"]}')
+            except RuntimeError:
+                continue
+            for x in c.get('actions', []):
+                if x.get('actionTypeId') == '0-5' and x.get('fields', {}).get('property_name') == 'hs_queue_membership_ids':
+                    movers.append({'id': f['id'], 'name': c['name'], 'enabled': c.get('isEnabled'), 'updatedAt': c.get('updatedAt'), 'actionId': x['actionId'],
+                                   'queue': str((x['fields'].get('value') or {}).get('staticValue')), 'config': c})
+        print(f'{len(outq)} task(s) outside the queue; {len(movers)} queue-setting action(s) in task workflows')
+    save(a.work, 'queue_history.json', qhist)
+    save(a.work, 'queue_movers.json', movers)
     tix = sorted({x['id'] for v in assoc.values() for x in v.get('tickets', [])})
     save(a.work, 'tickets.json', batch_read('tickets', tix, ['subject', 'hs_pipeline', 'hs_pipeline_stage']) if tix else [])
     save(a.work, 'scope.json', {'mode': 'weekly', 'team': team_name, 'team_slug': rules.team_slug(a.team), 'queue_ids': queue_ids,

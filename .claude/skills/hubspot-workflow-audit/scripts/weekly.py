@@ -40,6 +40,8 @@ COMP = {c['id']: c for c in W('companies.json', [])}
 LISTS = W('lists.json', {})
 LIST_NAMES = W('list_names.json', {})
 ACCT = W('account.json', {})
+QHIST = W('queue_history.json', {})
+MOVERS = W('queue_movers.json', [])
 from zoneinfo import ZoneInfo
 TZ = ZoneInfo(ACCT.get('timeZone') or 'UTC')
 P = rules.parse_date
@@ -60,8 +62,8 @@ wfname = lambda w: (M.get(w, {}).get('row', {}).get('Workflow Name') or LIVE.get
 PROBLEMS = []
 
 
-def problem(q, kind, text, label, cls='Confirmed', type_=None, cid=None, task=None, workflow=None, reason=None, group=None, source=None):
-    PROBLEMS.append({'q': q, 'kind': kind, 'text': text, 'label': label, 'class': cls, 'type': type_, 'company_id': cid,
+def problem(q, kind, text, label, cls='Confirmed', type_=None, cid=None, task=None, workflow=None, reason=None, group=None, source=None, extra=None):
+    PROBLEMS.append({**(extra or {}), 'q': q, 'kind': kind, 'text': text, 'label': label, 'class': cls, 'type': type_, 'company_id': cid,
                      'company': cname(cid) if cid else None, 'task_id': task, 'workflow': workflow, 'reason': reason, 'group': group or kind,
                      'source': source or (wfname(workflow) if workflow else None)})
 
@@ -83,6 +85,23 @@ def task_row(t):
 ROWS = [task_row(t) for t in TASKS if T0 <= P(t['properties']['hs_createdate']) < T1]
 MAIN = [r for r in ROWS if not r['sub']]
 SUBS = [r for r in ROWS if r['sub']]
+
+
+def moved_by(r):
+    """If a task was created in the team queue and later put in another queue by automation, say so,
+    and name the task workflow whose action sets that queue (when exactly one does)."""
+    hist = sorted(QHIST.get(r['id'], []), key=lambda h: h['timestamp'])
+    if not hist:
+        return None
+    first, last = hist[0], hist[-1]
+    if first.get('value') not in QIDS or last.get('value') in QIDS:
+        return None
+    m = [x for x in MOVERS if x['queue'] == last.get('value')]
+    who = f'workflow "{m[0]["name"]}" ({m[0]["id"]}, {"ON" if m[0]["enabled"] else "off"}) sets queue {last["value"]} in action {m[0]["actionId"]}' if len(m) == 1 else \
+          (f'{len(m)} task workflows set queue {last["value"]}' if m else 'no task workflow found that sets this queue')
+    secs = (P(last['timestamp']) - P(first['timestamp'])).total_seconds()
+    return {'text': f'It was created in {TEAM.get("queue_name")}, then moved to queue {last["value"]} by automation ({last.get("sourceType")}) {secs:.0f} s later; {who}.',
+            'workflow': m[0]['id'] if len(m) == 1 else None, 'workflow_name': m[0]['name'] if len(m) == 1 else None, 'queue': last['value']}
 
 
 # ------------------------------------------------------------------ who should get what
@@ -300,10 +319,12 @@ for r in MAIN:
                 None, (r['companies'] or [None])[0], r['id'], None, group=f'unknown_source:{r["source"]}')
     elif r['flow'] in M and QIDS and not r['in_queue']:
         cq = sorted({str(a.get('fields', {}).get('queue_id')) for a in M[r['flow']]['cfg'].get('actions', []) if describe.akind(a) == '0-3'})
+        mv = moved_by(r)
         problem(1, 'not_in_queue', f'Task "{r["title"]}" from {wfname(r["flow"])} is in queue {", ".join(r["queues"]) or "none"}, not {TEAM.get("queue_name")} '
-                f'({", ".join(sorted(QIDS))}); the workflow settings say queue {", ".join(cq)}.', 'VERIFIED (records)', 'Confirmed',
+                f'({", ".join(sorted(QIDS))}); the workflow settings say queue {", ".join(cq)}.' + (f' {mv["text"]}' if mv else ''),
+                'VERIFIED (records)' + (' + VERIFIED (config)' if mv and mv.get('workflow') else ''), 'Confirmed',
                 r['type'], (r['companies'] or [None])[0], r['id'], r['flow'], reason=f'in queue {", ".join(r["queues"]) or "none"}',
-                group=f'not_in_queue:{r["flow"]}:{",".join(r["queues"])}')
+                group=f'not_in_queue:{r["flow"]}:{",".join(r["queues"])}', extra={'moved_by': mv})
     elif r['flow'] in M and not r['type'] and M[r['flow']]['cfg'].get('isEnabled'):
         problem(1, 'unknown_type', f'Task "{r["title"]}" from {wfname(r["flow"])} does not match any task type in team-rules.md.', 'VERIFIED (records)', 'Needs Verification',
                 None, (r['companies'] or [None])[0], r['id'], r['flow'], group=f'unknown_type:{r["flow"]}')
@@ -400,12 +421,16 @@ for wid, e in sorted(M.items(), key=lambda x: wfname(x[0]).lower()):
             rule2 = f'now excludes list {excl["list_id"]}, which only {", ".join(excl.get("only_in_task_types", []))} workflows should (rule 2)'
         if live.get('isEnabled') and not has and wid in excl_wfs:
             rule2 = f'no longer excludes list {excl["list_id"]} (rule 2 says it should)'
-    CHANGES.append({'workflow': wid, 'name': wfname(wid), 'status': 'changed' if diffs else 'same', 'diffs': diffs, 'label': 'VERIFIED (config)',
+    pend = next((c for c in TEAM.get('changes_not_confirmed', []) if c['workflow'] == wid), None)
+    CHANGES.append({'workflow': wid, 'name': wfname(wid), 'status': 'change, not yet confirmed' if diffs else 'same', 'diffs': diffs, 'label': 'VERIFIED (config)',
+                    'pending': pend,
                     'revision': [e['row'].get('Revision'), str(live.get('revisionId'))], 'updated': (live.get('updatedAt') or '')[:16].replace('T', ' ') + ' UTC',
                     'only_revision': bool(only_rev), 'rule2': rule2})
     if diffs:
         what = 'only the revision number changed (no change found in the compared settings)' if only_rev else ', '.join(d['column'] for d in diffs) + ' changed'
-        problem(3, 'changed', f'{wfname(wid)}: {what}. Confirm it was planned.', 'VERIFIED (config)', 'Needs Verification', workflow=wid, group=f'changed:{wid}')
+        known = f' Change, not yet confirmed (first seen {pend["first_seen"]}; {pend["status"]}).' if pend else ' Change, not yet confirmed.'
+        problem(3, 'changed', f'{wfname(wid)}: {what}.{known}', 'VERIFIED (config)', 'Needs Verification', workflow=wid, group=f'changed:{wid}',
+                extra={'pending': bool(pend)})
     if rule2:
         problem(3, 'rule2', f'{wfname(wid)} {rule2}.', 'VERIFIED (config)', 'Confirmed', workflow=wid, group=f'rule2:{wid}')
 
@@ -430,7 +455,9 @@ def headline(g, ps):
     if k == 'link':
         return f'{n} main task{"s" if n > 1 else ""} from {p["source"]}: {p["reason"]}.'
     if k == 'not_in_queue':
-        return f'{n} task{"s" if n > 1 else ""} from {p["source"]} {"are" if n > 1 else "is"} {p["reason"]}, not the {TEAM.get("queue_name")} queue, although the workflow settings say {TEAM.get("queue_name")}.'
+        mv = p.get('moved_by') or {}
+        return (f'{n} task{"s" if n > 1 else ""} from {p["source"]} {"are" if n > 1 else "is"} {p["reason"]}, not the {TEAM.get("queue_name")} queue'
+                + (f': created in {TEAM.get("queue_name")}, then moved by the workflow "{mv["workflow_name"]}" ({mv["workflow"]}).' if mv.get('workflow') else ', although the workflow settings say ' + TEAM.get('queue_name', '') + '.'))
     if n == 1:
         return p['text']
     return f'{n} × {p["text"]}'
@@ -441,6 +468,8 @@ def score(ps):
     s = WEIGHT.get(p['kind'], 1) + min(len(ps), 50) / 25
     if p['kind'] == 'missing' and p.get('reason') in ('unknown', 'workflow off'):
         s += 3                                        # tasks nobody can explain go first
+    if p.get('pending'):
+        s -= 2                                        # already seen, waiting on confirmation
     if 'Waiting on' in (p.get('reason') or ''):
         s -= 3                                        # already with the decision owner
     return s

@@ -67,6 +67,7 @@ One task type can be made by several workflows, for example split by tier. Each 
 - **Tier 1 SM gap:** facilities caught by it are shown as **missing**, with the reason "Tier 1 SM gap (Waiting on Cherine)".
   - Not "excluded by rule": there's no confirmed rule yet.
   - Not "unknown": we know why.
+- **Tier 2 - L1 SM gap:** in Update Customer Sentiment (Ent, Tier 1, Tier 2.1) the "Tier 2 - L1 SM" branch ends with no task. Facilities caught by it are shown as **missing**, with the reason "Tier 2 - L1 SM gap (Waiting on Cherine)" (decided 2026-10-07).
 - **Duplicate Weekly Call tasks** (from both the Weekly calls and Weekly KPI workflows) go under Waiting on Cherine, not as a broken rule 4.
 - **No SM or OM on the facility:** a facility that should get a task but whose OM/SM branch matches neither is shown as missing, with the reason "no SM or OM on the facility", labelled VERIFIED (records).
 - **Wrong company** (Question 2):
@@ -89,6 +90,18 @@ Report these once per run, in their own section, not as new problems every week.
    - Should they create tasks before a facility is live?
 4. **R+S - Reminders: should it create a task?**
    - `R+S - Reminders: Respond within 1 day to external emails` (1689020435) only branches and waits; it creates nothing (F-05).
+5. **Tier 2 - L1 SM gap.**
+   - In Update Customer Sentiment (Ent, Tier 1, Tier 2.1) the "Tier 2 - L1 SM" branch ends with no task.
+   - So a Tier 2 - L1 facility with an SM but no OM gets no Update Customer Sentiment task.
+
+## Changes not yet confirmed
+
+The weekly audit found these differences from the master rules file. They stay "change, not yet confirmed" until WLS confirms whether they were planned; the master rules file is not updated until then.
+
+| Workflow | Change | First seen | Status |
+|---|---|---|---|
+| Create Tasks \| Weekly KPI review to owner for first 90 days (1838568062) | Switched OFF (revision 28 -> 29, 2026-10-07 13:15 UTC) | 2026-10-07 | Checking with Cherine |
+| Create Tasks \| Weekly calls first 90 days after go live (1838565644) | Revision 39 -> 41 (2026-10-07 13:15 UTC); no change in the compared settings | 2026-10-07 | Checking with Cherine |
 
 ## Known issues
 
@@ -154,13 +167,19 @@ The scripts read this block. Keep it in step with the text above.
   "branch_reasons": [
     {"branch": "^\"SOA\"", "kind": "excluded", "reason": "excluded by rule: SOA facility", "label": "VERIFIED (config)"},
     {"branch": "> \"(T1|Tier 1) SM\"$", "kind": "missing", "reason": "Tier 1 SM gap (Waiting on Cherine)", "label": "VERIFIED (config)", "waiting_on": "W-1"},
+    {"branch": "> \"Tier 2 - L1 SM\"$", "kind": "missing", "reason": "Tier 2 - L1 SM gap (Waiting on Cherine)", "label": "VERIFIED (config)", "waiting_on": "W-5"},
     {"branch": "^\"[^\"]+\" > None met$", "kind": "missing", "reason": "no SM or OM on the facility", "label": "VERIFIED (records)"}
   ],
   "waiting_on": [
     {"id": "W-1", "title": "Tier 1 SM gap", "detail": "In 7 workflows the T1 SM branch ends with no task, so a Tier 1 facility with an SM but no OM gets none of those tasks."},
     {"id": "W-2", "title": "Weekly KPI workflow making Weekly Call tasks", "detail": "Its Tier 2 - L1, Tier 2 - L2 and Tier 3 branches create the same Weekly Call task as the Weekly calls workflow. Duplicates found are listed here, not as a broken rule.", "duplicate_task_type": "Weekly Call: First 90 days"},
     {"id": "W-3", "title": "First-90-days tasks before a facility is live", "detail": "The first-90-days workflows check the go-live date, not Status = Live. Tasks for facilities that aren't live are flagged as a Potential Issue under rule 1.", "task_types": ["Weekly Call: First 90 days", "Weekly KPI Review: First 90 days"]},
-    {"id": "W-4", "title": "R+S - Reminders: should it create a task?", "detail": "R+S - Reminders: Respond within 1 day to external emails (1689020435) only branches and waits; it creates nothing (known issue F-05)."}
+    {"id": "W-4", "title": "R+S - Reminders: should it create a task?", "detail": "R+S - Reminders: Respond within 1 day to external emails (1689020435) only branches and waits; it creates nothing (known issue F-05)."},
+    {"id": "W-5", "title": "Tier 2 - L1 SM gap", "detail": "In Update Customer Sentiment (Ent, Tier 1, Tier 2.1) the Tier 2 - L1 SM branch ends with no task, so a Tier 2 - L1 facility with an SM but no OM gets no Update Customer Sentiment task."}
+  ],
+  "changes_not_confirmed": [
+    {"workflow": "1838568062", "what": "switched off", "first_seen": "2026-10-07", "status": "checking with Cherine"},
+    {"workflow": "1838565644", "what": "revision 39 -> 41, no change in the compared settings", "first_seen": "2026-10-07", "status": "checking with Cherine"}
   ],
   "known_issues": [
     {"id": "F-03", "text": "In 13 workflows the OM branch is checked before the SM branch, so tasks go to the OM when both exist. Cherine is deciding the fix."},
