@@ -137,8 +137,8 @@ function describe(key,ps){
  const p=ps[0],n=ps.length;
  if(p.kind==='not_in_queue'){const mb=p.moved_by||{};return{q:1,kind:'bad',title:`${plural(n,p.type+' task')} were moved out of ${D.queue}`,
   text:`They were created in ${D.queue}, then the “${mb.workflow_name||'another'}” workflow moved them to ${qname(mb.queue)} a few seconds later.`,who:D.decision_owner,label:p.label,ps};}
- if(p.kind==='link'){const isKnown=/F-08|Respond to reviews/.test(p.source||p.text||'');return{q:2,kind:isKnown?'known':'bad',title:`${plural(n,'task')} ${n===1?'has':'have'} no company`,
-  text:isKnown?`All from “${(p.source||'Respond to reviews at Storage Reach').replace(/\s*\(from known issue F-08\)/,'')}”. This is known issue F-08.`:`From “${p.source||''}”.`,who:isKnown?'Known issue':'You',label:p.label,ps};}
+ if(p.kind==='link'){const isKnown=!!p.known_issue;return{q:2,kind:isKnown?'known':'bad',title:`${plural(n,'task')} ${n===1?'has':'have'} no company`,
+  text:isKnown?`All from “${(p.source||'').replace(/\s*\(from known issue [^)]*\)/,'')}”. This is known issue ${p.known_issue}.`:`From “${p.source||''}”.`,who:isKnown?'Known issue':'You',label:p.label,ps};}
  if(p.kind==='missing'){return{q:1,kind:p.waiting_on?'wait':'bad',title:`${plural(n,'facility','facilities')} didn't get “${p.type}”`,
   text:`Reason: ${p.reason}.`,who:p.waiting_on?D.decision_owner:'You',label:p.label,ps};}
  if(p.kind==='shouldnt'){return{q:1,kind:'bad',title:`${plural(n,'facility','facilities')} got “${p.type}” but shouldn't have`,text:`Reason: ${p.reason||'not in scope'}.`,who:'You',label:p.label,ps};}
@@ -176,17 +176,18 @@ function show(id){document.querySelectorAll('nav button').forEach(b=>b.classList
 $('#nav').onclick=e=>{const b=e.target.closest('button');if(b)show(b.dataset.t);};
 
 /* ---------- overview ---------- */
-function qStatus(arr){if(nBad(arr))return['st-bad','Needs attention'];if(arr.some(i=>i.kind==='wait'))return['st-wait','Waiting on '+D.decision_owner];if(arr.length)return['st-ok','Only known issues'];return['st-ok','All good'];}
-function qLine(arr,good){if(!arr.length)return good;return arr.map(i=>i.title).join('. ')+'.';}
+const q1wait=D.types.reduce((n,t)=>n+Object.values(t.missing).filter(m=>m.waiting_on).length,0);
+function qStatus(arr,extraWait){if(nBad(arr))return['st-bad','Needs attention'];if(extraWait||arr.some(i=>i.kind==='wait'))return['st-wait','Waiting on '+D.decision_owner];if(arr.length)return['st-ok','Only known issues'];return['st-ok','All good'];}
+function qLine(arr,good,extraWait){if(!arr.length)return extraWait?`${good.replace(/\.$/,'')}, except ${plural(extraWait,'facility','facilities')} waiting on ${D.decision_owner}.`:good;return arr.map(i=>i.title).join('. ')+'.';}
 const isDate=s=>/^\d{4}-\d{2}-\d{2}/.test(s||'');
 const runs=D.types.flatMap(t=>t.runs.filter(r=>isDate(r.when)).map(r=>({...r,type:t.name})));
 const events=D.types.filter(t=>t.runs.some(r=>!isDate(r.when))).map(t=>t.name);
-const Q=[[1,'Were the tasks created?',q1,'Every facility that should have got a task this week got it.','tasks'],
- [2,'Are they linked to the right company?',q2,'Every task is linked to exactly one qualifying company.','links'],
- [3,'Did anyone change the workflows?',q3,'All workflows match the master rules file.','changes']];
+const Q=[[1,'Were the tasks created?',q1,'Every facility that should have got a task this week got it.','tasks',q1wait],
+ [2,'Are they linked to the right company?',q2,'Every task is linked to exactly one qualifying company.','links',0],
+ [3,'Did anyone change the workflows?',q3,'All workflows match the master rules file.','changes',0]];
 $('#t-overview').innerHTML=`<h2>This week at a glance</h2>
 <p class="lead">${runs.length?`${plural(runs.length,'scheduled run')} this week: ${runs.map(r=>esc(r.type)+' ('+esc(day(r.when))+')').join(' and ')}.`:'No scheduled workflow runs fell in this window.'}${events.length?` ${events.map(esc).join(', ')} can run any time a facility meets ${events.length===1?'its':'their'} trigger.`:''}</p>
-<div class="qs">${Q.map(([n,t,arr,good,tab])=>{const [cls,lab]=qStatus(arr);return `<button class="qcard" data-go="${tab}"><span class="qn">Question ${n}</span><h3>${t}</h3><span class="status ${cls}"><span class="dot"></span>${lab}</span><p>${esc(qLine(arr,good))}</p><span class="more">See details →</span></button>`;}).join('')}</div>
+<div class="qs">${Q.map(([n,t,arr,good,tab,xw])=>{const [cls,lab]=qStatus(arr,xw);return `<button class="qcard" data-go="${tab}"><span class="qn">Question ${n}</span><h3>${t}</h3><span class="status ${cls}"><span class="dot"></span>${lab}</span><p>${esc(qLine(arr,good,xw))}</p><span class="more">See details →</span></button>`;}).join('')}</div>
 <div class="stats"><span><b>${D.counts.facilities_in_scope}</b> facilities checked</span><span><b>${D.counts.main_tasks}</b> tasks created</span><span><b>${D.counts.subtasks}</b> subtasks</span><span><b>${D.counts.workflows}</b> workflows compared</span></div>
 <h2>What needs attention</h2><p class="lead">Grouped so each problem shows once. Click one to see the facilities.</p>
 <div class="list">${items.length?items.map(i=>itemHTML(i,false)).join(''):'<div class="empty">Nothing needs attention this week.</div>'}</div>
@@ -195,9 +196,9 @@ $('#t-overview').innerHTML=`<h2>This week at a glance</h2>
 $('#t-overview').onclick=e=>{const b=e.target.closest('[data-go]');if(b)show(b.dataset.go);};
 
 /* ---------- tasks ---------- */
-function typeRow(t,i){const ran=t.runs.length>0,miss=Object.keys(t.missing).length,sh=Object.keys(t.shouldnt).length,other=D.problems.filter(p=>p.q===1&&p.type===t.name&&p.kind!=='missing'&&p.kind!=='shouldnt').length;
- const ev=t.runs.some(r=>!isDate(r.when));const st=ev&&!t.should.length?'<span class="ok">Runs when triggered, none this week</span>':!ran?'<span class="ok">Not scheduled this week</span>':(miss||sh||other)?'<span class="badtxt">Needs attention</span>':'<span class="ok">All good</span>';
- return `<tr class="click${ran?'':' dim'}" data-i="${i}"><td><b>${esc(t.name)}</b></td><td>${ran?t.runs.map(r=>isDate(r.when)?esc(when(r.when)):'When triggered').join('<br>'):'None'}</td><td class="num">${ran?t.should.length:''}</td><td class="num">${ran?t.got.length:''}</td><td class="num${miss?' bad':''}">${ran?miss:''}</td><td class="num${(sh+other)?' bad':''}">${ran?sh+other:''}</td><td>${st}</td></tr>`;}
+function typeRow(t,i){const ran=t.runs.length>0,mv=Object.values(t.missing),miss=mv.filter(m=>!m.waiting_on).length,wait=mv.length-miss,sh=Object.keys(t.shouldnt).length,other=D.problems.filter(p=>p.q===1&&p.type===t.name&&p.kind!=='missing'&&p.kind!=='shouldnt').length;
+ const ev=t.runs.some(r=>!isDate(r.when));const st=ev&&!t.should.length?'<span class="ok">Runs when triggered, none this week</span>':!ran?'<span class="ok">Not scheduled this week</span>':(miss||sh||other)?'<span class="badtxt">Needs attention</span>':wait?`<span class="status st-wait"><span class="dot"></span>Waiting on ${esc(D.decision_owner)}</span>`:'<span class="ok">All good</span>';
+ return `<tr class="click${ran?'':' dim'}" data-i="${i}"><td><b>${esc(t.name)}</b></td><td>${ran?t.runs.map(r=>isDate(r.when)?esc(when(r.when)):'When triggered').join('<br>'):'None'}</td><td class="num">${ran?t.should.length:''}</td><td class="num">${ran?t.got.length:''}</td><td class="num${miss?' bad':''}">${ran?miss:''}${ran&&wait?`<br><small class="ok">${wait} waiting</small>`:''}</td><td class="num${(sh+other)?' bad':''}">${ran?sh+other:''}</td><td>${st}</td></tr>`;}
 const order=D.types.map((t,i)=>[t,i]).sort((a,b)=>(b[0].runs.length>0)-(a[0].runs.length>0));
 $('#t-tasks').innerHTML=`<h2>Were the tasks created?</h2><p class="lead">One row per task type. Click a row to see who should have got it, who did, and who's missing it.</p>
 <div class="tool"><label><input type="checkbox" id="onlyran" checked> Only show task types that ran this week</label></div>
