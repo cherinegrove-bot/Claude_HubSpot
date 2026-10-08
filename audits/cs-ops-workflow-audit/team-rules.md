@@ -91,14 +91,12 @@ Report these once per run, in their own section, not as new problems every week.
 3. **First-90-days tasks before a facility is live.**
    - The two first-90-days workflows check the go-live date, not Status = Live.
    - Should they create tasks before a facility is live?
-7. **demo Facility (44541671248): test record?**
-   - Live, Full TPM, Tier 2 - L1, with no SM and no OM, so it gets no tasks from the OM/SM branches.
-   - Should it be excluded from the audit?
 
 ### Closed (answered by Cherine, 2026-10-08)
 
 | Item | Answer |
 |---|---|
+| 7. demo Facility (44541671248): test record? | Demo facility, excluded from audits (see Excluded companies). |
 | 4. R+S - Reminders: should it create a task? | Workflow deleted. Known issue F-05 closed too. |
 | 5. Tier 2 - L1 SM gap (Update Customer Sentiment) | Fine, no action. Reported as "excluded by rule" from now on. |
 | 6. Set task queue moves BOG tasks to BOG - Run and Sustain | Workflow deleted. BOG tasks should now stay in Ops Tasks. The 52 tasks it moved on 2026-10-07 stay in BOG - Run and Sustain (known issue BOG-Q, fixed, no action needed). |
@@ -123,6 +121,14 @@ Report each once, as a known issue.
   - 1682549368 Create Tasks | Prepare Rate Review
   - 1682101413 Create Tasks | Prepare Month End Report
   - 1682545542 Create Tasks | Playbook Review/Maintenance T1 OM
+
+## Excluded companies
+
+These companies are left out of every audit: the facilities in scope, who should get a task, missing tasks, company links, the facility search and the calendar results. Tasks linked only to an excluded company are not checked.
+
+| Company ID | Name | Reason | Added |
+|---|---|---|---|
+| 44541671248 | demo Facility | demo facility | 2026-10-08 |
 
 ## HubSpot portal
 
@@ -200,6 +206,14 @@ The scripts read this block. Keep it in step with the text above.
       }
     ]
   },
+  "excluded_companies": [
+    {
+      "id": "44541671248",
+      "name": "demo Facility",
+      "reason": "demo facility",
+      "added": "2026-10-08"
+    }
+  ],
   "went_live": {
     "status_property": "live",
     "live_value": "Yes",
@@ -432,14 +446,6 @@ The scripts read this block. Keep it in step with the text above.
         "Weekly Call: First 90 days",
         "Weekly KPI Review: First 90 days"
       ]
-    },
-    {
-      "id": "W-7",
-      "title": "demo Facility (44541671248): test record?",
-      "detail": "Live, Full TPM, Tier 2 - L1, with no SM and no OM. Should it be excluded from the audit? Until then, anything the audit finds for it is listed here, not as a problem.",
-      "company_ids": [
-        "44541671248"
-      ]
     }
   ],
   "changes_not_confirmed": [],
@@ -498,6 +504,11 @@ The scripts read this block. Keep it in step with the text above.
       "id": "W-6",
       "closed": "2026-10-08",
       "answer": "Set task queue deleted; BOG tasks stay in Ops Tasks (also closes BOG-Q)"
+    },
+    {
+      "id": "W-7",
+      "closed": "2026-10-08",
+      "answer": "demo facility, excluded from audits"
     }
   ]
 }

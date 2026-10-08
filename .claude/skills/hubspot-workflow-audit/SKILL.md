@@ -218,6 +218,7 @@ A new team only needs its two files. Do this with the user, one checkpoint at a 
 | `master_rules_file` | File name of the master rules workbook in the team folder |
    | `queue_name`, `queue_ids`, `start_date`, `window` | `window` = `{"ends_on": "Thursday", "days": 7}` |
    | `company_scope` | Filters on company properties using **internal** values, e.g. `{"property": "live", "operator": "IS_ANY_OF", "values": ["Yes"]}`; `{}`/omitted = all companies |
+   | `excluded_companies` | `[{"id", "name", "reason", "added"}]`: companies left out of every audit (e.g. demo or test records): not in scope, not in should-have or missing counts, company links, the facility search or the calendar. Tasks linked only to them are not checked; the chat summary lists the exclusions once |
    | `went_live` | `status_property`, `live_value`, `go_live_date_property`, `max_days_apart` |
    | `links` | `main_task_company`, `main_task_ticket`, `subtask_ticket_forbidden` |
    | `exclusion` | Optional: `list_id` and `only_in_task_types` (the only task types whose workflows may exclude that list) |

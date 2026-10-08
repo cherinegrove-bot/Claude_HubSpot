@@ -36,7 +36,16 @@ LIVE = W('configs.json', {})
 DENIED = W('denied.json', [])
 TASKS = W('tasks.json', [])
 TASSOC = W('task_assoc.json', {})
-COMP = {c['id']: c for c in W('companies.json', [])}
+# Companies the team excludes from every audit (e.g. demo records): dropped here, so they are in no scope, count, search or calendar.
+EXCLUDED = {str(x['id']): x for x in (TEAM.get('excluded_companies') or [])}
+COMP = {c['id']: c for c in W('companies.json', []) if c['id'] not in EXCLUDED}
+EXCLUDED_TASKS = 0
+for _tid, _a in TASSOC.items():
+    _cs = _a.get('companies') or []
+    if any(x['id'] in EXCLUDED for x in _cs):
+        _a['companies'] = [x for x in _cs if x['id'] not in EXCLUDED]
+        if not _a['companies']:
+            _a['_only_excluded'] = True
 LISTS = W('lists.json', {})
 LIST_NAMES = W('list_names.json', {})
 ACCT = W('account.json', {})
@@ -83,6 +92,8 @@ def task_row(t):
 
 
 ROWS = [task_row(t) for t in TASKS if T0 <= P(t['properties']['hs_createdate']) < T1]
+EXCLUDED_TASKS = sum(1 for r in ROWS if TASSOC.get(r['id'], {}).get('_only_excluded'))
+ROWS = [r for r in ROWS if not TASSOC.get(r['id'], {}).get('_only_excluded')]      # tasks linked only to an excluded company are not checked
 MAIN = [r for r in ROWS if not r['sub']]
 SUBS = [r for r in ROWS if r['sub']]
 
@@ -614,6 +625,8 @@ RESULT = {
     'team': TEAM_NAME, 'team_slug': rules.team_slug(A.team), 'decision_owner': OWNER, 'portal': str(ACCT.get('portalId', '')), 'queue': TEAM.get('queue_name'), 'queue_ids': sorted(QIDS),
     'window': [FIRST.isoformat(), LAST.isoformat()], 'report_day': rules.report_day(TEAM, LAST).isoformat(), 'time_zone': ACCT.get('timeZone'),
     'fetched_at': fmt_dt(NOW), 'start_date': TEAM.get('start_date'),
+    'excluded_companies': [{'id': k, 'name': v.get('name'), 'reason': v.get('reason')} for k, v in EXCLUDED.items()],
+    'excluded_tasks': EXCLUDED_TASKS,
     'counts': {'facilities_in_scope': in_scope_count, 'main_tasks': len(MAIN), 'subtasks': len(SUBS), 'workflows': len(M),
                'q1': q_counts[1], 'q2': q_counts[2], 'q3': q_counts[3]},
     'top': TOP, 'types': TYPE_RESULTS, 'new_facilities': NEW, 'links': LINK_ROWS, 'subtasks': SUB_ROWS, 'changes': CHANGES,
@@ -628,6 +641,8 @@ json.dump(RESULT, open(os.path.join(A.work, 'results.json'), 'w'), indent=1, def
 
 line = lambda n, what: 'all good' if n == 0 else f'{n} problem{"s" if n > 1 else ""} found'
 print(f'## {TEAM_NAME} weekly audit — {FIRST} to {LAST}' + (' (window shortened by the start date)' if FIRST.isoformat() == TEAM.get('start_date') else ''))
+if EXCLUDED:
+    print(f'Excluded from the audit: ' + '; '.join(f'{v.get("name") or k} ({k}): {v.get("reason")}' for k, v in EXCLUDED.items()) + (f' ({EXCLUDED_TASKS} task(s) linked only to them not checked)' if EXCLUDED_TASKS else ''))
 print(f'Checked {in_scope_count} companies in scope ({(TEAM.get("company_scope") or {}).get("description", "all companies")}), {len(MAIN)} main tasks and {len(SUBS)} subtasks created in the window, and {len(M)} workflows.\n')
 print(f'1. **Were the tasks created?** {line(q_counts[1], "")}' + (f' ({len(NEW)} new facilit{"y" if len(NEW) == 1 else "ies"} this week)' if NEW else ''))
 print(f'2. **Are they linked to the right company?** {line(q_counts[2], "")}')
