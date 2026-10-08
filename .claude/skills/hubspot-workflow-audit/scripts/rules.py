@@ -320,7 +320,7 @@ def branch_props(cfg):
 DAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']
 
 
-def week_window(team, today, start=None, end=None):
+def week_window(team, today, start=None, end=None, ignore_start=False):
     """(first day, last day) of the audit window, as dates in the portal's time zone.
     Default: the 7 days ending on the team's window end day (e.g. Thursday) before today; on other days,
     the window that contains today (up to today). Never earlier than the team's start date."""
@@ -339,7 +339,7 @@ def week_window(team, today, start=None, end=None):
     if start is not None:
         first = start
     sd = (team or {}).get('start_date')
-    if sd:
+    if sd and not ignore_start:          # test runs may look back past the start date on purpose
         first = max(first, dt.date.fromisoformat(sd))
     return first, end
 

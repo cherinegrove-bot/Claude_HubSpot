@@ -12,7 +12,7 @@ This file and `CS_Ops_Master_Rules.xlsx` hold everything specific to CS Ops. The
   - Main tasks are found through the queue.
   - Subtasks are found through their main task, because subtasks may not carry the queue.
 - **Start date:** 2026-10-06. Nothing before this date is checked. Never audit backwards.
-- **Window:** last Friday to this Thursday (7 days). The audit runs every Friday.
+- **Window:** Friday to Thursday (7 days), as Cherine asked. The run on Friday covers the previous Friday to that Thursday (e.g. the run on Fri 16 Oct covers Fri 9 Oct to Thu 15 Oct).
 
 ## Rules
 
@@ -576,6 +576,27 @@ The scripts read this block. Keep it in step with the text above.
       "written_for_revision": "33",
       "written": "2026-10-08"
     }
+  },
+  "old_workflow_names": {
+    "Create Tasks | Update Customer Sentiment": [
+      "1682559152",
+      "1868006311"
+    ],
+    "Create Tasks | Rate Review - Execution": [
+      "1682542430",
+      "1868006300"
+    ],
+    "Create Tasks | BOG Oversight": [
+      "1770960918"
+    ]
+  },
+  "before_start": {
+    "title": "Made before the 6 October changes",
+    "note": "Tasks made before 2026-10-06, when the Ops Tasks queue, the segment exclusion changes and the branch changes came in. They're found through the workflows that created them, not the queue. Only real problems are flagged, such as a facility that got no task at all.",
+    "excluded_lists": [
+      "4291"
+    ],
+    "excluded_reason": "on the \"Exclude from Ops tasks\" list, which most workflows excluded until 6 October"
   }
 }
 ```

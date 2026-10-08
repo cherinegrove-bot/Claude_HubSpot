@@ -107,6 +107,7 @@ def main():
     ap.add_argument('--weekly', action='store_true')
     ap.add_argument('--from', dest='start')
     ap.add_argument('--to', dest='end')
+    ap.add_argument('--ignore-start-date', action='store_true', help='weekly test run: allow a window before the team start date')
     a = ap.parse_args()
     os.makedirs(a.work, exist_ok=True)
     if os.path.exists(os.path.join(a.work, 'COMPLETE')):
@@ -382,7 +383,7 @@ def fetch_weekly(a, flows):
     tz = ZoneInfo(acct.get('timeZone') or 'UTC')
     today = dt.datetime.now(tz).date()
     first, last = rules.week_window(team, today, dt.date.fromisoformat(a.start) if a.start else None,
-                                    dt.date.fromisoformat(a.end) if a.end else None)
+                                    dt.date.fromisoformat(a.end) if a.end else None, ignore_start=a.ignore_start_date)
     if last < first:
         sys.exit(f'STOP: the window {first}..{last} ends before the team start date {team.get("start_date")}. Nothing to audit.')
     t0 = dt.datetime(first.year, first.month, first.day, tzinfo=tz).astimezone(dt.timezone.utc)
@@ -407,6 +408,8 @@ def fetch_weekly(a, flows):
             names.setdefault(cfg[i]['name'], i)
     for n in team.get('not_readable', []):
         names.setdefault(n['name'], 'not_readable:' + n.get('known_issue', ''))
+    for old, ids in (team.get('old_workflow_names') or {}).items():      # tasks keep the workflow name from the day they were made
+        names.setdefault(old, ids[0] if len(ids) == 1 else 'alias:' + old)
 
     # 2. tasks created in the window: queue tasks, their subtasks, and tasks the workflows made outside the queue
     queue_ids = [q.strip() for q in (a.queue or '').split(',') if q.strip()] or [str(q) for q in team.get('queue_ids', [])]
@@ -495,6 +498,7 @@ def fetch_weekly(a, flows):
     save(a.work, 'tickets.json', batch_read('tickets', tix, ['subject', 'hs_pipeline', 'hs_pipeline_stage']) if tix else [])
     save(a.work, 'scope.json', {'mode': 'weekly', 'team': team_name, 'team_slug': rules.team_slug(a.team), 'queue_ids': queue_ids,
                                 'window': [first.isoformat(), last.isoformat()], 'window_utc': [iso(t0), iso(t1)],
+                                'ignore_start_date': bool(a.ignore_start_date), 'start_date': team.get('start_date'),
                                 'fetched_at': iso(dt.datetime.now(dt.timezone.utc)), 'history_props': hist})
     open(os.path.join(a.work, 'COMPLETE'), 'w').write(time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()))
     print(f'done: {len(cfg)} workflows ({len(denied)} not returned), {len(tasks)} tasks, {len(companies)} companies -> {a.work}')

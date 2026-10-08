@@ -248,6 +248,8 @@ $('#t-overview').innerHTML=`<h2>This week at a glance</h2>
 <details class="item known"><summary><div class="cnt">${D.known_issues.length}<small>known</small></div><div class="itxt"><h3>Known issues</h3><p>Already reported. They're listed once here, not as new problems every week.</p></div>${chev}</summary>
 <div class="body"><div class="list" style="margin:0">${D.known_issues.map(k=>`<div class="panel" style="margin:0"><b>${esc(k.id)}</b>  ${esc(k.text)}${k.this_week?` <span class="ok">${esc(k.this_week)}</span>`:''}</div>`).join('')}</div></div></details>`;
 $('#t-overview').onclick=e=>{const b=e.target.closest('[data-go]');if(b)show(b.dataset.go);};
+if(D.before_start){const n=D.before_start.problems.length;
+ $('#t-overview').insertAdjacentHTML('beforeend',`<div class="item ${n?'bad':'known'}" style="margin-top:18px"><div class="head" data-go="tasks" style="cursor:pointer"><div class="cnt">${n}<small>${n===1?'problem':'problems'}</small></div><div class="itxt"><h3>${esc(D.before_start.title)}</h3><p>${esc(day(D.before_start.window[0]))} to ${esc(day(D.before_start.window[1]))}: ${plural(D.before_start.main_tasks,'task')} found through their workflows. ${n?'Real problems only; see Tasks created.':'No real problems.'}</p></div>${chev}</div></div>`);}
 
 /* ---------- monthly calendar (Overview) ---------- */
 /* Every task type on the day(s) its workflows are set to create it this month, from the master rules file.
@@ -262,14 +264,14 @@ function runsOn(y,m,d){const dow=DOWS[(new Date(Date.UTC(y,m,d)).getUTCDay()+6)%
  (D.schedules||[]).forEach(s=>{const hit=s.kind==='daily'||(s.kind==='monthly'&&s.days.includes(d))||(s.kind==='weekly'&&s.days.includes(dow));if(!hit)return;
   const k=s.type+'|'+s.time,r=by[k]=by[k]||{type:s.type,time:s.time,wfs:[],off:true};r.wfs.push({id:s.workflow,name:s.workflow_name,off:s.off_now});r.off=r.off&&s.off_now;});
  return Object.values(by).sort((a,b)=>a.time.localeCompare(b.time)||a.type.localeCompare(b.type));}
-function runResult(r,date){const t=D.types.find(x=>x.name===r.type);
- if(date<(D.start_date||''))return{st:'grey',txt:'Before the audit start date, not checked'};
+function runResult(r,date){const pre=D.before_start&&date>=w0&&date<D.before_start.cutoff;const t=(pre?D.before_start.types:D.types).find(x=>x.name===r.type);
+ if(date<(D.start_date||'')&&!pre)return{st:'grey',txt:'Before the audit start date, not checked'};
  if(date<w0)return{st:'grey',txt:'Outside this week\'s window (checked in an earlier week)'};
  if(date>w1||date>today)return{st:'grey',txt:'Hasn\'t happened yet'};
  if(r.off)return{st:'grey',txt:'Workflow switched off now'};
  if(!t)return{st:'grey',txt:'No result'};
- const mv=Object.values(t.missing),miss=mv.filter(m=>!m.waiting_on).length,wait=mv.length-miss,sh=Object.keys(t.shouldnt).length,
-  other=D.problems.filter(p=>p.q===1&&p.type===t.name&&p.kind!=='missing'&&p.kind!=='shouldnt').length,
+ const mv=Object.values(t.missing).filter(m=>!m.not_flagged),miss=mv.filter(m=>!m.waiting_on).length,wait=mv.length-miss,sh=pre?0:Object.keys(t.shouldnt).length,
+  other=(pre?D.before_start.problems:D.problems).filter(p=>p.q===1&&p.type===t.name&&p.kind!=='missing'&&p.kind!=='shouldnt').length,
   kd=(D.known_days||[]).filter(k=>k.date===date&&k.type===r.type),base=`${t.got.length} of ${t.should.length} facilities got it`;
  if(miss||sh||other)return{st:'bad',txt:base+[miss?`${miss} missing`:'',sh?`${sh} shouldn't have it`:'',other?plural(other,'other problem'):''].filter(Boolean).map(x=>', '+x).join(''),t};
  if(kd.length)return{st:'known',txt:base+'. Known issue '+kd.map(k=>`${k.known_issue} (${plural(k.tasks,'task')}): ${(D.known_issues.find(x=>x.id===k.known_issue)||{}).text||''}`).join('; '),t};
@@ -320,8 +322,19 @@ $('#t-tasks').innerHTML=`<h2>Were the tasks created?</h2><p class="lead">One row
 <div id="typedetail"></div>
 <h3 style="margin-top:28px">New facilities this week</h3>
 ${D.new_facilities.length?`<div class="tw"><table><tr><th>Facility</th><th>Went live</th><th>Tasks so far</th></tr>${D.new_facilities.map(f=>`<tr><td>${coLink(f.id)}</td><td>${esc(day(f.live))}</td><td>${esc((f.got||[]).join(', ')||'None yet')}</td></tr>`).join('')}</table></div>`:'<div class="empty">No facility became live this week.</div>'}`;
+/* ---------- made before the start date (test runs that look back past it) ---------- */
+const PRE=D.before_start;
+const preItems=PRE?(()=>{const g={};PRE.problems.forEach(p=>{(g[p.group]=g[p.group]||[]).push(p);});return Object.entries(g).map(([k,ps])=>describe(k,ps));})():[];
+function preHTML(){if(!PRE)return'';
+ const rows=PRE.types.filter(t=>t.runs.length).map(t=>{const mv=Object.values(t.missing),flag=mv.filter(m=>!m.not_flagged&&!m.waiting_on).length,nf=mv.filter(m=>m.not_flagged).length,sh=Object.keys(t.shouldnt).length;
+  return `<tr><td><b>${esc(t.name)}</b></td><td>${t.runs.map(r=>/^\d{4}-/.test(r.when)?esc(when(r.when)):'When triggered').join('<br>')}</td><td class="num">${t.should.length}</td><td class="num">${t.got.length}</td><td class="num${flag?' bad':''}">${flag}</td><td class="num">${nf+sh}</td><td>${flag?'<span class="badtxt">Needs attention</span>':'<span class="ok">No real problems</span>'}</td></tr>`;}).join('');
+ return `<h2 style="margin-top:36px">${esc(PRE.title)}</h2><p class="lead">${esc(day(PRE.window[0]))} to ${esc(day(PRE.window[1]))}. ${esc(PRE.note)}</p>
+ <div class="tw"><table><tr><th>Task type</th><th>Ran</th><th style="text-align:right">Should get it</th><th style="text-align:right">Got it</th><th style="text-align:right">Missing</th><th style="text-align:right">Old settings, not flagged</th><th>Status</th></tr>${rows||'<tr><td colspan="7" class="ok">No scheduled runs in this period.</td></tr>'}</table></div>
+ <h3 style="margin-top:18px">Real problems</h3><div class="list">${preItems.length?preItems.map(i=>itemHTML(i,false)).join(''):'<div class="empty">No real problems.</div>'}</div>
+ ${PRE.known&&PRE.known.length?`<p class="ok">Known issues: ${PRE.known.map(esc).join('; ')}.</p>`:''}`;}
 function applyOnly(){const on=$('#onlyran').checked;document.querySelectorAll('#types tr.dim').forEach(r=>r.style.display=on?'none':'');}
 $('#onlyran').onchange=applyOnly;applyOnly();
+if(PRE)$('#t-tasks').insertAdjacentHTML('beforeend',preHTML());
 $('#types').onclick=e=>{const r=e.target.closest('tr[data-i]');if(!r)return;const t=D.types[r.dataset.i];
  const miss=Object.entries(t.missing),sh=Object.entries(t.shouldnt),ne=Object.entries(t.not_expected||{});
  const probs=items.filter(it=>it.q===1&&it.ps[0].type===t.name&&it.ps[0].kind!=='missing'&&it.ps[0].kind!=='shouldnt');
@@ -404,7 +417,7 @@ function openFacility(id){sg.style.display='none';inp.value='';const ts=byCompan
  <h2>${ext(coUrl(id),esc(company(id)))}</h2><p class="ok" style="margin:2px 0 16px">Company ID ${esc(id)}  ·  ${plural(ts.length,'task')} this week${ps.length?`  ·  <span class="badtxt">${plural(ps.length,'problem')}</span>`:''}</p>
  ${ps.length?`<h3>Problems</h3><div class="list" style="margin:8px 0 18px">${ps.map(p=>`<div class="panel" style="margin:0;border-left:5px solid var(--red)"><b>${esc(p.type||'')}</b>: ${esc(p.moved_by?('moved out of '+D.queue+' to '+qname(p.moved_by.queue)+' by the “'+p.moved_by.workflow_name+'” workflow'):(p.reason||p.kind))}<div class="meta">${chips(p.label)}</div></div>`).join('')}</div>`:''}
  ${facTypes(id)}
- <h3>Tasks this week</h3>${ts.length?`<div class="tw" style="margin-top:8px"><table><tr><th>Task</th><th>Created</th><th>Due</th><th>Queue</th></tr>${ts.map(t=>`<tr><td>${taskLink(t.id,t.title)}</td><td>${esc(when(t.created))}</td><td>${esc(when(t.due))}</td><td>${t.in_queue?'<span class="ok">'+esc(D.queue)+'</span>':'<span class="badtxt">Moved out</span>'}</td></tr>`).join('')}</table></div>`:'<div class="empty" style="margin-top:8px">No tasks for this facility this week.</div>'}</div>`;
+ <h3>Tasks this week</h3>${ts.length?`<div class="tw" style="margin-top:8px"><table><tr><th>Task</th><th>Created</th><th>Due</th><th>Queue</th></tr>${ts.map(t=>`<tr><td>${taskLink(t.id,t.title)}</td><td>${esc(when(t.created))}</td><td>${esc(when(t.due))}</td><td>${t.in_queue?'<span class="ok">'+esc(D.queue)+'</span>':t.before_start?'<span class="ok">Before the queue existed</span>':'<span class="badtxt">Moved out</span>'}</td></tr>`).join('')}</table></div>`:'<div class="empty" style="margin-top:8px">No tasks for this facility this week.</div>'}</div>`;
  window.scrollTo({top:0,behavior:'smooth'});}
 
 /* ---------- legend ---------- */
