@@ -97,6 +97,32 @@ a{color:inherit}
 .legend{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:13px;display:flex;flex-wrap:wrap;gap:8px 20px}
 .ok{color:var(--muted)}.badtxt{color:var(--red);font-weight:600}
 @media (max-width:640px){.body{padding:0 16px 16px}.diff{grid-template-columns:1fr}.diff .arr{display:none}}
+/* monthly calendar (Overview) */
+.cal{margin:36px 0 0}
+.cal-top{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;margin-bottom:6px}
+.cal-nav{display:flex;align-items:center;gap:8px}
+.cal-nav button{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;color:var(--ink)}
+.cal-nav button:hover{border-color:var(--grey)}
+.cal-nav b{min-width:130px;text-align:center;font-family:Poppins,Inter,Arial,sans-serif}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-top:12px}
+.cal-dow{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding:0 4px}
+.cal-day{background:var(--card);border:1px solid var(--line);border-radius:10px;min-height:104px;padding:6px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.cal-day.pad{background:transparent;border-color:transparent}
+.cal-day.before{background:var(--soft)}
+.cal-day.win{border:2px solid var(--navy);padding:5px}
+.cal-num{font-size:13px;font-weight:600;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
+.cal-day.win .cal-num,.cal-day.today .cal-num{color:var(--ink)}
+.cal-tag{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.cal-run{display:block;width:100%;text-align:left;font-size:11px;line-height:1.3;padding:3px 6px;border-radius:6px;border:1px solid var(--line);background:var(--soft);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default}
+.cal-run.go{cursor:pointer}.cal-run.go:hover{border-color:var(--grey)}
+.cal-run.bad{border-color:var(--red);color:var(--red);font-weight:600;background:var(--card)}
+.cal-run.wait{border-left:3px solid var(--navy)}
+.cal-run.off{text-decoration:line-through;color:var(--muted)}
+.cal-run.dim{color:var(--muted)}
+.cal-list{display:none;margin-top:12px}
+.cal-key{display:flex;flex-wrap:wrap;gap:6px 18px;color:var(--muted);font-size:13px;margin-top:12px}
+.cal-key .cal-run{display:inline-block;width:auto}
+@media (max-width:640px){.cal-grid{display:none}.cal-list{display:flex;flex-direction:column;gap:8px}.cal-list .cal-day{min-height:0}.cal-list .cal-run{white-space:normal}}
 </style></head><body>
 <header><div class="wrap">
  <div class="top">
@@ -194,6 +220,48 @@ $('#t-overview').innerHTML=`<h2>This week at a glance</h2>
 <details class="item known"><summary><div class="cnt">${D.known_issues.length}<small>known</small></div><div class="itxt"><h3>Known issues</h3><p>Already reported. They're listed once here, not as new problems every week.</p></div>${chev}</summary>
 <div class="body"><div class="list" style="margin:0">${D.known_issues.map(k=>`<div class="panel" style="margin:0"><b>${esc(k.id)}</b>  ${esc(k.text)}${k.this_week?` <span class="ok">${esc(k.this_week)}</span>`:''}</div>`).join('')}</div></div></details>`;
 $('#t-overview').onclick=e=>{const b=e.target.closest('[data-go]');if(b)show(b.dataset.go);};
+
+/* ---------- monthly calendar (Overview) ---------- */
+const DOWS=['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY','SUNDAY'],MONL=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const ymd=(y,m,d)=>`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+const today=(D.fetched_at||'').slice(0,10);
+let calY=+w1.slice(0,4),calM=+w1.slice(5,7)-1;
+function runsOn(y,m,d){const dow=DOWS[(new Date(Date.UTC(y,m,d)).getUTCDay()+6)%7],by={};
+ (D.schedules||[]).forEach(s=>{const hit=s.kind==='daily'||(s.kind==='monthly'&&s.days.includes(d))||(s.kind==='weekly'&&s.days.includes(dow));if(!hit)return;
+  const k=s.type+'|'+s.time,r=by[k]=by[k]||{type:s.type,time:s.time,wfs:[],off:true};r.wfs.push(s.workflow_name+(s.off_now?' (switched off now)':''));r.off=r.off&&s.off_now;});
+ return Object.values(by).sort((a,b)=>a.time.localeCompare(b.time)||a.type.localeCompare(b.type));}
+function runState(r,date){const t=D.types.find(x=>x.name===r.type);
+ if(date<(D.start_date||'')) return['dim','Before the audit start date: not checked'];
+ if(r.off) return['off','Switched off now'];
+ if(date<w0||date>w1) return[date<w0?'':'dim',date<w0?'Checked in an earlier week':'Not yet checked'];
+ if(date>today) return['dim','Later this week'];
+ if(!t) return['',''];
+ const mv=Object.values(t.missing),miss=mv.filter(m=>!m.waiting_on).length,wait=mv.length-miss,sh=Object.keys(t.shouldnt).length,
+  other=D.problems.filter(p=>p.q===1&&p.type===t.name&&p.kind!=='missing'&&p.kind!=='shouldnt').length;
+ if(miss||sh||other) return['bad go',`${t.got.length} of ${t.should.length} got it · needs attention`];
+ if(wait) return['wait go',`${t.got.length} of ${t.should.length} got it · ${wait} waiting on ${D.decision_owner}`];
+ return['go',`${t.got.length} of ${t.should.length} got it`];}
+function dayCell(y,m,d){const date=ymd(y,m,d),runs=runsOn(y,m,d),inWin=date>=w0&&date<=w1,cls=['cal-day'];
+ if(inWin)cls.push('win');if(date===today)cls.push('today');if(date<(D.start_date||''))cls.push('before');
+ return `<div class="${cls.join(' ')}"><div class="cal-num"><span>${d}</span>${date===today?'<span class="cal-tag">Today</span>':''}</div>${runs.map(r=>{const [c,note]=runState(r,date);
+  return `<button class="cal-run ${c}"${/go/.test(c)?` data-type="${esc(r.type)}"`:''} title="${esc(r.type+' · '+(r.time||'')+'\n'+r.wfs.join('\n')+(note?'\n'+note:''))}">${r.time?esc(r.time)+' ':''}${esc(r.type)}</button>`;}).join('')}</div>`;}
+function calHTML(){const first=(new Date(Date.UTC(calY,calM,1)).getUTCDay()+6)%7,n=new Date(Date.UTC(calY,calM+1,0)).getUTCDate();
+ let g=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(x=>`<div class="cal-dow">${x}</div>`).join('');
+ for(let i=0;i<first;i++)g+='<div class="cal-day pad"></div>';
+ let list='';
+ for(let d=1;d<=n;d++){g+=dayCell(calY,calM,d);if(runsOn(calY,calM,d).length)list+=dayCell(calY,calM,d).replace('<span>'+d+'</span>','<span>'+esc(day(ymd(calY,calM,d)))+'</span>');}
+ const trig=(D.schedules||[]).filter(s=>s.kind==='trigger').map(s=>s.type).filter((v,i,a)=>a.indexOf(v)===i);
+ const off=(D.schedules||[]).filter(s=>s.off_now).map(s=>s.workflow_name).filter((v,i,a)=>a.indexOf(v)===i);
+ return `<div class="cal-top"><div><h2>${MONL[calM]} ${calY}</h2></div><div class="cal-nav"><button data-cal="-1" aria-label="Previous month">‹</button><b>${MONL[calM].slice(0,3)} ${calY}</b><button data-cal="1" aria-label="Next month">›</button></div></div>
+ <p class="lead" style="margin-bottom:0">When each task type's workflows are set to run, from the master rules file. This week's window is outlined; click a run in it to see its results.</p>
+ <div class="cal-grid">${g}</div><div class="cal-list">${list||'<div class="empty">No scheduled runs this month.</div>'}</div>
+ <div class="cal-key"><span><span class="cal-run">Run</span> scheduled</span><span><span class="cal-run bad">Run</span> needs attention</span><span><span class="cal-run wait">Run</span> waiting on ${esc(D.decision_owner)}</span><span><span class="cal-run off">Run</span> workflow switched off now</span>
+ ${trig.length?`<span>${trig.map(esc).join(', ')}: no schedule, runs when a facility meets the trigger.</span>`:''}${off.length?`<span>Switched off now: ${off.map(esc).join(', ')}.</span>`:''}</div>`;}
+$('#t-overview').insertAdjacentHTML('beforeend','<div class="cal" id="cal"></div>');
+function drawCal(){$('#cal').innerHTML=calHTML();}
+$('#cal').addEventListener('click',e=>{const nv=e.target.closest('[data-cal]');if(nv){e.stopPropagation();calM+=+nv.dataset.cal;if(calM<0){calM=11;calY--;}if(calM>11){calM=0;calY++;}drawCal();return;}
+ const r=e.target.closest('.cal-run[data-type]');if(r){e.stopPropagation();const i=D.types.findIndex(t=>t.name===r.dataset.type);show('tasks');const row=document.querySelector(`#types tr[data-i="${i}"]`);if(row){row.style.display='';row.click();}}});
+drawCal();
 
 /* ---------- tasks ---------- */
 function typeRow(t,i){const ran=t.runs.length>0,mv=Object.values(t.missing),miss=mv.filter(m=>!m.waiting_on).length,wait=mv.length-miss,sh=Object.keys(t.shouldnt).length,other=D.problems.filter(p=>p.q===1&&p.type===t.name&&p.kind!=='missing'&&p.kind!=='shouldnt').length;

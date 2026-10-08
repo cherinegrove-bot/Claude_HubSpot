@@ -553,6 +553,22 @@ for i, k in enumerate(known):
         known[i] = k
 off_state = [{'id': w, 'name': wfname(w), 'live': 'ON' if (LIVE.get(w) or {}).get('isEnabled') else 'OFF'} for w in EXPECTED_OFF]
 
+# Schedules for the Overview calendar: when each task type's workflows are set to run, from the MASTER RULES FILE.
+SCHEDULES = []
+for tt in TYPES:
+    for wid in tt['workflows']:
+        mc = (M.get(wid) or {}).get('cfg') or {}
+        if not mc.get('isEnabled'):
+            continue
+        sc = mc.get('enrollmentSchedule') or {}
+        t = sc.get('timeOfDay', {})
+        live = LIVE.get(wid)
+        SCHEDULES.append({'type': tt['name'], 'workflow': wid, 'workflow_name': wfname(wid),
+                          'kind': {'MONTHLY_SPECIFIC_DAYS': 'monthly', 'WEEKLY': 'weekly', 'DAILY': 'daily'}.get(sc.get('type'), 'trigger'),
+                          'days': sc.get('daysOfMonth') or [d.upper() for d in sc.get('daysOfWeek', [])],
+                          'time': f'{t.get("hour", 0):02d}:{t.get("minute", 0):02d}' if sc else '',
+                          'off_now': bool(live is not None and not live.get('isEnabled'))})
+
 RESULT = {
     'team': TEAM_NAME, 'team_slug': rules.team_slug(A.team), 'decision_owner': OWNER, 'portal': str(ACCT.get('portalId', '')), 'queue': TEAM.get('queue_name'), 'queue_ids': sorted(QIDS),
     'window': [FIRST.isoformat(), LAST.isoformat()], 'report_day': rules.report_day(TEAM, LAST).isoformat(), 'time_zone': ACCT.get('timeZone'),
@@ -560,7 +576,7 @@ RESULT = {
     'counts': {'facilities_in_scope': in_scope_count, 'main_tasks': len(MAIN), 'subtasks': len(SUBS), 'workflows': len(M),
                'q1': q_counts[1], 'q2': q_counts[2], 'q3': q_counts[3]},
     'top': TOP, 'types': TYPE_RESULTS, 'new_facilities': NEW, 'links': LINK_ROWS, 'subtasks': SUB_ROWS, 'changes': CHANGES,
-    'waiting_on': waiting, 'known_issues': known, 'expected_off': off_state, 'problems': PROBLEMS,
+    'schedules': SCHEDULES, 'waiting_on': waiting, 'known_issues': known, 'expected_off': off_state, 'problems': PROBLEMS,
     'companies': {cid: cname(cid) for cid in {x for tr in TYPE_RESULTS for x in tr['should'] + tr['got'] + list(tr['missing']) + list(tr['shouldnt'])} | {c for r in MAIN for c in r['companies']}},
     'tasks': [{'id': r['id'], 'title': r['title'], 'type': r['type'], 'workflow': wfname(r['flow']) if r['flow'] in M else r['source'], 'created': fmt_dt(r['created']),
                'due': fmt_dt(r['due']) if r['due'] else '', 'companies': r['companies'], 'link': r.get('link'), 'in_queue': r['in_queue']} for r in MAIN],

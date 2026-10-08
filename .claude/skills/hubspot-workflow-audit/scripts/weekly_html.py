@@ -34,6 +34,7 @@ if page.count('__DATA__') != 1:
 data = {k: R[k] for k in ('team', 'decision_owner', 'portal', 'queue', 'queue_ids', 'window', 'report_day', 'time_zone', 'fetched_at', 'start_date',
                           'counts', 'top', 'types', 'new_facilities', 'links', 'subtasks', 'changes', 'waiting_on', 'known_issues', 'expected_off',
                           'problems', 'companies', 'tasks')}
+data['schedules'] = R.get('schedules', [])
 data['queue_names'] = {q: (v['name'] if isinstance(v, dict) else v) for q, v in (TEAM.get('queue_names') or {}).items()}
 for n in data['new_facilities']:                       # field names the template's New facilities table reads
     n['id'] = n['company_id']
