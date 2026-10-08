@@ -30,6 +30,15 @@ This file and `CS_Ops_Master_Rules.xlsx` hold everything specific to CS Ops. The
 3. Main tasks are associated with the **company**. That's enough for CS Ops; no ticket link is needed.
    - Subtasks must **not** be associated with a ticket.
 4. Tasks that were switched off as duplicates should not be created.
+5. **Tier 1 tasks go only to the OM** in these 7 workflows (by design, confirmed by Cherine on 2026-10-08). A Tier 1 facility with a site manager but no operations manager doesn't get these tasks; that's expected, not missing.
+   - Create Tasks | BOG Oversight Ent and T1 (1770960918)
+   - Create Tasks | Confirm contacts on facility are correct (1838568063)
+   - Create Tasks | Month End Call (1682560327)
+   - Create Tasks | Update Customer Sentiment | Ent, Tier 1, Tier 2.1 (1682559152)
+   - Create Tasks | Weekly calls first 90 days after go live (1838565644)
+   - Create Tasks | Weekly KPI review to owner for first 90 days (1838568062, switched off)
+   - R+S - Facility Performance Monitoring and Escalation (1688976731)
+   - The "T1 SM" branches in these workflows never had a task; deleting them on 2026-10-08 only cleaned up the workflows.
 
 ## Task types
 
@@ -70,10 +79,7 @@ One task type can be made by several workflows, for example split by tier. Each 
   - Flag any facility where the two are more than 7 days apart.
 - **First-90-days tasks for facilities that aren't live:** OK by design (Cherine, 2026-10-08). They're not flagged; see the exception under rule 1.
   - This includes facilities that went live recently and are now Lost or Offboarding: they're still expected to get first-90-days tasks while their go-live date is in the last 91 days. Fine for now (WLS, 2026-10-08); update this if it changes.
-- **Tier 1 SM gap:** a Tier 1 facility with an SM but no OM, in a workflow that gives Tier 1 tasks only to the OM, is shown as **missing**, with the reason "Tier 1 SM gap (Waiting on Cherine)".
-  - Not "excluded by rule": there's no confirmed rule yet.
-  - Not "unknown": we know why.
-  - Not "no SM or OM on the facility": the facility has an SM.
+- **Tier 1 facilities with an SM but no OM** in the 7 workflows under rule 5: "not expected, by design" (Cherine, 2026-10-08). They are not reported as missing.
 - **Tier 2 - L1 facilities with no OM in Update Customer Sentiment (Ent, Tier 1, Tier 2.1):** they get no task. Cherine confirmed on 2026-10-08 that this is fine, so it's reported as "excluded by rule", not as missing.
 - **Weekly KPI review** (1838568062) is switched off on purpose since 2026-10-08: it was the duplicate of the Weekly calls workflow (Cherine). Weekly Call tasks now come only from Weekly calls; if both workflows create one again, it's a broken rule 4.
 - **No SM or OM on the facility:** a facility that should get a task but has neither an SM nor an OM is shown as missing, with the reason "no SM or OM on the facility", labelled VERIFIED (records).
@@ -86,14 +92,13 @@ One task type can be made by several workflows, for example split by tier. Each 
 
 Report these once per run, in their own section, not as new problems every week.
 
-1. **Tier 1 SM gap** (asked 2026-10-07)
-   - Workflows: BOG Oversight Ent and T1, Confirm contacts on facility are correct, Month End Call, Update Customer Sentiment (Ent, Tier 1, Tier 2.1), Weekly calls first 90 days after go live, Weekly KPI review to owner for first 90 days (switched off), R+S - Facility Performance Monitoring and Escalation.
-   - In these 7 workflows, Tier 1 tasks go only to the operations manager. A Tier 1 facility with a site manager but no operations manager gets none of these tasks. The empty "T1 SM" branches were deleted on 2026-10-08; that didn't add a task.
-   - **Are Tier 1 tasks meant to go only to the OM?**
+None open.
+
 ### Closed (answered by Cherine, 2026-10-08)
 
 | Item | Answer |
 |---|---|
+| 1. Tier 1 SM gap | By design: in these 7 workflows, Tier 1 tasks go only to the OM. The T1 SM branches never had a task, so these facilities never got these tasks, even before the empty branches were deleted; the deletion only cleaned up the workflows. Confirmed by Cherine. Added as rule 5 (2026-10-08). |
 | 3. First-90-days tasks before a facility is live | OK by design: the first-90-days workflows start from the go-live date, not Status = Live. Added as an exception to rule 1 (2026-10-08). |
 | 2. Weekly KPI review is on and creates duplicate Weekly Call tasks. Should it be off? | Duplicate of Weekly calls, switched off on 2026-10-08, confirmed by Cherine. Master rules file updated. |
 | 7. demo Facility (44541671248): test record? | Demo facility, excluded from audits (see Excluded companies). |
@@ -425,16 +430,24 @@ The scripts read this block. Keep it in step with the text above.
     },
     {
       "branch": "^\"(T1|Tier 1)\" > (None met|\"(T1|Tier 1) SM\")$",
+      "workflows": [
+        "1770960918",
+        "1838568063",
+        "1682560327",
+        "1682559152",
+        "1838565644",
+        "1838568062",
+        "1688976731"
+      ],
       "when": [
         {
           "property": "site_manager",
           "is": "known"
         }
       ],
-      "kind": "missing",
-      "reason": "Tier 1 SM gap (Waiting on Cherine)",
-      "label": "VERIFIED (config)",
-      "waiting_on": "W-1"
+      "kind": "excluded",
+      "reason": "not expected, by design: Tier 1 tasks go only to the OM in this workflow (rule 5)",
+      "label": "VERIFIED (config)"
     },
     {
       "branch": "^\"[^\"]+\" > None met$",
@@ -453,24 +466,7 @@ The scripts read this block. Keep it in step with the text above.
       "label": "VERIFIED (records)"
     }
   ],
-  "waiting_on": [
-    {
-      "id": "W-1",
-      "title": "Tier 1 SM gap",
-      "detail": "In these 7 workflows, Tier 1 tasks go only to the operations manager. A Tier 1 facility with a site manager but no operations manager gets none of these tasks. (The empty \"T1 SM\" branches were deleted on 2026-10-08; that didn't add a task.)",
-      "asked": "2026-10-07",
-      "workflows": [
-        "1770960918",
-        "1838568063",
-        "1682560327",
-        "1682559152",
-        "1838565644",
-        "1838568062",
-        "1688976731"
-      ],
-      "question": "Are Tier 1 tasks meant to go only to the OM?"
-    }
-  ],
+  "waiting_on": [],
   "changes_not_confirmed": [],
   "queue_names": {
     "13519269": {
@@ -542,6 +538,11 @@ The scripts read this block. Keep it in step with the text above.
       "id": "W-3",
       "closed": "2026-10-08",
       "answer": "OK by design: the first-90-days workflows start from the go-live date, not Status = Live."
+    },
+    {
+      "id": "W-1",
+      "closed": "2026-10-08",
+      "answer": "By design: in these 7 workflows, Tier 1 tasks go only to the OM. The T1 SM branches never had a task; deleting them only cleaned up the workflows. Confirmed by Cherine."
     }
   ],
   "workflow_summaries": {

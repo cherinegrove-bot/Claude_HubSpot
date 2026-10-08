@@ -377,6 +377,7 @@ $('#t-waiting').innerHTML=`<h2>Waiting on ${esc(D.decision_owner)}</h2><p class=
  ${wf.length?`<div class="wfl"><h4>Workflows</h4><ul>${wf.map(x=>`<li>${wfLink(x.id,x.name)}${x.on?'':' <span class="ok">(switched off)</span>'}</li>`).join('')}</ul></div>`:''}
  <div class="meta"><span class="chip">${w.found&&w.found.length?plural(w.found.length,'facility','facilities')+' affected this week':'Nothing affected this week'}</span></div>
  ${w.question?`<p class="wq">${esc(w.question)}</p>`:''}</div></div></div>`;}).join('')}
+${!D.waiting_on.length&&!changed.some(c=>c.pending)?`<div class="empty">Nothing is waiting on ${esc(D.decision_owner)}. Answered questions are kept in the team's rules file.</div>`:''}
 ${changed.filter(c=>c.pending).map(c=>`<div class="item wait"><div class="head"><div class="cnt">Q3<small>change</small></div><div class="itxt"><h3>Was this change planned? ${wfLink(c.workflow,c.name)}</h3><p>${esc(changeText(c))}</p></div></div></div>`).join('')}</div>`;
 
 /* ---------- facility search ---------- */

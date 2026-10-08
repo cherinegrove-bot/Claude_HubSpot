@@ -686,6 +686,8 @@ print('\n**Known issues** (reported once)')
 for k in known:
     print(f'- {k["id"]}: {k["text"]}' + (f' This week: {k["this_week"]}' if k.get('this_week') else ''))
 print(f'\n**Waiting on {OWNER}**')
+if not waiting:
+    print('- None')
 for w in waiting:
     print(f'- {w["id"]} {w["title"]}' + (f' — this week: ' + (w.get('summary') or '; '.join(f.get('reason') or f.get('company') or '' for f in w['found'][:3])) if w.get('found') else ''))
 print(f'\nresults: {os.path.join(A.work, "results.json")}')
