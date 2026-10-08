@@ -38,8 +38,8 @@ One task type can be made by several workflows, for example split by tier. Each 
 | 3 | Send Monthly Marketing Report to Owner | 1682548292 | Day 6, 10:00 | All tiers, not SOA, PPC Enrolled is not No |
 | 4 | Bi-Weekly Call | 1682560327 (Month End Call) | Day 10 & 20, 10:00 | Enterprise, Tier 1, Tier 2 - L1, Tier 2 - L2; not SOA |
 | 5 | Monthly Status Call | 1682560327 (Month End Call) | Day 10 & 20, 10:00 | Tier 3; not SOA |
-| 6 | Weekly Call: First 90 days | 1838565644; also 1838568062 for Tier 2/3 (see Waiting on Cherine) | Mondays, 10:00 | Go-live date in the last 91 days, not SOA, not Pinetop Self Storage |
-| 7 | Weekly KPI Review: First 90 days | 1838568062 | Mondays, 10:00 | Enterprise and Tier 1, go-live date in the last 91 days, not SOA |
+| 6 | Weekly Call: First 90 days | 1838565644 (1838568062 also made it for Tier 2/3 until it was switched off on 2026-10-08) | Mondays, 10:00 | Go-live date in the last 91 days, not SOA, not Pinetop Self Storage |
+| 7 | Weekly KPI Review: First 90 days | 1838568062 (switched off since 2026-10-08) | Mondays, 10:00 | Enterprise and Tier 1, go-live date in the last 91 days, not SOA |
 | 8 | Review Facility Contacts | 1838568063 | Day 25, 17:00 | All tiers, not SOA |
 | 9 | Unsold Unit, Towing, SCRA | 1838565797 | Day 1, 10:00 | All tiers, not SOA |
 | 10 | Playbook Review/Maintenance | 1682549352 | Day 15, 17:00 | All tiers, including SOA |
@@ -70,7 +70,7 @@ One task type can be made by several workflows, for example split by tier. Each 
   - Not "unknown": we know why.
   - Not "no SM or OM on the facility": the facility has an SM.
 - **Tier 2 - L1 facilities with no OM in Update Customer Sentiment (Ent, Tier 1, Tier 2.1):** they get no task. Cherine confirmed on 2026-10-08 that this is fine, so it's reported as "excluded by rule", not as missing.
-- **Duplicate Weekly Call tasks** (from both the Weekly calls and Weekly KPI workflows) go under Waiting on Cherine item 2, not as new problems or a broken rule 4.
+- **Weekly KPI review** (1838568062) is switched off on purpose since 2026-10-08: it was the duplicate of the Weekly calls workflow (Cherine). Weekly Call tasks now come only from Weekly calls; if both workflows create one again, it's a broken rule 4.
 - **No SM or OM on the facility:** a facility that should get a task but has neither an SM nor an OM is shown as missing, with the reason "no SM or OM on the facility", labelled VERIFIED (records).
 - **Wrong company** (Question 2):
   - A main task with **no company** is flagged, VERIFIED (records).
@@ -85,9 +85,6 @@ Report these once per run, in their own section, not as new problems every week.
    - In 7 workflows, Tier 1 tasks go only to the OM: Facility Performance, Weekly KPI, Weekly calls, Update Customer Sentiment Ent/T1/T2.1, Month End Call, Confirm contacts and BOG Oversight.
    - The empty "T1 SM" branches were deleted on 2026-10-08, but that doesn't add a task: a Tier 1 facility with an SM and no OM now matches no branch and still gets none of those tasks.
    - Are Tier 1 tasks meant to go only to the OM?
-2. **Weekly KPI review is on and creates duplicate Weekly Call tasks. Should it be off?**
-   - It was switched off on 2026-10-07 and back on on 2026-10-08 (08:12 UTC). Its Tier 2 - L1, Tier 2 - L2 and Tier 3 branches create "Weekly Call: First 90 days Live", the same task the Weekly calls workflow makes.
-   - Duplicate Weekly Call tasks are listed under this item, not as new problems.
 3. **First-90-days tasks before a facility is live.**
    - The two first-90-days workflows check the go-live date, not Status = Live.
    - Should they create tasks before a facility is live?
@@ -96,11 +93,12 @@ Report these once per run, in their own section, not as new problems every week.
 
 | Item | Answer |
 |---|---|
+| 2. Weekly KPI review is on and creates duplicate Weekly Call tasks. Should it be off? | Duplicate of Weekly calls, switched off on 2026-10-08, confirmed by Cherine. Master rules file updated. |
 | 7. demo Facility (44541671248): test record? | Demo facility, excluded from audits (see Excluded companies). |
 | 4. R+S - Reminders: should it create a task? | Workflow deleted. Known issue F-05 closed too. |
 | 5. Tier 2 - L1 SM gap (Update Customer Sentiment) | Fine, no action. Reported as "excluded by rule" from now on. |
 | 6. Set task queue moves BOG tasks to BOG - Run and Sustain | Workflow deleted. BOG tasks should now stay in Ops Tasks. The 52 tasks it moved on 2026-10-07 stay in BOG - Run and Sustain (known issue BOG-Q, fixed, no action needed). |
-| Weekly KPI review switched off (change of 2026-10-07) | It's on again. The switch-off was not marked as planned and the master rules file still records it as on. See item 2. |
+| Weekly KPI review switched off (change of 2026-10-07) | It was turned back on on 2026-10-08, then switched off again at 09:37 UTC as the duplicate of Weekly calls (confirmed by Cherine). Planned; master rules file updated. |
 | Weekly calls revision 39 -> 41 (change of 2026-10-07) | Planned. Master rules file updated on 2026-10-08. |
 | Empty branches in CS Ops workflows | 47 branches with nothing under them, plus Storage Reach's "Enterprise" branch (it held only empty branches), deleted on purpose. Master rules file updated on 2026-10-08, one log line per workflow. |
 
@@ -115,12 +113,13 @@ Report each once, as a known issue.
 - **F-03:** in 13 workflows the OM branch is checked before the SM branch, so tasks go to the OM when both exist. Cherine is deciding the fix.
 - **BOG-Q (fixed, no action needed):** the 52 BOG Oversight tasks created on 2026-10-07 are still in queue 9999918 "BOG - Run and Sustain": moved by Set task queue before it was deleted, no action needed (WLS, 2026-10-08). Reported once, as a known issue that's already fixed. Only tasks created on or before 2026-10-07 are covered; a BOG task moved after that is a new problem.
 - **F-08:** "Create Tasks | Respond to reviews at Storage Reach" didn't come back from the API. It's a User workflow, which may be why. Its tasks are in Ops Tasks but are not linked to any company. The audit reports this as one line, with the week's count, not one problem per task.
-- **5 workflows are switched off.** That's expected unless WLS says otherwise:
+- **6 workflows are switched off.** That's expected unless WLS says otherwise:
   - 1774165521 OM | RISK within the first 90 days
   - 1697631666 Create Tasks | Storage Reach
   - 1682549368 Create Tasks | Prepare Rate Review
   - 1682101413 Create Tasks | Prepare Month End Report
   - 1682545542 Create Tasks | Playbook Review/Maintenance T1 OM
+  - 1838568062 Create Tasks | Weekly KPI review to owner for first 90 days (since 2026-10-08, duplicate of Weekly calls)
 
 ## Excluded companies
 
@@ -140,6 +139,7 @@ Plain-English summaries for the weekly page's "Switched off" tab: what each swit
 | Create Tasks \| Prepare Month End Report (1682101413) | Creates a monthly "Prepare Month End Report" task on the 1st for every live, full-management facility in every tier (not SOA), due five working days later. It goes to the facility's operations manager if it has one, otherwise to the site manager; Tier 2 - L2 and Tier 3 always go to the site manager. | 109 |
 | Create Tasks \| Prepare Rate Review (1682549368) | Gives live, full-management Enterprise, Tier 1, Tier 2 - L1 and Tier 3 facilities (not SOA, and not on the "Exclude from Ops tasks" list) a "Prepare Rate Review" task, then a second one two weeks later (three weeks later for Tier 2 - L1 and Tier 3); it checks for facilities every Monday. Each task is due two working days after it's created and goes to the operations manager if the facility has one, otherwise to the site manager. | 142 |
 | Create Tasks \| Storage Reach (1697631666) | Every Wednesday it creates a "Storage Reach" task for live, full-management Tier 1 facilities that have a site manager, Tier 2 - L1 facilities and SOA facilities (not on the "Exclude from Ops tasks" list), due two working days later. The task goes to a named person, not the facility's manager: Kara Slavens for Tier 1, Hunter Stoner for Tier 2 - L1 and Luann Laughlin for SOA. | 23 |
+| Create Tasks \| Weekly KPI review to owner for first 90 days (1838568062) | Checks every Monday for full-management facilities that went live in the last 91 days (not SOA). Enterprise and Tier 1 facilities get a "Weekly KPI Review: First 90 days live" task for the operations manager (Enterprise: the site manager if there's no operations manager), and Tier 2 and Tier 3 facilities get a "Weekly Call: First 90 days Live" call task, the same one the Weekly calls workflow already creates; each is due two working days later. | 33 |
 | OM \| RISK within the first 90 days (1774165521) | When a full-management facility in its first 90 days after go-live is marked At-Risk in its customer health score, it creates a high-priority task with no title for the facility's operations manager, due three working days later. Facilities on the "Exclude from Ops tasks" list are skipped. | 8 |
 
 ## HubSpot portal
@@ -366,7 +366,8 @@ The scripts read this block. Keep it in step with the text above.
     "1697631666",
     "1682549368",
     "1682101413",
-    "1682545542"
+    "1682545542",
+    "1838568062"
   ],
   "not_readable": [
     {
@@ -445,12 +446,6 @@ The scripts read this block. Keep it in step with the text above.
       "detail": "In 7 workflows Tier 1 tasks go only to the OM. The empty T1 SM branches were deleted on 2026-10-08, but a Tier 1 facility with an SM and no OM still gets none of those tasks. Are Tier 1 tasks meant to go only to the OM?"
     },
     {
-      "id": "W-2",
-      "title": "Weekly KPI review is on and creates duplicate Weekly Call tasks. Should it be off?",
-      "detail": "Its Tier 2 - L1, Tier 2 - L2 and Tier 3 branches create the same Weekly Call task as the Weekly calls workflow. It was switched off on 2026-10-07 and back on on 2026-10-08. Duplicates found are listed here, not as new problems.",
-      "duplicate_task_type": "Weekly Call: First 90 days"
-    },
-    {
       "id": "W-3",
       "title": "First-90-days tasks before a facility is live",
       "detail": "The first-90-days workflows check the go-live date, not Status = Live. Tasks for facilities that aren't live are flagged as a Potential Issue under rule 1.",
@@ -498,7 +493,7 @@ The scripts read this block. Keep it in step with the text above.
     },
     {
       "id": "OFF-5",
-      "text": "5 workflows are switched off. That's expected unless WLS says otherwise."
+      "text": "6 workflows are switched off. That's expected unless WLS says otherwise."
     }
   ],
   "closed": [
@@ -521,6 +516,11 @@ The scripts read this block. Keep it in step with the text above.
       "id": "W-7",
       "closed": "2026-10-08",
       "answer": "demo facility, excluded from audits"
+    },
+    {
+      "id": "W-2",
+      "closed": "2026-10-08",
+      "answer": "Duplicate of Weekly calls, switched off on 2026-10-08, confirmed by Cherine"
     }
   ],
   "workflow_summaries": {
@@ -547,6 +547,11 @@ The scripts read this block. Keep it in step with the text above.
     "1774165521": {
       "summary": "When a full-management facility in its first 90 days after go-live is marked At-Risk in its customer health score, it creates a high-priority task with no title for the facility's operations manager, due three working days later. Facilities on the \"Exclude from Ops tasks\" list are skipped.",
       "written_for_revision": "8",
+      "written": "2026-10-08"
+    },
+    "1838568062": {
+      "summary": "Checks every Monday for full-management facilities that went live in the last 91 days (not SOA). Enterprise and Tier 1 facilities get a \"Weekly KPI Review: First 90 days live\" task for the operations manager (Enterprise: the site manager if there's no operations manager), and Tier 2 and Tier 3 facilities get a \"Weekly Call: First 90 days Live\" call task, the same one the Weekly calls workflow already creates; each is due two working days later.",
+      "written_for_revision": "33",
       "written": "2026-10-08"
     }
   }
