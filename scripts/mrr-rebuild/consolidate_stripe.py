@@ -193,6 +193,7 @@ def ym_label(ym):
 def main(template, stripe_csv, dst):
     wb = openpyxl.load_workbook(template)
     base = wb[hs.SHEET]
+    hs.add_company_blocks(base)
     hs.extend_months(base)
     month_cols = hs.month_columns(base)
     facilities = hs.read_facilities(base)

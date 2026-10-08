@@ -48,6 +48,9 @@ FIRST_MONTH = (2022, 11)  # earliest Stripe invoice
 FEE_ROWS = ["Management Fee", "Marketing Fee", "Bookkeeping Fee", "Other Fee"]
 SKIP_STATUSES = {"voided", "draft"}
 EASTERN = ZoneInfo("America/New_York")
+# Billing companies that are not Live/Lost facilities but hold invoices for a group of
+# facilities (one invoice for all SOA sites). Each gets its own block at the bottom.
+EXTRA_COMPANIES = {"35011152532": "Storage of America Corporate"}
 
 MONTHS = {m: i for i, m in enumerate(
     ["january", "february", "march", "april", "may", "june", "july",
@@ -132,6 +135,23 @@ def invoice_month(invoice):
             local = ts.astimezone(EASTERN)
             return (local.year, local.month), label
     return None, "no date"
+
+
+def add_company_blocks(ws, companies=EXTRA_COMPANIES):
+    """Append a facility block for each {company id: name} not already on the sheet,
+    styled like the last block. Header-row SUM formulas come from extend_months."""
+    on_sheet = {str(int(v)) for v in (ws.cell(r, 2).value for r in range(2, ws.max_row + 1)) if v}
+    for cid, name in companies.items():
+        if cid in on_sheet:
+            continue
+        top = ws.max_row + 1
+        for off in range(5):
+            for col in range(1, ws.max_column + 1):
+                ws.cell(top + off, col)._style = ws.cell(top - 5 + off, col)._style
+        ws.cell(top, 1, name)
+        ws.cell(top, 2, int(cid))
+        for off, label in enumerate(FEE_ROWS, 1):
+            ws.cell(top + off, 1, label)
 
 
 def extend_months(ws, first=FIRST_MONTH):
@@ -308,6 +328,7 @@ def hs_detail_row(ln):
 def main(src, dst):
     wb = openpyxl.load_workbook(src)
     ws = wb[SHEET]
+    add_company_blocks(ws)
     extend_months(ws)
     month_cols = month_columns(ws)
     facilities = read_facilities(ws)

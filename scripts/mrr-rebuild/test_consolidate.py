@@ -107,6 +107,22 @@ class MonthColumns(unittest.TestCase):
                          ["=SUM(H3:H6)", "=SUM(I3:I6)", "=SUM(J3:J6)", "=SUM(K3:K6)"])
 
 
+    def test_add_company_block_appends_once(self):
+        import openpyxl
+        wb = openpyxl.Workbook(); ws = wb.active
+        ws.append(["Deal Name", "Hubspot ID", "", "", "", "", "", "Jan-23"])
+        ws.append(["Fac", 1])
+        for label in hs.FEE_ROWS:
+            ws.append([label])
+        hs.add_company_blocks(ws, {"99": "Corporate"})
+        hs.add_company_blocks(ws, {"99": "Corporate"})
+        hs.extend_months(ws, first=(2023, 1))
+        self.assertEqual(ws.max_row, 11)
+        self.assertEqual((ws.cell(7, 1).value, ws.cell(7, 2).value, ws.cell(7, 8).value),
+                         ("Corporate", 99, "=SUM(H8:H11)"))
+        self.assertEqual(hs.read_facilities(ws)["99"]["rows"]["Other Fee"], 11)
+
+
 class StripeLines(unittest.TestCase):
     def test_skips_void_and_uncollectible_and_uses_net(self):
         rows = [stripe_row(), stripe_row(line_item_id="il_2", invoice_status="void"),
