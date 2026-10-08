@@ -21,8 +21,8 @@ Duplicates
 Stripe rules
   * Void, draft and uncollectible invoices are skipped.
   * Amount = line_amount - line_discount (matches invoice_total on every invoice).
-  * Fee row and service month use the same rules as HubSpot (populate_fees.category /
-    MONTH_RE); without a month in the line name, the Stripe invoice date is used.
+  * Fee row uses the same rule as HubSpot (populate_fees.category); the month is the
+    Stripe invoice date.
   * Facility, first match wins:
       1. the synced HubSpot copy of the same invoice -> that invoice's facilities
       2. the facilities the customer's other synced invoices sit on (most frequent)
@@ -159,10 +159,7 @@ def stripe_lines(stripe_rows, stripe_inv_cids, customer_map, facilities):
             unmatched.append(r)
             continue
         inv_date = date.fromisoformat(r["invoice_date"]) if r["invoice_date"] else None
-        m = hs.MONTH_RE.search(r["line_item"] or "")
-        if m:
-            ym, source = (int(m.group(2)), hs.MONTHS[m.group(1).lower()]), "line item name"
-        elif inv_date:
+        if inv_date:
             ym, source = (inv_date.year, inv_date.month), "invoice date"
         else:
             ym, source = None, "no date"
@@ -196,9 +193,12 @@ def ym_label(ym):
 def main(template, stripe_csv, dst):
     wb = openpyxl.load_workbook(template)
     base = wb[hs.SHEET]
+    hs.extend_months(base)
     month_cols = hs.month_columns(base)
     facilities = hs.read_facilities(base)
     print(f"{len(facilities)} facilities on sheet")
+    for name, (old, new) in hs.refresh_lost_dates(base, facilities).items():
+        print(f"Lost Date changed for {name}: {old} -> {new}")
 
     hs_all, no_inv = hs.fetch_hubspot_lines(facilities)
     stripe_rows = read_stripe(stripe_csv)

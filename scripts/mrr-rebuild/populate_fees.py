@@ -11,9 +11,9 @@ Rules
   * Category from line item name: "management" -> Management Fee,
     "marketing" -> Marketing Fee, "bookkeep" -> Bookkeeping Fee, everything
     else (reimbursements, StorageReach, Sparefoot, AI Lean, ...) -> Other Fee.
-  * Service month: "<Month> <YYYY>" in the line item name when present,
-    otherwise the invoice date (America/New_York), falling back to the
-    invoice create date.
+  * Month: the invoice date (America/New_York, as HubSpot shows it), falling
+    back to the invoice create date. Every line on an invoice counts in the
+    invoice's month, whatever month its name mentions.
   * Voided and draft invoices are skipped.
   * Amount = line item `amount` (net of discounts). An invoice associated
     with several facilities on the sheet (one bill for sister sites) is
@@ -21,7 +21,8 @@ Rules
 
 An "Line Item Detail" sheet lists every line item used, and a "Not Placed"
 sheet lists anything that could not be put on the grid (month outside
-Jan-23..Dec-26, company not found, ...), so totals can be audited.
+the sheet's columns, ...), so totals can be audited. Month columns are
+extended back to FIRST_MONTH if the template starts later.
 
 Requires HUBSPOT_ACCESS_TOKEN with scopes: crm.objects.companies.read,
 crm.objects.invoices.read, crm.objects.line_items.read.
@@ -38,10 +39,12 @@ from zoneinfo import ZoneInfo
 
 import openpyxl
 import requests
+from openpyxl.utils import get_column_letter
 
 API = "https://api.hubapi.com"
 SHEET = "MRR Rebuild"
 FIRST_MONTH_COL = 8  # column H
+FIRST_MONTH = (2022, 11)  # earliest Stripe invoice
 FEE_ROWS = ["Management Fee", "Marketing Fee", "Bookkeeping Fee", "Other Fee"]
 SKIP_STATUSES = {"voided", "draft"}
 EASTERN = ZoneInfo("America/New_York")
@@ -122,16 +125,51 @@ def category(name):
     return "Other Fee"
 
 
-def service_month(li_name, invoice):
-    m = MONTH_RE.search(li_name or "")
-    if m:
-        return (int(m.group(2)), MONTHS[m.group(1).lower()]), "line item name"
+def invoice_month(invoice):
     for prop, label in (("hs_invoice_date", "invoice date"), ("hs_createdate", "invoice create date")):
         ts = parse_ts(invoice.get(prop))
         if ts:
             local = ts.astimezone(EASTERN)
             return (local.year, local.month), label
     return None, "no date"
+
+
+def extend_months(ws, first=FIRST_MONTH):
+    """Insert month columns in front of the first one so the grid starts at `first`,
+    and (re)write every header-row SUM formula."""
+    hdr = ws.cell(1, FIRST_MONTH_COL).value
+    start = hdr if isinstance(hdr, datetime) else datetime.strptime(str(hdr), "%b-%y")
+    missing = (start.year - first[0]) * 12 + start.month - first[1]
+    if missing > 0:
+        ws.insert_cols(FIRST_MONTH_COL, missing)
+        for i in range(missing):
+            y, m = divmod(first[1] - 1 + i, 12)
+            cell = ws.cell(1, FIRST_MONTH_COL + i, datetime(first[0] + y, m + 1, 1))
+            cell._style = ws.cell(1, FIRST_MONTH_COL + missing)._style
+            cell.number_format = "mmm-yy"
+    for row in range(2, ws.max_row + 1):
+        if ws.cell(row, 2).value is None:
+            continue
+        for col in range(FIRST_MONTH_COL, ws.max_column + 1):
+            letter = get_column_letter(col)
+            ws.cell(row, col).value = f"=SUM({letter}{row + 1}:{letter}{row + 4})"
+            ws.cell(row, col)._style = ws.cell(row, FIRST_MONTH_COL + max(missing, 0))._style
+
+
+def refresh_lost_dates(ws, facilities):
+    """Column G (Lost Date) <- the Company's System Lost Date. Returns {name: (old, new)} for changes."""
+    props = batch_read("companies", list(facilities), ["system_lost_date"])
+    changes = {}
+    for cid, fac in facilities.items():
+        raw = (props.get(cid) or {}).get("system_lost_date")
+        new = datetime.strptime(raw[:10], "%Y-%m-%d") if raw else None
+        cell = ws.cell(fac["row"], 7)
+        old = cell.value
+        if (old.date() if old else None) != (new.date() if new else None):
+            changes[fac["name"]] = (old.date() if old else None, new.date() if new else None)
+        cell.value = new
+        cell.number_format = "yyyy-mm-dd"
+    return changes
 
 
 def month_columns(ws):
@@ -201,7 +239,7 @@ def fetch_hubspot_lines(facilities):
                 seen.add((cid, li_id))
                 li = line_items.get(li_id, {})
                 full_amount = float(li.get("amount") or 0)
-                ym, source = service_month(li.get("name"), inv)
+                ym, source = invoice_month(inv)
                 lines.append({
                     "cid": cid, "facility": facilities[cid]["name"],
                     "invoice_number": inv.get("hs_number"), "invoice_id": inv_id,
@@ -270,6 +308,7 @@ def hs_detail_row(ln):
 def main(src, dst):
     wb = openpyxl.load_workbook(src)
     ws = wb[SHEET]
+    extend_months(ws)
     month_cols = month_columns(ws)
     facilities = read_facilities(ws)
     print(f"{len(facilities)} facilities on sheet")

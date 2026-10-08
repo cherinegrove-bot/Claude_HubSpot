@@ -43,17 +43,17 @@ class FeeAndMonthRules(unittest.TestCase):
         self.assertEqual(hs.category("StorageReach - May 2026"), "Other Fee")
         self.assertEqual(hs.category("White Label Set Up Fee"), "Other Fee")
 
-    def test_month_from_name_beats_invoice_date(self):
-        ym, src = hs.service_month("Management Fee - October 2026", {"hs_invoice_date": "2026-09-30T12:00:00Z"})
-        self.assertEqual((ym, src), ((2026, 10), "line item name"))
+    def test_invoice_month_ignores_month_in_name(self):
+        ym, src = hs.invoice_month({"hs_invoice_date": "2026-05-05T12:00:00Z"})
+        self.assertEqual((ym, src), ((2026, 5), "invoice date"))
 
     def test_invoice_date_is_eastern(self):
         # 03:59 UTC on Mar 1 is still Feb 28 in New York
-        ym, _ = hs.service_month("Management Fee", {"hs_invoice_date": "2026-03-01T03:59:59.999Z"})
+        ym, _ = hs.invoice_month({"hs_invoice_date": "2026-03-01T03:59:59.999Z"})
         self.assertEqual(ym, (2026, 2))
 
     def test_create_date_fallback(self):
-        ym, src = hs.service_month("Management Fee", {"hs_createdate": "2026-04-15T14:00:00Z"})
+        ym, src = hs.invoice_month({"hs_createdate": "2026-04-15T14:00:00Z"})
         self.assertEqual((ym, src), ((2026, 4), "invoice create date"))
 
 
@@ -93,6 +93,20 @@ class CustomerMapping(unittest.TestCase):
         self.assertEqual(cmap["cus_none"], ([], "no match"))
 
 
+class MonthColumns(unittest.TestCase):
+    def test_extend_months_back_to_nov_2022(self):
+        import openpyxl
+        wb = openpyxl.Workbook(); ws = wb.active
+        ws.append(["Deal Name", "Hubspot ID", "", "", "", "", "", "Jan-23", "Feb-23"])
+        ws.append(["Fac", 1, None, None, None, None, None, "=SUM(H3:H6)", "=SUM(I3:I6)"])
+        for label in hs.FEE_ROWS:
+            ws.append([label])
+        hs.extend_months(ws)
+        self.assertEqual(sorted(hs.month_columns(ws)), [(2022, 11), (2022, 12), (2023, 1), (2023, 2)])
+        self.assertEqual([ws.cell(2, c).value for c in range(8, 12)],
+                         ["=SUM(H3:H6)", "=SUM(I3:I6)", "=SUM(J3:J6)", "=SUM(K3:K6)"])
+
+
 class StripeLines(unittest.TestCase):
     def test_skips_void_and_uncollectible_and_uses_net(self):
         rows = [stripe_row(), stripe_row(line_item_id="il_2", invoice_status="void"),
@@ -111,10 +125,10 @@ class StripeLines(unittest.TestCase):
         lines, unmatched, _ = cs.stripe_lines([stripe_row()], {}, {"cus_1": ([], "no match")}, FACILITIES)
         self.assertEqual((lines, len(unmatched)), ([], 1))
 
-    def test_month_from_name(self):
-        lines, _, _ = cs.stripe_lines([stripe_row(line_item="Management Fee - October 2026")],
-                                      {"in_1": ["3"]}, {}, FACILITIES)
-        self.assertEqual((lines[0]["ym"], lines[0]["invoice_date"]), ((2026, 10), date(2026, 3, 31)))
+    def test_month_is_invoice_date_not_name(self):
+        lines, _, _ = cs.stripe_lines([stripe_row(line_item="Sparefoot Reimbursement - March 2026",
+                                                  invoice_date="2026-05-05")], {"in_1": ["3"]}, {}, FACILITIES)
+        self.assertEqual((lines[0]["ym"], lines[0]["invoice_date"]), ((2026, 5), date(2026, 5, 5)))
 
 
 if __name__ == "__main__":
