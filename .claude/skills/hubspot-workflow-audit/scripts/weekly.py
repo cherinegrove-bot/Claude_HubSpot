@@ -571,6 +571,9 @@ in_scope_count = len(LIVE_NOW)
 waiting = []
 for wid_, w in WAIT.items():
     item = dict(w)
+    # the workflows a question is about, by name, with whether each is switched on now (live, else master rules file)
+    item['workflow_list'] = [{'id': x, 'name': wfname(x),
+                              'on': bool((LIVE.get(x) or (M.get(x) or {}).get('cfg') or {}).get('isEnabled'))} for x in w.get('workflows', [])]
     if w.get('duplicate_task_type'):
         item['found'] = [d for d in DUPES if d.get('waiting_on') == wid_]
     elif w.get('task_types'):

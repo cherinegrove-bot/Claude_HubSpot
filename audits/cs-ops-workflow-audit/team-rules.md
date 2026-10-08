@@ -81,13 +81,14 @@ One task type can be made by several workflows, for example split by tier. Each 
 
 Report these once per run, in their own section, not as new problems every week.
 
-1. **Tier 1 SM gap.**
-   - In 7 workflows, Tier 1 tasks go only to the OM: Facility Performance, Weekly KPI, Weekly calls, Update Customer Sentiment Ent/T1/T2.1, Month End Call, Confirm contacts and BOG Oversight.
-   - The empty "T1 SM" branches were deleted on 2026-10-08, but that doesn't add a task: a Tier 1 facility with an SM and no OM now matches no branch and still gets none of those tasks.
-   - Are Tier 1 tasks meant to go only to the OM?
-3. **First-90-days tasks before a facility is live.**
-   - The two first-90-days workflows check the go-live date, not Status = Live.
-   - Should they create tasks before a facility is live?
+1. **Tier 1 SM gap** (asked 2026-10-07)
+   - Workflows: BOG Oversight Ent and T1, Confirm contacts on facility are correct, Month End Call, Update Customer Sentiment (Ent, Tier 1, Tier 2.1), Weekly calls first 90 days after go live, Weekly KPI review to owner for first 90 days (switched off), R+S - Facility Performance Monitoring and Escalation.
+   - In these 7 workflows, Tier 1 tasks go only to the operations manager. A Tier 1 facility with a site manager but no operations manager gets none of these tasks. The empty "T1 SM" branches were deleted on 2026-10-08; that didn't add a task.
+   - **Are Tier 1 tasks meant to go only to the OM?**
+3. **First-90-days tasks before a facility is live** (asked 2026-10-07)
+   - Workflows: Weekly calls first 90 days after go live, Weekly KPI review to owner for first 90 days (switched off), OM | RISK within the first 90 days (switched off).
+   - The first-90-days workflows start from the go-live date, so a facility can get these tasks before its Status is Live.
+   - **Is it OK for a facility to get first-90-days tasks before its Status is Live?**
 
 ### Closed (answered by Cherine, 2026-10-08)
 
@@ -443,16 +444,34 @@ The scripts read this block. Keep it in step with the text above.
     {
       "id": "W-1",
       "title": "Tier 1 SM gap",
-      "detail": "In 7 workflows Tier 1 tasks go only to the OM. The empty T1 SM branches were deleted on 2026-10-08, but a Tier 1 facility with an SM and no OM still gets none of those tasks. Are Tier 1 tasks meant to go only to the OM?"
+      "detail": "In these 7 workflows, Tier 1 tasks go only to the operations manager. A Tier 1 facility with a site manager but no operations manager gets none of these tasks. (The empty \"T1 SM\" branches were deleted on 2026-10-08; that didn't add a task.)",
+      "asked": "2026-10-07",
+      "workflows": [
+        "1770960918",
+        "1838568063",
+        "1682560327",
+        "1682559152",
+        "1838565644",
+        "1838568062",
+        "1688976731"
+      ],
+      "question": "Are Tier 1 tasks meant to go only to the OM?"
     },
     {
       "id": "W-3",
       "title": "First-90-days tasks before a facility is live",
-      "detail": "The first-90-days workflows check the go-live date, not Status = Live. Tasks for facilities that aren't live are flagged as a Potential Issue under rule 1.",
+      "detail": "The first-90-days workflows start from the go-live date, so a facility can get these tasks before its Status is Live. Any such tasks this week are listed here.",
       "task_types": [
         "Weekly Call: First 90 days",
         "Weekly KPI Review: First 90 days"
-      ]
+      ],
+      "asked": "2026-10-07",
+      "workflows": [
+        "1838565644",
+        "1838568062",
+        "1774165521"
+      ],
+      "question": "Is it OK for a facility to get first-90-days tasks before its Status is Live?"
     }
   ],
   "changes_not_confirmed": [],

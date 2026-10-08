@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{--navy:#00173C;--grey:#646F79;--red:#E62222;--white:#FFFFFF;--bg:#F7F9FA;
+:root{--amber:#F2A900;--navy:#00173C;--grey:#646F79;--red:#E62222;--white:#FFFFFF;--bg:#F7F9FA;
  --ink:#00173C;--muted:#646F79;--card:#FFFFFF;--line:#E1E5E9;--soft:#EEF1F4;--redsoft:#FDECEC;--head:#00173C;--headtext:#FFFFFF;
  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--ink:#E8EDF3;--muted:#A3ADB7;--card:#14213A;--line:#26344F;--soft:#1B2944;--redsoft:#3A1A20;--bg:#0B1528;--head:#000E26;--headtext:#FFFFFF}}
@@ -48,7 +48,7 @@ h3{font-size:17px;font-weight:600}
 .status{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:14px}
 .dot{width:10px;height:10px;border-radius:50%;background:var(--grey)}
 .st-bad .dot{background:var(--red)}.st-bad{color:var(--red)}
-.st-wait{color:var(--ink)}.st-wait .dot{background:var(--navy);box-shadow:0 0 0 2px var(--line)}
+.st-wait{color:var(--ink)}.st-wait .dot{background:var(--amber)}
 .st-ok{color:var(--muted)}.st-ok .dot{background:transparent;border:2px solid var(--grey)}
 .qcard p{margin:0;color:var(--ink)}
 .more{color:var(--muted);font-size:14px;margin-top:auto}
@@ -57,7 +57,10 @@ h3{font-size:17px;font-weight:600}
 .list{display:flex;flex-direction:column;gap:10px;margin:14px 0 28px}
 .item{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
 .item.bad{border-left:5px solid var(--red)}
-.item.wait{border-left:5px solid var(--navy)}
+.item.wait{border-left:5px solid var(--amber)}
+.itxt p.wq{margin:12px 0 0;font-weight:700;color:var(--ink);font-size:15px}
+.wfl{margin:10px 0 0}.wfl h4{margin:0 0 4px;font:600 13px Inter,Arial,sans-serif;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.wfl ul{margin:0;padding-left:18px}.wfl li{margin:2px 0}
 .item.known{border-left:5px solid var(--grey)}
 .item>summary,.item>.head{list-style:none;display:flex;gap:16px;align-items:flex-start;padding:16px 18px;cursor:pointer}
 .item>summary::-webkit-details-marker{display:none}
@@ -345,7 +348,7 @@ $('#allinks').onchange=e=>{$('#linktable').innerHTML=e.target.checked?`<div clas
 const changed=D.changes.filter(c=>c.status!=='same'),same=D.changes.filter(c=>c.status==='same');
 $('#t-changes').innerHTML=`<h2>Did anyone change the workflows?</h2>
 <p class="lead">${changed.length?`${plural(changed.length,'workflow')} of ${D.changes.length} ${changed.length===1?'is':'are'} different from the master rules file. A change isn't wrong by itself. Someone just needs to confirm it was planned.`:'Every workflow matches the master rules file.'}</p>
-${changed.map(c=>`<div class="panel" style="border-left:5px solid var(--navy)"><h3>${wfLink(c.workflow,c.name)}</h3><p style="margin:4px 0 0">${esc(changeText(c))}</p>${diffHTML(c)}<div class="meta">${c.pending?`<span class="chip who">Waiting on ${esc(D.decision_owner)}</span>`:''}${chips(c.label)}</div></div>`).join('')}
+${changed.map(c=>`<div class="panel" style="border-left:5px solid var(--amber)"><h3>${wfLink(c.workflow,c.name)}</h3><p style="margin:4px 0 0">${esc(changeText(c))}</p>${diffHTML(c)}<div class="meta">${c.pending?`<span class="chip who">Waiting on ${esc(D.decision_owner)}</span>`:''}${chips(c.label)}</div></div>`).join('')}
 <details class="item known" style="margin-top:18px"><summary><div class="cnt">${same.length}<small>same</small></div><div class="itxt"><h3>Workflows with no changes</h3><p>Including ${D.expected_off.length} that are switched off, as expected.</p></div>${chev}</summary>
 <div class="body"><div class="tw"><table><tr><th>Workflow</th><th>On or off</th></tr>${same.map(c=>{const off=D.expected_off.some(o=>o.id===c.workflow);return `<tr><td>${wfLink(c.workflow,c.name)}</td><td class="ok">${off?'Off, as expected':'On'}</td></tr>`;}).join('')}</table></div></div></details>`;
 
@@ -367,7 +370,13 @@ ${changed.map(c=>`<div class="panel" style="border-left:5px solid var(--navy)"><
 
 /* ---------- waiting ---------- */
 $('#t-waiting').innerHTML=`<h2>Waiting on ${esc(D.decision_owner)}</h2><p class="lead">Open questions. Until they're answered, anything they affect is listed here instead of as a new problem.</p>
-<div class="list">${D.waiting_on.map(w=>`<div class="item wait"><div class="head"><div class="cnt">${esc(w.id.replace('W-',''))}<small>question</small></div><div class="itxt"><h3>${esc(w.title)}</h3><p>${esc(w.detail)}</p><div class="meta"><span class="chip">${w.found&&w.found.length?plural(w.found.length,'facility','facilities')+' affected this week':'Nothing affected this week'}</span></div></div></div></div>`).join('')}
+<div class="list">${D.waiting_on.map(w=>{const wf=w.workflow_list||[];
+ return `<div class="item wait"><div class="head"><div class="cnt">${esc(w.id.replace('W-',''))}<small>question</small></div><div class="itxt"><h3>${esc(w.title)}</h3>
+ ${w.asked?`<p style="margin-top:2px">Asked on ${esc(day(w.asked))} ${esc(w.asked.slice(0,4))}</p>`:''}
+ <p style="color:var(--ink);margin-top:8px">${esc(w.detail)}</p>
+ ${wf.length?`<div class="wfl"><h4>Workflows</h4><ul>${wf.map(x=>`<li>${wfLink(x.id,x.name)}${x.on?'':' <span class="ok">(switched off)</span>'}</li>`).join('')}</ul></div>`:''}
+ <div class="meta"><span class="chip">${w.found&&w.found.length?plural(w.found.length,'facility','facilities')+' affected this week':'Nothing affected this week'}</span></div>
+ ${w.question?`<p class="wq">${esc(w.question)}</p>`:''}</div></div></div>`;}).join('')}
 ${changed.filter(c=>c.pending).map(c=>`<div class="item wait"><div class="head"><div class="cnt">Q3<small>change</small></div><div class="itxt"><h3>Was this change planned? ${wfLink(c.workflow,c.name)}</h3><p>${esc(changeText(c))}</p></div></div></div>`).join('')}</div>`;
 
 /* ---------- facility search ---------- */
