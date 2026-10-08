@@ -63,6 +63,26 @@ class FeeAndMonthRules(unittest.TestCase):
         self.assertEqual((ym, src), ((2026, 4), "invoice create date"))
 
 
+class InvoiceAdjustments(unittest.TestCase):
+    def test_order_discount_and_late_fee_become_lines(self):
+        from unittest import mock
+        base = dict(cid="3", facility="F", invoice_number="INV-1", invoice_source="native_invoice",
+                    share=1, ym=(2026, 3), invoice_status="paid")
+        lines = [dict(base, invoice_id="d", invoice_total=5233.48, line_id="a", fee="Management Fee",
+                      full_amount=7000.0, amount=7000.0),
+                 dict(base, invoice_id="d", invoice_total=5233.48, line_id="b", fee="Other Fee",
+                      full_amount=3233.48, amount=3233.48),
+                 dict(base, invoice_id="f", invoice_total=105.0, line_id="c", fee="Management Fee",
+                      full_amount=100.0, amount=100.0),
+                 dict(base, invoice_id="ok", invoice_total=50.0, line_id="e", fee="Other Fee",
+                      full_amount=50.0, amount=50.0)]
+        with mock.patch.object(hs, "associations", return_value={}), \
+             mock.patch.object(hs, "batch_read", return_value={}):
+            adj = hs.invoice_adjustments(lines)
+        got = sorted((a["invoice_id"], a["fee"], a["amount"]) for a in adj)
+        self.assertEqual(got, [("d", "Management Fee", -5000.0), ("f", "Other Fee", 5.0)])
+
+
 class DuplicateDetection(unittest.TestCase):
     def test_synced_copy_matches_on_number_and_total(self):
         m = cs.match_synced([hs_line()], [stripe_row()])

@@ -284,8 +284,48 @@ def fetch_hubspot_lines(facilities):
                     "currency": li.get("hs_line_item_currency_code"),
                     "fee": category(li.get("name")), "ym": ym, "month_source": source,
                 })
+    lines += invoice_adjustments(lines)
     no_inv = [f["name"] for c, f in facilities.items() if not comp_inv.get(c)]
     return lines, no_inv
+
+
+def invoice_adjustments(lines):
+    """One extra line per facility for invoices whose billed total differs from the sum of
+    their line items: order-level discounts (negative) and fees such as late fees (positive)
+    sit on the invoice, not on a line. Discounts go to the Management Fee row when the
+    invoice has one (else the row of its largest line); fees go to Other Fee."""
+    by_inv = defaultdict(list)
+    for ln in lines:
+        by_inv[ln["invoice_id"]].append(ln)
+    labels = {}
+    ids = [i for i, ls in by_inv.items() if abs(_gap(ls)) > 0.005]
+    for kind in ("discounts", "fees"):
+        assoc = associations("invoices", kind, ids) if ids else {}
+        objs = batch_read(kind, sorted({o for v in assoc.values() for o in v}), ["hs_label"])
+        for inv_id, obj_ids in assoc.items():
+            labels.setdefault((inv_id, kind), []).extend(objs.get(o, {}).get("hs_label") or kind for o in obj_ids)
+    out = []
+    for inv_id in ids:
+        ls = by_inv[inv_id]
+        gap = _gap(ls)
+        if gap < 0:
+            fees = {ln["fee"] for ln in ls}
+            fee = "Management Fee" if "Management Fee" in fees else max(ls, key=lambda x: x["full_amount"])["fee"]
+            kind, objs = "Invoice discount", "discounts"
+        else:
+            fee, kind, objs = "Other Fee", "Invoice fee", "fees"
+        name = f"{kind}: {', '.join(labels.get((inv_id, objs), [])) or 'not itemised'}"
+        for cid in sorted({ln["cid"] for ln in ls}):
+            first = next(ln for ln in ls if ln["cid"] == cid)
+            out.append({**first, "line_id": f"adj-{inv_id}", "line_name": name, "description": None,
+                        "amount": round(gap / first["share"], 2), "full_amount": gap, "fee": fee})
+    return out
+
+
+def _gap(invoice_lines):
+    """Billed total minus the sum of the invoice's line items (each line counted once)."""
+    seen = {ln["line_id"]: ln["full_amount"] for ln in invoice_lines}
+    return round(invoice_lines[0]["invoice_total"] - sum(seen.values()), 2)
 
 
 def write_grid(ws, facilities, month_cols, totals):
