@@ -21,6 +21,10 @@ This file and `CS_Ops_Master_Rules.xlsx` hold everything specific to CS Ops. The
    - Full management means Full Management Type is either value below. Both are used in the workflow filters today:
      - "Full management (Excl Call center)"
      - "Full management (Incl Call center)" (internal value `Full TPM`)
+   - **Exception (decided by Cherine, 2026-10-08):** the first-90-days workflows don't need Status = Live. They start from the go-live date, and their own trigger (go-live date in the last 91 days, full management) decides who should get them. A facility can get these tasks before its Status is Live; that's OK by design.
+     - Create Tasks | Weekly calls first 90 days after go live (1838565644)
+     - Create Tasks | Weekly KPI review to owner for first 90 days (1838568062, switched off)
+     - OM | RISK within the first 90 days (1774165521, switched off)
 2. Only the **Rate Review** workflows keep the segment exclusion (list 4291 "Exclude from Ops tasks").
    - It was removed from the other workflows on 2026-10-06.
 3. Main tasks are associated with the **company**. That's enough for CS Ops; no ticket link is needed.
@@ -64,7 +68,7 @@ One task type can be made by several workflows, for example split by tier. Each 
 - **Full management:** both values listed under rule 1 count (confirmed 2026-10-07).
 - **Became live this week:** use the date Status changed to Live, with the go-live date as a cross-check.
   - Flag any facility where the two are more than 7 days apart.
-- **First-90-days tasks for facilities that aren't live:** flag as a Potential Issue under rule 1, and add to Waiting on Cherine.
+- **First-90-days tasks for facilities that aren't live:** OK by design (Cherine, 2026-10-08). They're not flagged; see the exception under rule 1.
 - **Tier 1 SM gap:** a Tier 1 facility with an SM but no OM, in a workflow that gives Tier 1 tasks only to the OM, is shown as **missing**, with the reason "Tier 1 SM gap (Waiting on Cherine)".
   - Not "excluded by rule": there's no confirmed rule yet.
   - Not "unknown": we know why.
@@ -85,15 +89,11 @@ Report these once per run, in their own section, not as new problems every week.
    - Workflows: BOG Oversight Ent and T1, Confirm contacts on facility are correct, Month End Call, Update Customer Sentiment (Ent, Tier 1, Tier 2.1), Weekly calls first 90 days after go live, Weekly KPI review to owner for first 90 days (switched off), R+S - Facility Performance Monitoring and Escalation.
    - In these 7 workflows, Tier 1 tasks go only to the operations manager. A Tier 1 facility with a site manager but no operations manager gets none of these tasks. The empty "T1 SM" branches were deleted on 2026-10-08; that didn't add a task.
    - **Are Tier 1 tasks meant to go only to the OM?**
-3. **First-90-days tasks before a facility is live** (asked 2026-10-07)
-   - Workflows: Weekly calls first 90 days after go live, Weekly KPI review to owner for first 90 days (switched off), OM | RISK within the first 90 days (switched off).
-   - The first-90-days workflows start from the go-live date, so a facility can get these tasks before its Status is Live.
-   - **Is it OK for a facility to get first-90-days tasks before its Status is Live?**
-
 ### Closed (answered by Cherine, 2026-10-08)
 
 | Item | Answer |
 |---|---|
+| 3. First-90-days tasks before a facility is live | OK by design: the first-90-days workflows start from the go-live date, not Status = Live. Added as an exception to rule 1 (2026-10-08). |
 | 2. Weekly KPI review is on and creates duplicate Weekly Call tasks. Should it be off? | Duplicate of Weekly calls, switched off on 2026-10-08, confirmed by Cherine. Master rules file updated. |
 | 7. demo Facility (44541671248): test record? | Demo facility, excluded from audits (see Excluded companies). |
 | 4. R+S - Reminders: should it create a task? | Workflow deleted. Known issue F-05 closed too. |
@@ -227,6 +227,18 @@ The scripts read this block. Keep it in step with the text above.
       "added": "2026-10-08"
     }
   ],
+  "scope_exempt_workflows": {
+    "workflows": [
+      "1838565644",
+      "1838568062",
+      "1774165521"
+    ],
+    "reason": "first-90-days workflows: their own trigger (go-live date) decides who gets them, not Status = Live (Cherine, 2026-10-08)",
+    "fetch_companies": {
+      "property": "go_live_date",
+      "within_days": 92
+    }
+  },
   "went_live": {
     "status_property": "live",
     "live_value": "Yes",
@@ -456,22 +468,6 @@ The scripts read this block. Keep it in step with the text above.
         "1688976731"
       ],
       "question": "Are Tier 1 tasks meant to go only to the OM?"
-    },
-    {
-      "id": "W-3",
-      "title": "First-90-days tasks before a facility is live",
-      "detail": "The first-90-days workflows start from the go-live date, so a facility can get these tasks before its Status is Live. Any such tasks this week are listed here.",
-      "task_types": [
-        "Weekly Call: First 90 days",
-        "Weekly KPI Review: First 90 days"
-      ],
-      "asked": "2026-10-07",
-      "workflows": [
-        "1838565644",
-        "1838568062",
-        "1774165521"
-      ],
-      "question": "Is it OK for a facility to get first-90-days tasks before its Status is Live?"
     }
   ],
   "changes_not_confirmed": [],
@@ -540,6 +536,11 @@ The scripts read this block. Keep it in step with the text above.
       "id": "W-2",
       "closed": "2026-10-08",
       "answer": "Duplicate of Weekly calls, switched off on 2026-10-08, confirmed by Cherine"
+    },
+    {
+      "id": "W-3",
+      "closed": "2026-10-08",
+      "answer": "OK by design: the first-90-days workflows start from the go-live date, not Status = Live."
     }
   ],
   "workflow_summaries": {

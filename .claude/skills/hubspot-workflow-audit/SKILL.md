@@ -220,6 +220,7 @@ A new team only needs its two files. Do this with the user, one checkpoint at a 
    | `queue_name`, `queue_ids`, `start_date`, `window` | `window` = `{"ends_on": "Thursday", "days": 7}` |
    | `company_scope` | Filters on company properties using **internal** values, e.g. `{"property": "live", "operator": "IS_ANY_OF", "values": ["Yes"]}`; `{}`/omitted = all companies |
    | `excluded_companies` | `[{"id", "name", "reason", "added"}]`: companies left out of every audit (e.g. demo or test records): not in scope, not in should-have or missing counts, company links, the facility search or the calendar. Tasks linked only to them are not checked; the chat summary lists the exclusions once |
+   | `scope_exempt_workflows` | `{"workflows": [ids], "reason", optional "fetch_companies": {"property", "within_days"}}`: workflows whose own trigger decides who should get them, instead of the team's company scope (e.g. first-90-days workflows that start from the go-live date). `fetch_companies` makes the weekly fetch also load companies whose date property is that recent, so facilities outside the scope can still be checked |
    | `went_live` | `status_property`, `live_value`, `go_live_date_property`, `max_days_apart` |
    | `links` | `main_task_company`, `main_task_ticket`, `subtask_ticket_forbidden` |
    | `exclusion` | Optional: `list_id` and `only_in_task_types` (the only task types whose workflows may exclude that list) |

@@ -443,6 +443,11 @@ def fetch_weekly(a, flows):
     cids |= {c['id'] for c in search_all('companies', [{'propertyName': 'hs_lastmodifieddate', 'operator': 'GTE', 'value': iso(t0)},
                                                        {'propertyName': sp, 'operator': 'HAS_PROPERTY'}], ['name'])}
     cids |= {x['id'] for v in assoc.values() for x in v.get('companies', [])}
+    fc = (team.get('scope_exempt_workflows') or {}).get('fetch_companies')
+    if fc:      # companies the scope-exempt workflows may pick up although they're outside the team scope (e.g. recent go-live date)
+        d0 = first - dt.timedelta(days=int(fc.get('within_days', 92)))
+        since_ms = str(int(dt.datetime(d0.year, d0.month, d0.day, tzinfo=dt.timezone.utc).timestamp() * 1000))   # date filters take epoch ms
+        cids |= {c['id'] for c in search_all('companies', [{'propertyName': fc['property'], 'operator': 'GTE', 'value': since_ms}], ['name'])}
     companies = batch_read_history('companies', sorted(cids), cprops, hist)
     save(a.work, 'companies.json', companies)
     print('companies fetched (with property history):', len(companies))

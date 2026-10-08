@@ -38,6 +38,8 @@ TASKS = W('tasks.json', [])
 TASSOC = W('task_assoc.json', {})
 # Companies the team excludes from every audit (e.g. demo records): dropped here, so they are in no scope, count, search or calendar.
 EXCLUDED = {str(x['id']): x for x in (TEAM.get('excluded_companies') or [])}
+# Workflows whose own trigger decides who should get them, instead of the team's company scope (team-rules.md).
+SCOPE_EXEMPT = {str(x) for x in ((TEAM.get('scope_exempt_workflows') or {}).get('workflows') or [])}
 COMP = {c['id']: c for c in W('companies.json', []) if c['id'] not in EXCLUDED}
 EXCLUDED_TASKS = 0
 for _tid, _a in TASSOC.items():
@@ -162,7 +164,7 @@ def evaluate(cid, wid, when, type_name):
     if not c or not cfg:
         return {'state': 'unknown', 'reason': 'no data', 'label': 'NEEDS VERIFICATION'}
     props = rules.props_at(c, when)
-    sc = rules.in_scope(props, TEAM)
+    sc = None if str(wid) in SCOPE_EXEMPT else rules.in_scope(props, TEAM)     # exempt workflows: their own trigger decides
     if sc is False:
         return {'state': 'out_of_scope', 'reason': scope_reason(props), 'label': 'VERIFIED (records)'}
     trig = cfg.get('enrollmentCriteria', {}).get('listFilterBranch')
