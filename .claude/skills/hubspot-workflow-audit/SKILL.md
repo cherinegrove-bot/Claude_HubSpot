@@ -175,8 +175,9 @@ Open `$WK/results.json` and look over the top problems.
    - known issues, mentioned once
 2. **HTML page**, one file per report day, in `audits/<team>-workflow-audit/weekly/`.
    - **Layout:** `weekly_html.py` fills the skill's template, `templates/weekly_check_template.html`, by putting the results data object in place of `__DATA__`. The layout is the same for every team; don't build a page by hand.
-   - **Tabs:** Overview (the three questions, what needs attention, known issues, and a monthly calendar of every task type's scheduled runs from the master rules file, with this week's window outlined), Tasks created (one row per task type; click for should have / got it / missing with reason), Company links, Workflow changes, Waiting on \<decision owner\>.
-   - **Facility search** in the header opens a facility's tasks this week, with created and due dates, queue, and any problems.
+   - **Tabs:** Overview (the three questions, what needs attention, known issues, and a monthly calendar: every task type on the day(s) the master rules file says it's created, each run day coloured green (created correctly), red (problems), grey (not happened yet or outside the window), or marked as a known issue or waiting; click a day for its task types and results. Green is used on the calendar only), Tasks created (one row per task type; click for should have / got it / missing with reason), Company links, Workflow changes, Waiting on \<decision owner\>.
+   - **Facility search** in the header finds any facility in the team's scope by name or company ID (spaces or a # are ignored) and opens its week: the task types that ran and its result for each, its tasks, and any problems.
+   - **HubSpot links:** every workflow, company and task the page names opens in HubSpot in a new tab, built from the team's `portal_id` in `team-rules.md`. A company name opens HubSpot; the **Week** button next to it opens that facility's week on the page.
    - **Queue names:** the API can't return them, so the page uses the team's `queue_names` from `team-rules.md`.
    - **Colours:** the template's base colours are replaced by the team's `page_colours` from `team-rules.md`, if set (`navy` title bar and headings, `grey` headers and labels, `red` problems only, `white` cards and tables, `background` page).
    - **Content:** company names and record IDs only. No customer contact details.
@@ -212,6 +213,7 @@ A new team only needs its two files. Do this with the user, one checkpoint at a 
    | Key | Meaning |
    |---|---|
    | `team`, `team_name`, `decision_owner` | Short name (folder), display name, who decides open questions (names the "Waiting on" tab) |
+   | `portal_id` | HubSpot portal ID, used for the page's links to workflows, companies and tasks |
    | `page_colours` | Colours of the weekly HTML page: `navy`, `grey`, `red` (problems only), `white`, `background` |
 | `master_rules_file` | File name of the master rules workbook in the team folder |
    | `queue_name`, `queue_ids`, `start_date`, `window` | `window` = `{"ends_on": "Thursday", "days": 7}` |
@@ -225,7 +227,7 @@ A new team only needs its two files. Do this with the user, one checkpoint at a 
    | `waiting_on` | `[{"id", "title", "detail", optional "duplicate_task_type", "task_types", "queue_move" (queue ID) or "company_ids"}]`. Problems for those companies, or tasks moved to that queue, are listed under the item instead of as new problems |
    | `known_issues` | `[{"id", "text", optional "label"}]`. Each is reported once, with this week's count of the tasks it covers |
    | `queue_names` | `{"<queue ID>": {"name", "label", "confirmed"}}`: queue names the user confirmed (the API can't return them) |
-   | `known_queue_moves` | `[{"queue", "workflow", "known_issue", "waiting_on"}]`: a known workflow that moves the team's tasks to another queue; those tasks are reported as one known-issue line, not one problem per task |
+   | `known_queue_moves` | `[{"queue", "workflow", "known_issue", "waiting_on", optional "created_on_or_before"}]` (with a date, only tasks created on or before it are covered, e.g. a move that has since been fixed): a known workflow that moves the team's tasks to another queue; those tasks are reported as one known-issue line, not one problem per task |
 3. **Build the master rules file once,** from a saved settings snapshot the user agrees is correct:
    ```bash
    python3 $SK/fetch.py --work $WK --ids <id> <id> ...           # snapshot of the agreed workflows

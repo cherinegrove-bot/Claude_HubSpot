@@ -414,6 +414,7 @@ for r in MAIN:
                 extra={'nr_issue': r['flow'].split(':', 1)[1], 'known_issue': r['flow'].split(':', 1)[1]} if isinstance(r['flow'], str) and r['flow'].startswith('not_readable:') else None)
     r['known'] = r['flow'].split(':', 1)[1] if isinstance(r['flow'], str) and r['flow'].startswith('not_readable:') and st != 'ok' else None
     LINK_ROWS.append({'task': r['id'], 'title': r['title'], 'type': r['type'], 'workflow': wfname(r['flow']) if r['flow'] in M else r['source'],
+                      'workflow_id': r['flow'] if r['flow'] in M else None,
                       'companies': [{'id': c, 'name': cname(c)} for c in r['companies']], 'status': st, 'label': label, 'known': r.get('known')})
 SUB_ROWS = []
 for r in SUBS:
@@ -459,14 +460,26 @@ for wid, e in sorted(M.items(), key=lambda x: wfname(x[0]).lower()):
 # ------------------------------------------------------------------ known issues and open decisions: one line each, not one problem per task
 FOLDED = collections.defaultdict(list)
 known_moves = {m['queue']: m for m in TEAM.get('known_queue_moves', [])}
+ROW_BY_ID = {r['id']: r for r in ROWS}
+
+
+def known_move(p):
+    """The team's known queue move that covers this problem (same queue, and created on or before the cut-off date if one is set)."""
+    m = known_moves.get((p.get('moved_by') or {}).get('queue'))
+    if not m:
+        return None
+    r = ROW_BY_ID.get(p.get('task_id'))
+    if m.get('created_on_or_before') and (not r or local(r['created']).date().isoformat() > m['created_on_or_before']):
+        return None
+    return m
 wait_cos = {cid: wid for wid, w in WAIT.items() for cid in w.get('company_ids', [])}
 keep = []
 for p in PROBLEMS:
-    mv = (p.get('moved_by') or {}).get('queue')
-    if p['kind'] == 'not_in_queue' and mv in known_moves:
-        FOLDED[('known', known_moves[mv]['known_issue'])].append(p)
-        if known_moves[mv].get('waiting_on'):
-            FOLDED[('wait', known_moves[mv]['waiting_on'])].append(p)
+    km = known_move(p) if p['kind'] == 'not_in_queue' else None
+    if km:
+        FOLDED[('known', km['known_issue'])].append(p)
+        if km.get('waiting_on'):
+            FOLDED[('wait', km['waiting_on'])].append(p)
     elif p['kind'] == 'link' and p.get('nr_issue'):
         FOLDED[('known', p['nr_issue'])].append(p)
     elif p.get('company_id') in wait_cos:
@@ -479,6 +492,15 @@ for tr in TYPE_RESULTS:                       # same facilities in the task-type
         if cid in wait_cos:
             m['reason'] += f' (Waiting on {OWNER}: {wait_cos[cid]})'
             m['waiting_on'] = wait_cos[cid]
+
+
+KNOWN_DAYS = collections.defaultdict(int)          # (local date, task type, known issue) -> tasks, for the Overview calendar
+for (kind, kid), ps in FOLDED.items():
+    if kind == 'known':
+        for p in ps:
+            r = ROW_BY_ID.get(p.get('task_id'))
+            if r and r.get('type'):
+                KNOWN_DAYS[(local(r['created']).date().isoformat(), r['type'], kid)] += 1
 
 
 def folded_text(ps):
@@ -595,9 +617,11 @@ RESULT = {
     'counts': {'facilities_in_scope': in_scope_count, 'main_tasks': len(MAIN), 'subtasks': len(SUBS), 'workflows': len(M),
                'q1': q_counts[1], 'q2': q_counts[2], 'q3': q_counts[3]},
     'top': TOP, 'types': TYPE_RESULTS, 'new_facilities': NEW, 'links': LINK_ROWS, 'subtasks': SUB_ROWS, 'changes': CHANGES,
-    'schedules': SCHEDULES, 'waiting_on': waiting, 'known_issues': known, 'expected_off': off_state, 'problems': PROBLEMS,
-    'companies': {cid: cname(cid) for cid in {x for tr in TYPE_RESULTS for x in tr['should'] + tr['got'] + list(tr['missing']) + list(tr['shouldnt'])} | {c for r in MAIN for c in r['companies']}},
-    'tasks': [{'id': r['id'], 'title': r['title'], 'type': r['type'], 'workflow': wfname(r['flow']) if r['flow'] in M else r['source'], 'created': fmt_dt(r['created']),
+    'schedules': SCHEDULES, 'known_days': [{'date': d, 'type': t, 'known_issue': k, 'tasks': n} for (d, t, k), n in sorted(KNOWN_DAYS.items())],
+    'waiting_on': waiting, 'known_issues': known, 'expected_off': off_state, 'problems': PROBLEMS,
+    'companies': {cid: cname(cid) for cid in {x for tr in TYPE_RESULTS for x in tr['should'] + tr['got'] + list(tr['missing']) + list(tr['shouldnt'])} | {c for r in MAIN for c in r['companies']} | LIVE_NOW},
+    'tasks': [{'id': r['id'], 'title': r['title'], 'type': r['type'], 'workflow': wfname(r['flow']) if r['flow'] in M else r['source'],
+               'workflow_id': r['flow'] if r['flow'] in M else None, 'created': fmt_dt(r['created']),
                'due': fmt_dt(r['due']) if r['due'] else '', 'companies': r['companies'], 'link': r.get('link'), 'in_queue': r['in_queue']} for r in MAIN],
 }
 json.dump(RESULT, open(os.path.join(A.work, 'results.json'), 'w'), indent=1, default=str)

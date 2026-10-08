@@ -35,6 +35,8 @@ data = {k: R[k] for k in ('team', 'decision_owner', 'portal', 'queue', 'queue_id
                           'counts', 'top', 'types', 'new_facilities', 'links', 'subtasks', 'changes', 'waiting_on', 'known_issues', 'expected_off',
                           'problems', 'companies', 'tasks')}
 data['schedules'] = R.get('schedules', [])
+data['known_days'] = R.get('known_days', [])
+data['portal'] = str(TEAM.get('portal_id') or R.get('portal') or '')      # HubSpot links use the portal ID from team-rules.md
 data['queue_names'] = {q: (v['name'] if isinstance(v, dict) else v) for q, v in (TEAM.get('queue_names') or {}).items()}
 for n in data['new_facilities']:                       # field names the template's New facilities table reads
     n['id'] = n['company_id']

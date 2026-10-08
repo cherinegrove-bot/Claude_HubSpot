@@ -101,7 +101,7 @@ Report these once per run, in their own section, not as new problems every week.
 |---|---|
 | 4. R+S - Reminders: should it create a task? | Workflow deleted. Known issue F-05 closed too. |
 | 5. Tier 2 - L1 SM gap (Update Customer Sentiment) | Fine, no action. Reported as "excluded by rule" from now on. |
-| 6. Set task queue moves BOG tasks to BOG - Run and Sustain | Workflow deleted. BOG tasks should now stay in Ops Tasks. Known issue BOG-Q closed too. |
+| 6. Set task queue moves BOG tasks to BOG - Run and Sustain | Workflow deleted. BOG tasks should now stay in Ops Tasks. The 52 tasks it moved on 2026-10-07 stay in BOG - Run and Sustain (known issue BOG-Q, fixed, no action needed). |
 | Weekly KPI review switched off (change of 2026-10-07) | It's on again. The switch-off was not marked as planned and the master rules file still records it as on. See item 2. |
 | Weekly calls revision 39 -> 41 (change of 2026-10-07) | Planned. Master rules file updated on 2026-10-08. |
 | Empty branches in CS Ops workflows | 47 branches with nothing under them, plus Storage Reach's "Enterprise" branch (it held only empty branches), deleted on purpose. Master rules file updated on 2026-10-08, one log line per workflow. |
@@ -115,6 +115,7 @@ None. The live workflows matched the master rules file after the 2026-10-08 upda
 Report each once, as a known issue.
 
 - **F-03:** in 13 workflows the OM branch is checked before the SM branch, so tasks go to the OM when both exist. Cherine is deciding the fix.
+- **BOG-Q (fixed, no action needed):** the 52 BOG Oversight tasks created on 2026-10-07 are still in queue 9999918 "BOG - Run and Sustain": moved by Set task queue before it was deleted, no action needed (WLS, 2026-10-08). Reported once, as a known issue that's already fixed. Only tasks created on or before 2026-10-07 are covered; a BOG task moved after that is a new problem.
 - **F-08:** "Create Tasks | Respond to reviews at Storage Reach" didn't come back from the API. It's a User workflow, which may be why. Its tasks are in Ops Tasks but are not linked to any company. The audit reports this as one line, with the week's count, not one problem per task.
 - **5 workflows are switched off.** That's expected unless WLS says otherwise:
   - 1774165521 OM | RISK within the first 90 days
@@ -122,6 +123,10 @@ Report each once, as a known issue.
   - 1682549368 Create Tasks | Prepare Rate Review
   - 1682101413 Create Tasks | Prepare Month End Report
   - 1682545542 Create Tasks | Playbook Review/Maintenance T1 OM
+
+## HubSpot portal
+
+Portal ID **45059701**. The weekly page uses it for the links that open workflows, companies and tasks in HubSpot.
 
 ## Queue names
 
@@ -157,6 +162,7 @@ The scripts read this block. Keep it in step with the text above.
   "team": "cs-ops",
   "team_name": "CS Ops",
   "decision_owner": "Cherine",
+  "portal_id": "45059701",
   "page_colours": {
     "navy": "#00173C",
     "grey": "#646F79",
@@ -449,11 +455,23 @@ The scripts read this block. Keep it in step with the text above.
       "confirmed": "2026-10-07"
     }
   },
-  "known_queue_moves": [],
+  "known_queue_moves": [
+    {
+      "queue": "9999918",
+      "created_on_or_before": "2026-10-07",
+      "known_issue": "BOG-Q"
+    }
+  ],
   "known_issues": [
     {
       "id": "F-03",
       "text": "In 13 workflows the OM branch is checked before the SM branch, so tasks go to the OM when both exist. Cherine is deciding the fix."
+    },
+    {
+      "id": "BOG-Q",
+      "status": "fixed",
+      "text": "BOG Oversight tasks from 2026-10-07 in BOG - Run and Sustain: moved by Set task queue before it was deleted, no action needed.",
+      "label": "VERIFIED (records); queue name VERIFIED (screenshot)"
     },
     {
       "id": "F-08",
