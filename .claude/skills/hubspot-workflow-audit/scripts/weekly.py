@@ -621,6 +621,32 @@ for tt in TYPES:
                           'time': f'{t.get("hour", 0):02d}:{t.get("minute", 0):02d}' if sc else '',
                           'off_now': bool(live is not None and not live.get('isEnabled'))})
 
+# "Switched off" tab: every master-file workflow that is off in the master rules file or in HubSpot now.
+# Summaries come from team-rules.md (written from the master rules file); a summary written for an older revision is flagged.
+SUMS = TEAM.get('workflow_summaries') or {}
+SWITCHED_OFF = []
+for wid, e in M.items():
+    mon = bool((e.get('cfg') or {}).get('isEnabled'))
+    live = LIVE.get(wid)
+    lon = None if live is None else bool(live.get('isEnabled'))
+    if mon and lon is not False:
+        continue
+    if not mon and lon is False:
+        status = 'off_expected'
+    elif not mon and lon:
+        status = 'on_now'          # off in the master rules file, switched on in HubSpot
+    elif not mon:
+        status = 'not_returned'
+    else:
+        status = 'off_now'         # on in the master rules file, switched off in HubSpot
+    sm = SUMS.get(wid) or {}
+    rev = str((e.get('cfg') or {}).get('revisionId') or e['row'].get('Revision') or '')
+    SWITCHED_OFF.append({'workflow': wid, 'name': wfname(wid), 'status': status, 'summary': sm.get('summary'),
+                         'summary_stale': bool(sm) and str(sm.get('written_for_revision')) != rev, 'summary_revision': sm.get('written_for_revision'),
+                         'master_revision': rev, 'live_revision': str((live or {}).get('revisionId') or ''),
+                         'last_edited': ((live or {}).get('updatedAt') or (e.get('cfg') or {}).get('updatedAt') or '')[:16].replace('T', ' ') + ' UTC'})
+SWITCHED_OFF.sort(key=lambda x: (x['status'] == 'off_expected', x['name'].lower()))
+
 RESULT = {
     'team': TEAM_NAME, 'team_slug': rules.team_slug(A.team), 'decision_owner': OWNER, 'portal': str(ACCT.get('portalId', '')), 'queue': TEAM.get('queue_name'), 'queue_ids': sorted(QIDS),
     'window': [FIRST.isoformat(), LAST.isoformat()], 'report_day': rules.report_day(TEAM, LAST).isoformat(), 'time_zone': ACCT.get('timeZone'),
@@ -630,7 +656,7 @@ RESULT = {
     'counts': {'facilities_in_scope': in_scope_count, 'main_tasks': len(MAIN), 'subtasks': len(SUBS), 'workflows': len(M),
                'q1': q_counts[1], 'q2': q_counts[2], 'q3': q_counts[3]},
     'top': TOP, 'types': TYPE_RESULTS, 'new_facilities': NEW, 'links': LINK_ROWS, 'subtasks': SUB_ROWS, 'changes': CHANGES,
-    'schedules': SCHEDULES, 'known_days': [{'date': d, 'type': t, 'known_issue': k, 'tasks': n} for (d, t, k), n in sorted(KNOWN_DAYS.items())],
+    'schedules': SCHEDULES, 'switched_off': SWITCHED_OFF, 'known_days': [{'date': d, 'type': t, 'known_issue': k, 'tasks': n} for (d, t, k), n in sorted(KNOWN_DAYS.items())],
     'waiting_on': waiting, 'known_issues': known, 'expected_off': off_state, 'problems': PROBLEMS,
     'companies': {cid: cname(cid) for cid in {x for tr in TYPE_RESULTS for x in tr['should'] + tr['got'] + list(tr['missing']) + list(tr['shouldnt'])} | {c for r in MAIN for c in r['companies']} | LIVE_NOW},
     'tasks': [{'id': r['id'], 'title': r['title'], 'type': r['type'], 'workflow': wfname(r['flow']) if r['flow'] in M else r['source'],

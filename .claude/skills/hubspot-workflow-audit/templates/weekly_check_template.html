@@ -154,6 +154,7 @@ button.cal-day.s-ok:hover,button.cal-day.s-bad:hover,button.cal-day.s-known:hove
  <section id="t-links"></section>
  <section id="t-changes"></section>
  <section id="t-waiting"></section>
+ <section id="t-off"></section>
  <div class="legend" id="legend"></div>
 </div></main>
 <script>
@@ -220,7 +221,7 @@ $('#title').textContent=`${D.team} weekly check`;
 $('#sub').textContent=`${day(w0)} to ${day(w1)} ${w1.slice(0,4)}  ·  Report for ${day(D.report_day)}  ·  Data read ${when(D.fetched_at)} (${(D.time_zone||'').replace('US/','US ')})`;
 const q1=items.filter(i=>i.q===1),q2=items.filter(i=>i.q===2),q3=items.filter(i=>i.q===3);
 const nBad=a=>a.filter(i=>i.kind==='bad').length;
-const TABS=[['overview','Overview',nBad(items),true],['tasks','Tasks created',nBad(q1),true],['links','Company links',nBad(q2),true],['changes','Workflow changes',q3.length,false],['waiting',`Waiting on ${D.decision_owner}`,D.waiting_on.length,false]];
+const TABS=[['overview','Overview',nBad(items),true],['tasks','Tasks created',nBad(q1),true],['links','Company links',nBad(q2),true],['changes','Workflow changes',q3.length,false],['waiting',`Waiting on ${D.decision_owner}`,D.waiting_on.length,false],['off','Switched off',(D.switched_off||[]).length,(D.switched_off||[]).some(w=>w.status!=='off_expected')]];
 $('#nav').innerHTML=TABS.map(([id,l,n,red])=>`<button data-t="${id}">${l}${n?`<span class="badge${red?' red':''}">${n}</span>`:''}</button>`).join('');
 function show(id){document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===id));document.querySelectorAll('main section').forEach(s=>s.classList.toggle('on',s.id==='t-'+id));$('#facility').innerHTML='';window.scrollTo(0,0);}
 $('#nav').onclick=e=>{const b=e.target.closest('button');if(b)show(b.dataset.t);};
@@ -347,6 +348,22 @@ $('#t-changes').innerHTML=`<h2>Did anyone change the workflows?</h2>
 ${changed.map(c=>`<div class="panel" style="border-left:5px solid var(--navy)"><h3>${wfLink(c.workflow,c.name)}</h3><p style="margin:4px 0 0">${esc(changeText(c))}</p>${diffHTML(c)}<div class="meta">${c.pending?`<span class="chip who">Waiting on ${esc(D.decision_owner)}</span>`:''}${chips(c.label)}</div></div>`).join('')}
 <details class="item known" style="margin-top:18px"><summary><div class="cnt">${same.length}<small>same</small></div><div class="itxt"><h3>Workflows with no changes</h3><p>Including ${D.expected_off.length} that are switched off, as expected.</p></div>${chev}</summary>
 <div class="body"><div class="tw"><table><tr><th>Workflow</th><th>On or off</th></tr>${same.map(c=>{const off=D.expected_off.some(o=>o.id===c.workflow);return `<tr><td>${wfLink(c.workflow,c.name)}</td><td class="ok">${off?'Off, as expected':'On'}</td></tr>`;}).join('')}</table></div></div></details>`;
+
+/* ---------- switched off ---------- */
+(function(){const list=D.switched_off||[],flag=list.filter(w=>w.status!=='off_expected');
+ const ST={off_expected:['ok','Off, as expected'],
+  on_now:['badtxt','Switched on in HubSpot, but off in the master rules file. See Workflow changes.'],
+  off_now:['badtxt','Switched off in HubSpot, but on in the master rules file. See Workflow changes.'],
+  not_returned:['badtxt','Not returned by HubSpot this week. See Workflow changes.']};
+ $('#t-off').innerHTML=`<h2>Switched off <span class="ok" style="font-weight:500">(${list.length})</span></h2>
+ <p class="lead">These are kept switched off on purpose, so they can be turned back on quickly if the client asks.</p>
+ ${flag.length?`<p class="badtxt" style="margin:-8px 0 18px">${plural(flag.length,'workflow')} ${flag.length===1?"doesn't":"don't"} match the master rules file.</p>`:''}
+ <div class="list">${list.length?list.map(w=>{const [c,t]=ST[w.status]||['ok',w.status];
+  return `<div class="item ${w.status==='off_expected'?'known':'bad'}"><div class="head"><div class="itxt"><h3>${wfLink(w.workflow,w.name)}</h3>
+  <p style="color:var(--ink);margin-top:6px">${w.summary?esc(w.summary):'<span class="ok">No summary written yet.</span>'}</p>
+  ${w.summary_stale?`<p class="ok" style="margin-top:6px">This summary was written for revision ${esc(w.summary_revision)}; the workflow has changed since (master rules file: revision ${esc(w.master_revision)}). Ask Claude to rewrite it.</p>`:''}
+  <div class="meta"><span class="chip">Last edited ${esc(when(w.last_edited.slice(0,16)))} UTC</span><span class="${c}" style="font-size:14px">${w.status==='off_expected'?esc(t):`${esc(t.replace(' See Workflow changes.',''))} <a href="#" data-go="changes">See Workflow changes →</a>`}</span></div></div></div></div>`;}).join(''):'<div class="empty">No workflow is switched off.</div>'}</div>`;
+ $('#t-off').onclick=e=>{const b=e.target.closest('[data-go]');if(b){e.preventDefault();show(b.dataset.go);}};})();
 
 /* ---------- waiting ---------- */
 $('#t-waiting').innerHTML=`<h2>Waiting on ${esc(D.decision_owner)}</h2><p class="lead">Open questions. Until they're answered, anything they affect is listed here instead of as a new problem.</p>
