@@ -15,7 +15,9 @@ Rules
     otherwise the invoice date (America/New_York), falling back to the
     invoice create date.
   * Voided and draft invoices are skipped.
-  * Amount = line item `amount` (net of discounts).
+  * Amount = line item `amount` (net of discounts). An invoice associated
+    with several facilities on the sheet (one bill for sister sites) is
+    split evenly across them, so it is counted once in total.
 
 An "Line Item Detail" sheet lists every line item used, and a "Not Placed"
 sheet lists anything that could not be put on the grid (month outside
@@ -174,6 +176,11 @@ def main(src, dst):
     line_items = batch_read("line_items", li_ids, [
         "name", "description", "amount", "quantity", "price", "hs_line_item_currency_code"])
 
+    inv_companies = defaultdict(set)
+    for cid, inv_list in comp_inv.items():
+        for inv_id in inv_list:
+            inv_companies[inv_id].add(cid)
+
     totals = defaultdict(float)  # (cid, fee, (y, m)) -> amount
     detail, not_placed = [], []
     seen_li = set()
@@ -183,9 +190,11 @@ def main(src, dst):
             inv = invoices.get(inv_id, {})
             if inv_id not in live_inv:
                 continue
+            share = len(inv_companies[inv_id])
             for li_id in inv_li.get(inv_id, []):
                 li = line_items.get(li_id, {})
-                amount = float(li.get("amount") or 0)
+                full_amount = float(li.get("amount") or 0)
+                amount = round(full_amount / share, 2)
                 fee = category(li.get("name"))
                 ym, source = service_month(li.get("name"), inv)
                 inv_ts = parse_ts(inv.get("hs_invoice_date")) or parse_ts(inv.get("hs_createdate"))
@@ -193,7 +202,8 @@ def main(src, dst):
                        inv_ts.astimezone(EASTERN).date() if inv_ts else None,
                        li_id, li.get("name"), li.get("description"), amount,
                        li.get("hs_line_item_currency_code"), fee,
-                       f"{ym[0]}-{ym[1]:02d}" if ym else None, source]
+                       f"{ym[0]}-{ym[1]:02d}" if ym else None, source,
+                       f"1/{share} of {full_amount:,.2f}" if share > 1 else None]
                 if (cid, li_id) in seen_li:
                     not_placed.append(rec + ["duplicate association, skipped"])
                     continue
@@ -216,7 +226,7 @@ def main(src, dst):
 
     headers = ["Facility", "Company ID", "Invoice #", "Invoice ID", "Invoice Status", "Invoice Date",
                "Line Item ID", "Line Item Name", "Description", "Amount", "Currency", "Fee Row",
-               "Service Month", "Month Source"]
+               "Service Month", "Month Source", "Shared Invoice Split"]
     for title, rows, extra in (("Line Item Detail", detail, []),
                                ("Not Placed", not_placed, ["Reason"])):
         if title in wb.sheetnames:
