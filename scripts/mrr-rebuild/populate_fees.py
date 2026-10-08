@@ -134,10 +134,7 @@ def service_month(li_name, invoice):
     return None, "no date"
 
 
-def main(src, dst):
-    wb = openpyxl.load_workbook(src)
-    ws = wb[SHEET]
-
+def month_columns(ws):
     month_cols = {}
     for col in range(FIRST_MONTH_COL, ws.max_column + 1):
         hdr = ws.cell(1, col).value
@@ -145,32 +142,41 @@ def main(src, dst):
             continue
         d = hdr if isinstance(hdr, datetime) else datetime.strptime(str(hdr), "%b-%y")
         month_cols[(d.year, d.month)] = col
+    return month_cols
 
-    facilities = {}  # company id -> {fee name: row}
+
+def read_facilities(ws):
+    """{company id: {"name": ..., "row": header row, "rows": {fee name: row}}}"""
+    facilities = {}
     for row in range(2, ws.max_row + 1):
         cid = ws.cell(row, 2).value
         if cid is None:
             continue
-        cid = str(int(cid))
         rows = {}
         for off in range(1, 5):
             label = ws.cell(row + off, 1).value
             if label in FEE_ROWS:
                 rows[label] = row + off
-        facilities[cid] = {"name": ws.cell(row, 1).value, "rows": rows}
-    print(f"{len(facilities)} facilities on sheet")
+        facilities[str(int(cid))] = {"name": ws.cell(row, 1).value, "row": row, "rows": rows}
+    return facilities
 
+
+def fetch_hubspot_lines(facilities):
+    """Every line item on the facilities' live invoices, one record per (facility, line item).
+
+    An invoice associated with several facilities is split evenly across them.
+    """
     comp_inv = associations("companies", "invoices", facilities)
     inv_ids = sorted({i for v in comp_inv.values() for i in v})
     print(f"{len(inv_ids)} invoices associated")
     invoices = batch_read("invoices", inv_ids, [
         "hs_number", "hs_title", "hs_invoice_date", "hs_createdate",
-        "hs_invoice_status", "hs_currency", "hs_amount_billed"])
-    live_inv = [i for i in inv_ids
-                if (invoices.get(i, {}).get("hs_invoice_status") or "").lower() not in SKIP_STATUSES]
+        "hs_invoice_status", "hs_currency", "hs_amount_billed", "hs_invoice_source"])
+    live_inv = {i for i in inv_ids
+                if (invoices.get(i, {}).get("hs_invoice_status") or "").lower() not in SKIP_STATUSES}
     print(f"{len(live_inv)} invoices after skipping voided/draft")
 
-    inv_li = associations("invoices", "line_items", live_inv)
+    inv_li = associations("invoices", "line_items", sorted(live_inv))
     li_ids = sorted({i for v in inv_li.values() for i in v})
     print(f"{len(li_ids)} line items")
     line_items = batch_read("line_items", li_ids, [
@@ -181,42 +187,39 @@ def main(src, dst):
         for inv_id in inv_list:
             inv_companies[inv_id].add(cid)
 
-    totals = defaultdict(float)  # (cid, fee, (y, m)) -> amount
-    detail, not_placed = [], []
-    seen_li = set()
+    lines, seen = [], set()
     for cid, inv_list in comp_inv.items():
-        fac = facilities[cid]
         for inv_id in inv_list:
-            inv = invoices.get(inv_id, {})
             if inv_id not in live_inv:
                 continue
+            inv = invoices.get(inv_id, {})
             share = len(inv_companies[inv_id])
+            inv_ts = parse_ts(inv.get("hs_invoice_date")) or parse_ts(inv.get("hs_createdate"))
             for li_id in inv_li.get(inv_id, []):
+                if (cid, li_id) in seen:
+                    continue
+                seen.add((cid, li_id))
                 li = line_items.get(li_id, {})
                 full_amount = float(li.get("amount") or 0)
-                amount = round(full_amount / share, 2)
-                fee = category(li.get("name"))
                 ym, source = service_month(li.get("name"), inv)
-                inv_ts = parse_ts(inv.get("hs_invoice_date")) or parse_ts(inv.get("hs_createdate"))
-                rec = [fac["name"], cid, inv.get("hs_number"), inv_id, inv.get("hs_invoice_status"),
-                       inv_ts.astimezone(EASTERN).date() if inv_ts else None,
-                       li_id, li.get("name"), li.get("description"), amount,
-                       li.get("hs_line_item_currency_code"), fee,
-                       f"{ym[0]}-{ym[1]:02d}" if ym else None, source,
-                       f"1/{share} of {full_amount:,.2f}" if share > 1 else None]
-                if (cid, li_id) in seen_li:
-                    not_placed.append(rec + ["duplicate association, skipped"])
-                    continue
-                seen_li.add((cid, li_id))
-                if ym not in month_cols:
-                    not_placed.append(rec + ["service month outside sheet range"])
-                    continue
-                if fee not in fac["rows"]:
-                    not_placed.append(rec + ["fee row missing on sheet"])
-                    continue
-                totals[(cid, fee, ym)] += amount
-                detail.append(rec)
+                lines.append({
+                    "cid": cid, "facility": facilities[cid]["name"],
+                    "invoice_number": inv.get("hs_number"), "invoice_id": inv_id,
+                    "invoice_status": inv.get("hs_invoice_status"),
+                    "invoice_source": inv.get("hs_invoice_source"),
+                    "invoice_total": float(inv.get("hs_amount_billed") or 0),
+                    "invoice_date": inv_ts.astimezone(EASTERN).date() if inv_ts else None,
+                    "line_id": li_id, "line_name": li.get("name"), "description": li.get("description"),
+                    "amount": round(full_amount / share, 2), "full_amount": full_amount, "share": share,
+                    "currency": li.get("hs_line_item_currency_code"),
+                    "fee": category(li.get("name")), "ym": ym, "month_source": source,
+                })
+    no_inv = [f["name"] for c, f in facilities.items() if not comp_inv.get(c)]
+    return lines, no_inv
 
+
+def write_grid(ws, facilities, month_cols, totals):
+    """Fill the fee rows from {(cid, fee, (y, m)): amount}; header-row formulas are untouched."""
     for cid, fac in facilities.items():
         for fee, row in fac["rows"].items():
             for ym, col in month_cols.items():
@@ -224,22 +227,62 @@ def main(src, dst):
                 ws.cell(row, col).value = val if val else None
                 ws.cell(row, col).number_format = '#,##0.00'
 
-    headers = ["Facility", "Company ID", "Invoice #", "Invoice ID", "Invoice Status", "Invoice Date",
-               "Line Item ID", "Line Item Name", "Description", "Amount", "Currency", "Fee Row",
-               "Service Month", "Month Source", "Shared Invoice Split"]
-    for title, rows, extra in (("Line Item Detail", detail, []),
-                               ("Not Placed", not_placed, ["Reason"])):
-        if title in wb.sheetnames:
-            del wb[title]
-        sh = wb.create_sheet(title)
-        sh.append(headers + extra)
-        for r in rows:
-            sh.append(r)
-        sh.freeze_panes = "A2"
+
+def place(lines, facilities, month_cols):
+    """Sum lines onto the grid. Returns (totals, placed, not_placed[(line, reason)])."""
+    totals = defaultdict(float)
+    placed, not_placed = [], []
+    for ln in lines:
+        if ln["ym"] not in month_cols:
+            not_placed.append((ln, "service month outside sheet range"))
+        elif ln["fee"] not in facilities[ln["cid"]]["rows"]:
+            not_placed.append((ln, "fee row missing on sheet"))
+        else:
+            totals[(ln["cid"], ln["fee"], ln["ym"])] += ln["amount"]
+            placed.append(ln)
+    return totals, placed, not_placed
+
+
+def write_table(wb, title, headers, rows):
+    if title in wb.sheetnames:
+        del wb[title]
+    sh = wb.create_sheet(title)
+    sh.append(headers)
+    for r in rows:
+        sh.append(r)
+    sh.freeze_panes = "A2"
+    return sh
+
+
+HS_DETAIL_HEADERS = ["Facility", "Company ID", "Invoice #", "Invoice ID", "Invoice Status", "Invoice Date",
+                     "Line Item ID", "Line Item Name", "Description", "Amount", "Currency", "Fee Row",
+                     "Service Month", "Month Source", "Shared Invoice Split"]
+
+
+def hs_detail_row(ln):
+    ym = ln["ym"]
+    return [ln["facility"], ln["cid"], ln["invoice_number"], ln["invoice_id"], ln["invoice_status"],
+            ln["invoice_date"], ln["line_id"], ln["line_name"], ln["description"], ln["amount"],
+            ln["currency"], ln["fee"], f"{ym[0]}-{ym[1]:02d}" if ym else None, ln["month_source"],
+            f"1/{ln['share']} of {ln['full_amount']:,.2f}" if ln["share"] > 1 else None]
+
+
+def main(src, dst):
+    wb = openpyxl.load_workbook(src)
+    ws = wb[SHEET]
+    month_cols = month_columns(ws)
+    facilities = read_facilities(ws)
+    print(f"{len(facilities)} facilities on sheet")
+
+    lines, no_inv = fetch_hubspot_lines(facilities)
+    totals, placed, not_placed = place(lines, facilities, month_cols)
+    write_grid(ws, facilities, month_cols, totals)
+    write_table(wb, "Line Item Detail", HS_DETAIL_HEADERS, [hs_detail_row(ln) for ln in placed])
+    write_table(wb, "Not Placed", HS_DETAIL_HEADERS + ["Reason"],
+                [hs_detail_row(ln) + [why] for ln, why in not_placed])
 
     wb.save(dst)
-    no_inv = [f["name"] for c, f in facilities.items() if not comp_inv.get(c)]
-    print(f"placed {len(detail)} line items, {len(not_placed)} not placed, "
+    print(f"placed {len(placed)} line items, {len(not_placed)} not placed, "
           f"{len(no_inv)} facilities with no invoices")
     print(f"saved {dst}")
 
