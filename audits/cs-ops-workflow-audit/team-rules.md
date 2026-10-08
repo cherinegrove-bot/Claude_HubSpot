@@ -69,6 +69,7 @@ One task type can be made by several workflows, for example split by tier. Each 
 - **Became live this week:** use the date Status changed to Live, with the go-live date as a cross-check.
   - Flag any facility where the two are more than 7 days apart.
 - **First-90-days tasks for facilities that aren't live:** OK by design (Cherine, 2026-10-08). They're not flagged; see the exception under rule 1.
+  - This includes facilities that went live recently and are now Lost or Offboarding: they're still expected to get first-90-days tasks while their go-live date is in the last 91 days. Fine for now (WLS, 2026-10-08); update this if it changes.
 - **Tier 1 SM gap:** a Tier 1 facility with an SM but no OM, in a workflow that gives Tier 1 tasks only to the OM, is shown as **missing**, with the reason "Tier 1 SM gap (Waiting on Cherine)".
   - Not "excluded by rule": there's no confirmed rule yet.
   - Not "unknown": we know why.
