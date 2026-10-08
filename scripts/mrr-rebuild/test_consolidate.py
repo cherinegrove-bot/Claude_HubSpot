@@ -52,6 +52,12 @@ class FeeAndMonthRules(unittest.TestCase):
         ym, _ = hs.invoice_month({"hs_invoice_date": "2026-03-01T03:59:59.999Z"})
         self.assertEqual(ym, (2026, 2))
 
+    def test_midnight_eastern_minus_one_ms_is_the_next_day(self):
+        # Safe Storage INV-4060 is stored as Apr 1 00:00 EDT minus 1 ms: it is the April invoice
+        self.assertEqual(hs.invoice_day({"hs_invoice_date": "2026-04-01T03:59:59.999Z"})[0], date(2026, 4, 1))
+        self.assertEqual(hs.invoice_day({"hs_invoice_date": "2026-03-01T04:59:59.999Z"})[0], date(2026, 3, 1))
+        self.assertEqual(hs.invoice_day({"hs_invoice_date": "2026-05-06T03:59:59.999Z"})[0], date(2026, 5, 6))
+
     def test_date_only_value_is_not_shifted(self):
         # HubSpot stores a plain date as midnight UTC: Apr 1 must stay Apr 1, not Mar 31
         ym, _ = hs.invoice_month({"hs_invoice_date": "2026-04-01T00:00:00Z"})

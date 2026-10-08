@@ -34,7 +34,7 @@ import re
 import sys
 import time
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 import openpyxl
@@ -129,11 +129,13 @@ def category(name):
 
 
 def local_day(ts):
-    """Calendar day of a HubSpot timestamp as HubSpot shows it. Date-only values are
-    stored as midnight UTC and are taken as-is; real timestamps are read in Eastern time."""
+    """Calendar day a HubSpot invoice date stands for. Two storage styles occur:
+    a plain date as midnight UTC (2026-04-01T00:00:00Z = Apr 1), and midnight Eastern
+    minus 1 ms (2026-04-01T03:59:59.999Z = Apr 1, not Mar 31 23:59). Other timestamps
+    are read in Eastern time."""
     if ts.hour == ts.minute == ts.second == ts.microsecond == 0 and ts.utcoffset().total_seconds() == 0:
         return ts.date()
-    return ts.astimezone(EASTERN).date()
+    return (ts + timedelta(milliseconds=1)).astimezone(EASTERN).date()
 
 
 def invoice_day(invoice):
