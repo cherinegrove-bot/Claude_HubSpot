@@ -11,6 +11,8 @@ Usage:
     python3 master.py build --team cs-ops --work <snapshot dir> [--purposes purposes.json] [--source-note "..."]
   update rows the user confirmed as planned changes:
     python3 master.py update --team cs-ops --work <weekly work dir> --ids 123 456 --reason "confirmed by ... on ..."
+  remove rows for workflows the user confirmed were deleted:
+    python3 master.py remove --team cs-ops --work <weekly work dir> --ids 123 --reason "deleted on purpose, confirmed by ... on ..."
   show differences (no file is written):
     python3 master.py diff --team cs-ops --work <weekly work dir>
 """
@@ -323,6 +325,25 @@ def cmd_update(A):
     print(f'Updated {path}: {", ".join(A.ids)}')
 
 
+def cmd_remove(A):
+    """Remove rows for workflows the user confirmed were deleted on purpose, and log it."""
+    T = load_team(A.team)
+    path = master_path(T)
+    _load_work(A.work)                      # labels for the readable columns (properties, lists, owners)
+    M, readme = read_master(path)
+    missing = [w for w in A.ids if w not in M]
+    if missing:
+        sys.exit(f'STOP: not in the master rules file: {", ".join(missing)}')
+    names = {w: M[w]['row'].get('Workflow Name') for w in A.ids}
+    keep = [(w, e) for w, e in M.items() if w not in A.ids]
+    rows = [row(e['cfg'], T, e['row'].get('Purpose', ''), e['row'].get('Notes', '')) for w, e in keep]
+    machine = [(w, e['cfg']) for w, e in keep]
+    readme = list(readme)
+    readme.append(('Change log', f'{dt.date.today().isoformat()}: removed {"; ".join(f"{n} ({w})" for w, n in names.items())}. {A.reason}'))
+    write_workbook(path, T, rows, machine, readme)
+    print(f'Removed from {path}: {", ".join(A.ids)}')
+
+
 def cmd_diff(A):
     T = load_team(A.team)
     M, _ = read_master(master_path(T))
@@ -354,8 +375,13 @@ if __name__ == '__main__':
     u.add_argument('--work', required=True)
     u.add_argument('--ids', nargs='+', required=True)
     u.add_argument('--reason', required=True)
+    r = sp.add_parser('remove')
+    r.add_argument('--team', required=True)
+    r.add_argument('--work', required=True)
+    r.add_argument('--ids', nargs='+', required=True)
+    r.add_argument('--reason', required=True)
     d = sp.add_parser('diff')
     d.add_argument('--team', required=True)
     d.add_argument('--work', required=True)
     A = ap.parse_args()
-    {'build': cmd_build, 'update': cmd_update, 'diff': cmd_diff}[A.cmd](A)
+    {'build': cmd_build, 'update': cmd_update, 'remove': cmd_remove, 'diff': cmd_diff}[A.cmd](A)

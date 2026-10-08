@@ -102,7 +102,7 @@ def moved_by(r):
     secs = (P(last['timestamp']) - P(first['timestamp'])).total_seconds()
     qn = (TEAM.get('queue_names') or {}).get(last.get('value'))
     if qn:
-        who += f' Queue {last["value"]} is "{qn["name"]}" ({qn.get("label", "VERIFIED (screenshot)")}).'
+        who += f'; queue {last["value"]} is "{qn["name"]}" ({qn.get("label", "VERIFIED (screenshot)")})'
     return {'text': f'It was created in {TEAM.get("queue_name")}, then moved to queue {last["value"]} by automation ({last.get("sourceType")}) {secs:.0f} s later; {who}.',
             'workflow': m[0]['id'] if len(m) == 1 else None, 'workflow_name': m[0]['name'] if len(m) == 1 else None, 'queue': last['value']}
 
@@ -119,9 +119,26 @@ def scope_reason(props):
     return '; '.join(out) or 'outside the team scope'
 
 
-def branch_reason(path):
+def _when_ok(conds, props):
+    """All conditions of a branch reason hold for these company values, e.g. {"property": "site_manager", "is": "known"}."""
+    for c in conds or []:
+        v = props.get(c['property'])
+        has = v not in (None, '')
+        if c.get('is') == 'known' and not has:
+            return False
+        if c.get('is') == 'unknown' and has:
+            return False
+        if 'starts_with' in c and not str(v or '').startswith(c['starts_with']):
+            return False
+    return True
+
+
+def branch_reason(path, props=None, wid=None):
+    """First team branch reason whose branch pattern, workflows and conditions all match."""
     for b in TEAM.get('branch_reasons', []):
-        if re.search(b['branch'], path or ''):
+        if b.get('workflows') and str(wid) not in b['workflows']:
+            continue
+        if re.search(b['branch'], path or '') and _when_ok(b.get('when'), props or {}):
             return b
     return None
 
@@ -160,7 +177,7 @@ def evaluate(cid, wid, when, type_name):
         if t == type_name:
             return {'state': 'expected', 'path': path, 'label': 'INFERENCE'}
         return {'state': 'not_expected', 'reason': f'gets "{t or action.get("fields", {}).get("subject")}" instead ({path})', 'label': 'VERIFIED (config)'}
-    b = branch_reason(path)
+    b = branch_reason(path, props, wid)
     if b and b.get('kind') == 'missing':
         return {'state': 'missing_reason', 'reason': b['reason'], 'label': b.get('label', 'VERIFIED (config)'), 'path': path, 'waiting_on': b.get('waiting_on')}
     if b:
@@ -494,7 +511,9 @@ def headline(g, ps):
     if k == 'not_in_queue':
         mv = p.get('moved_by') or {}
         return (f'{n} task{"s" if n > 1 else ""} from {p["source"]} {"are" if n > 1 else "is"} {p["reason"]}, not the {TEAM.get("queue_name")} queue'
-                + (f': created in {TEAM.get("queue_name")}, then moved by the workflow "{mv["workflow_name"]}" ({mv["workflow"]}).' if mv.get('workflow') else ', although the workflow settings say ' + TEAM.get('queue_name', '') + '.'))
+                + (f': created in {TEAM.get("queue_name")}, then moved by the workflow "{mv["workflow_name"]}" ({mv["workflow"]}).' if mv.get('workflow') else
+                   f': created in {TEAM.get("queue_name")}, then moved by automation; no current task workflow sets that queue (the one that did may have been deleted).' if mv else
+                   ', although the workflow settings say ' + TEAM.get('queue_name', '') + '.'))
     if n == 1:
         return p['text']
     return f'{n} × {p["text"]}'

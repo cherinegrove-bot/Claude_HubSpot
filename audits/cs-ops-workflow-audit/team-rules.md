@@ -51,7 +51,7 @@ One task type can be made by several workflows, for example split by tier. Each 
 | 16 | NPS Detractor Recovery Actions | 1770961042 | No schedule: when NPS Customer Service Score drops below 6 | All tiers, not SOA |
 
 **Not task types:**
-- `R+S - Reminders: Respond within 1 day to external emails` (1689020435) creates nothing (known issue F-05, Waiting on Cherine 4).
+- `R+S - Reminders: Respond within 1 day to external emails` (1689020435) was deleted on 2026-10-08.
 - The 5 switched-off workflows (see Known issues): any task they create counts as one that shouldn't exist.
 
 ## Decisions so far
@@ -60,16 +60,18 @@ One task type can be made by several workflows, for example split by tier. Each 
 - **SOA facilities:**
   - If the workflow settings leave them out, report it as "excluded by rule", labelled VERIFIED (config).
   - If not, label it INFERENCE and add it to Waiting on Cherine.
+  - Since 2026-10-08 most workflows no longer have an empty "SOA" branch. SOA facilities are still left out by the tier branches ("Company name doesn't contain exactly SOA"), so this stays "excluded by rule".
 - **Full management:** both values listed under rule 1 count (confirmed 2026-10-07).
 - **Became live this week:** use the date Status changed to Live, with the go-live date as a cross-check.
   - Flag any facility where the two are more than 7 days apart.
 - **First-90-days tasks for facilities that aren't live:** flag as a Potential Issue under rule 1, and add to Waiting on Cherine.
-- **Tier 1 SM gap:** facilities caught by it are shown as **missing**, with the reason "Tier 1 SM gap (Waiting on Cherine)".
+- **Tier 1 SM gap:** a Tier 1 facility with an SM but no OM, in a workflow that gives Tier 1 tasks only to the OM, is shown as **missing**, with the reason "Tier 1 SM gap (Waiting on Cherine)".
   - Not "excluded by rule": there's no confirmed rule yet.
   - Not "unknown": we know why.
-- **Tier 2 - L1 SM gap:** in Update Customer Sentiment (Ent, Tier 1, Tier 2.1) the "Tier 2 - L1 SM" branch ends with no task. Facilities caught by it are shown as **missing**, with the reason "Tier 2 - L1 SM gap (Waiting on Cherine)" (decided 2026-10-07).
-- **Duplicate Weekly Call tasks** (from both the Weekly calls and Weekly KPI workflows) go under Waiting on Cherine, not as a broken rule 4.
-- **No SM or OM on the facility:** a facility that should get a task but whose OM/SM branch matches neither is shown as missing, with the reason "no SM or OM on the facility", labelled VERIFIED (records).
+  - Not "no SM or OM on the facility": the facility has an SM.
+- **Tier 2 - L1 facilities with no OM in Update Customer Sentiment (Ent, Tier 1, Tier 2.1):** they get no task. Cherine confirmed on 2026-10-08 that this is fine, so it's reported as "excluded by rule", not as missing.
+- **Duplicate Weekly Call tasks** (from both the Weekly calls and Weekly KPI workflows) go under Waiting on Cherine item 2, not as new problems or a broken rule 4.
+- **No SM or OM on the facility:** a facility that should get a task but has neither an SM nor an OM is shown as missing, with the reason "no SM or OM on the facility", labelled VERIFIED (records).
 - **Wrong company** (Question 2):
   - A main task with **no company** is flagged, VERIFIED (records).
   - A main task with **more than one company** is flagged, VERIFIED (records).
@@ -80,44 +82,40 @@ One task type can be made by several workflows, for example split by tier. Each 
 Report these once per run, in their own section, not as new problems every week.
 
 1. **Tier 1 SM gap.**
-   - In 7 workflows the "T1 SM" branch ends with no task: Facility Performance, Weekly KPI, Weekly calls, Update Customer Sentiment Ent/T1/T2.1, Month End Call, Confirm contacts and BOG Oversight.
-   - So a Tier 1 facility with an SM but no OM gets none of those tasks.
-2. **Weekly KPI workflow making "Weekly Call" tasks.**
-   - Its Tier 2 - L1, Tier 2 - L2 and Tier 3 branches create "Weekly Call: First 90 days Live", the same task the Weekly calls workflow makes.
-   - Is this a duplicate?
+   - In 7 workflows, Tier 1 tasks go only to the OM: Facility Performance, Weekly KPI, Weekly calls, Update Customer Sentiment Ent/T1/T2.1, Month End Call, Confirm contacts and BOG Oversight.
+   - The empty "T1 SM" branches were deleted on 2026-10-08, but that doesn't add a task: a Tier 1 facility with an SM and no OM now matches no branch and still gets none of those tasks.
+   - Are Tier 1 tasks meant to go only to the OM?
+2. **Weekly KPI review is on and creates duplicate Weekly Call tasks. Should it be off?**
+   - It was switched off on 2026-10-07 and back on on 2026-10-08 (08:12 UTC). Its Tier 2 - L1, Tier 2 - L2 and Tier 3 branches create "Weekly Call: First 90 days Live", the same task the Weekly calls workflow makes.
+   - Duplicate Weekly Call tasks are listed under this item, not as new problems.
 3. **First-90-days tasks before a facility is live.**
    - The two first-90-days workflows check the go-live date, not Status = Live.
    - Should they create tasks before a facility is live?
-4. **R+S - Reminders: should it create a task?**
-   - `R+S - Reminders: Respond within 1 day to external emails` (1689020435) only branches and waits; it creates nothing (F-05).
-5. **Tier 2 - L1 SM gap.**
-   - In Update Customer Sentiment (Ent, Tier 1, Tier 2.1) the "Tier 2 - L1 SM" branch ends with no task.
-   - So a Tier 2 - L1 facility with an SM but no OM gets no Update Customer Sentiment task.
-6. **Set task queue moves BOG tasks from Ops Tasks to BOG - Run and Sustain.**
-   - The task workflow "Set task queue" (1677143128) puts any new task whose title contains "BOG" into queue 9999918, "BOG - Run and Sustain", replacing Ops Tasks.
-   - Seen on 2026-10-07 for all 52 BOG Oversight tasks. BOG Weekly Walkthrough tasks will very likely be moved the same way.
-   - Should CS Ops BOG tasks stay in Ops Tasks?
 7. **demo Facility (44541671248): test record?**
    - Live, Full TPM, Tier 2 - L1, with no SM and no OM, so it gets no tasks from the OM/SM branches.
    - Should it be excluded from the audit?
 
+### Closed (answered by Cherine, 2026-10-08)
+
+| Item | Answer |
+|---|---|
+| 4. R+S - Reminders: should it create a task? | Workflow deleted. Known issue F-05 closed too. |
+| 5. Tier 2 - L1 SM gap (Update Customer Sentiment) | Fine, no action. Reported as "excluded by rule" from now on. |
+| 6. Set task queue moves BOG tasks to BOG - Run and Sustain | Workflow deleted. BOG tasks should now stay in Ops Tasks. Known issue BOG-Q closed too. |
+| Weekly KPI review switched off (change of 2026-10-07) | It's on again. The switch-off was not marked as planned and the master rules file still records it as on. See item 2. |
+| Weekly calls revision 39 -> 41 (change of 2026-10-07) | Planned. Master rules file updated on 2026-10-08. |
+| Empty branches in CS Ops workflows | 47 branches with nothing under them, plus Storage Reach's "Enterprise" branch (it held only empty branches), deleted on purpose. Master rules file updated on 2026-10-08, one log line per workflow. |
+
 ## Changes not yet confirmed
 
-The weekly audit found these differences from the master rules file. They stay "change, not yet confirmed" until WLS confirms whether they were planned; the master rules file is not updated until then.
-
-| Workflow | Change | First seen | Status |
-|---|---|---|---|
-| Create Tasks \| Weekly KPI review to owner for first 90 days (1838568062) | Switched OFF (revision 28 -> 29, 2026-10-07 13:15 UTC) | 2026-10-07 | Checking with Cherine |
-| Create Tasks \| Weekly calls first 90 days after go live (1838565644) | Revision 39 -> 41 (2026-10-07 13:15 UTC); no change in the compared settings | 2026-10-07 | Checking with Cherine |
+None. The live workflows matched the master rules file after the 2026-10-08 update.
 
 ## Known issues
 
 Report each once, as a known issue.
 
 - **F-03:** in 13 workflows the OM branch is checked before the SM branch, so tasks go to the OM when both exist. Cherine is deciding the fix.
-- **F-05:** `R+S - Reminders: Respond within 1 day to external emails` (1689020435) creates no tasks. It only branches and waits, then loops back. Flagged by the 2026-10-06 full-map audit.
 - **F-08:** "Create Tasks | Respond to reviews at Storage Reach" didn't come back from the API. It's a User workflow, which may be why. Its tasks are in Ops Tasks but are not linked to any company. The audit reports this as one line, with the week's count, not one problem per task.
-- **BOG-Q:** "Set task queue" (1677143128) moves BOG tasks from Ops Tasks to queue 9999918 "BOG - Run and Sustain" (queue name VERIFIED (screenshot), 2026-10-07; the move VERIFIED (records) and (config)). Waiting on Cherine (item 6). The audit reports it as one line with the week's count, not one problem per task.
 - **5 workflows are switched off.** That's expected unless WLS says otherwise:
   - 1774165521 OM | RISK within the first 90 days
   - 1697631666 Create Tasks | Storage Reach
@@ -132,7 +130,7 @@ HubSpot's API can't return queue names, only their IDs. These were confirmed by 
 | Queue ID | Name | Confirmed |
 |---|---|---|
 | 13519269 | Ops Tasks | 2026-10-06 |
-| 9999918 | BOG - Run and Sustain | 2026-10-07 (seen in a task's queue history) |
+| 9999918 | BOG - Run and Sustain | 2026-10-07 (seen in a task's queue history). CS Ops tasks should no longer go there: "Set task queue" was deleted on 2026-10-08. |
 
 ## Page colours
 
@@ -159,75 +157,330 @@ The scripts read this block. Keep it in step with the text above.
   "team": "cs-ops",
   "team_name": "CS Ops",
   "decision_owner": "Cherine",
-  "page_colours": {"navy": "#00173C", "grey": "#646F79", "red": "#E62222", "white": "#FFFFFF", "background": "#F7F9FA"},
+  "page_colours": {
+    "navy": "#00173C",
+    "grey": "#646F79",
+    "red": "#E62222",
+    "white": "#FFFFFF",
+    "background": "#F7F9FA"
+  },
   "master_rules_file": "CS_Ops_Master_Rules.xlsx",
   "queue_name": "Ops Tasks",
-  "queue_ids": ["13519269"],
+  "queue_ids": [
+    "13519269"
+  ],
   "start_date": "2026-10-06",
-  "window": {"ends_on": "Thursday", "days": 7},
+  "window": {
+    "ends_on": "Thursday",
+    "days": 7
+  },
   "company_scope": {
     "description": "Live, full management",
     "filters": [
-      {"property": "live", "operator": "IS_ANY_OF", "values": ["Yes"]},
-      {"property": "mgt_type", "operator": "IS_ANY_OF", "values": ["Full management (Excl Call center)", "Full TPM"]}
+      {
+        "property": "live",
+        "operator": "IS_ANY_OF",
+        "values": [
+          "Yes"
+        ]
+      },
+      {
+        "property": "mgt_type",
+        "operator": "IS_ANY_OF",
+        "values": [
+          "Full management (Excl Call center)",
+          "Full TPM"
+        ]
+      }
     ]
   },
-  "went_live": {"status_property": "live", "live_value": "Yes", "go_live_date_property": "go_live_date", "max_days_apart": 7},
-  "links": {"main_task_company": true, "main_task_ticket": false, "subtask_ticket_forbidden": true},
-  "exclusion": {"list_id": "4291", "only_in_task_types": ["Rate Review - Execution"]},
+  "went_live": {
+    "status_property": "live",
+    "live_value": "Yes",
+    "go_live_date_property": "go_live_date",
+    "max_days_apart": 7
+  },
+  "links": {
+    "main_task_company": true,
+    "main_task_ticket": false,
+    "subtask_ticket_forbidden": true
+  },
+  "exclusion": {
+    "list_id": "4291",
+    "only_in_task_types": [
+      "Rate Review - Execution"
+    ]
+  },
   "task_types": [
-    {"name": "Rate Review - Execution", "workflows": ["1682542430", "1868006300"], "title": "rate review"},
-    {"name": "Update Customer Sentiment", "workflows": ["1682559152", "1868006311"], "title": "customer sentiment"},
-    {"name": "Send Monthly Marketing Report to Owner", "workflows": ["1682548292"], "title": "marketing report"},
-    {"name": "Bi-Weekly Call", "workflows": ["1682560327"], "title": "bi-?weekly call"},
-    {"name": "Monthly Status Call", "workflows": ["1682560327"], "title": "monthly sta\\w*s call"},
-    {"name": "Weekly Call: First 90 days", "workflows": ["1838565644", "1838568062"], "title": "weekly call"},
-    {"name": "Weekly KPI Review: First 90 days", "workflows": ["1838568062"], "title": "kpi review"},
-    {"name": "Review Facility Contacts", "workflows": ["1838568063"], "title": "facility contacts"},
-    {"name": "Unsold Unit, Towing, SCRA", "workflows": ["1838565797"], "title": "unsold unit"},
-    {"name": "Playbook Review/Maintenance", "workflows": ["1682549352"], "title": "playbook"},
-    {"name": "BOG Weekly Walkthrough + BOG Performance Status", "workflows": ["1682559061"], "title": "bog weekly|execute/review checklist"},
-    {"name": "Execute Monthly Walk Through", "workflows": ["1688833555"], "title": "monthly walk ?through"},
-    {"name": "Facility Performance Monitoring and Escalation", "workflows": ["1688976731"], "title": "facility performance"},
-    {"name": "AI Lien Process", "workflows": ["1688964146"], "title": "ai lien"},
-    {"name": "BOG Oversight", "workflows": ["1770960918"], "title": "bog oversight"},
-    {"name": "NPS Detractor Recovery Actions", "workflows": ["1770961042"], "title": "nps detractor"}
+    {
+      "name": "Rate Review - Execution",
+      "workflows": [
+        "1682542430",
+        "1868006300"
+      ],
+      "title": "rate review"
+    },
+    {
+      "name": "Update Customer Sentiment",
+      "workflows": [
+        "1682559152",
+        "1868006311"
+      ],
+      "title": "customer sentiment"
+    },
+    {
+      "name": "Send Monthly Marketing Report to Owner",
+      "workflows": [
+        "1682548292"
+      ],
+      "title": "marketing report"
+    },
+    {
+      "name": "Bi-Weekly Call",
+      "workflows": [
+        "1682560327"
+      ],
+      "title": "bi-?weekly call"
+    },
+    {
+      "name": "Monthly Status Call",
+      "workflows": [
+        "1682560327"
+      ],
+      "title": "monthly sta\\w*s call"
+    },
+    {
+      "name": "Weekly Call: First 90 days",
+      "workflows": [
+        "1838565644",
+        "1838568062"
+      ],
+      "title": "weekly call"
+    },
+    {
+      "name": "Weekly KPI Review: First 90 days",
+      "workflows": [
+        "1838568062"
+      ],
+      "title": "kpi review"
+    },
+    {
+      "name": "Review Facility Contacts",
+      "workflows": [
+        "1838568063"
+      ],
+      "title": "facility contacts"
+    },
+    {
+      "name": "Unsold Unit, Towing, SCRA",
+      "workflows": [
+        "1838565797"
+      ],
+      "title": "unsold unit"
+    },
+    {
+      "name": "Playbook Review/Maintenance",
+      "workflows": [
+        "1682549352"
+      ],
+      "title": "playbook"
+    },
+    {
+      "name": "BOG Weekly Walkthrough + BOG Performance Status",
+      "workflows": [
+        "1682559061"
+      ],
+      "title": "bog weekly|execute/review checklist"
+    },
+    {
+      "name": "Execute Monthly Walk Through",
+      "workflows": [
+        "1688833555"
+      ],
+      "title": "monthly walk ?through"
+    },
+    {
+      "name": "Facility Performance Monitoring and Escalation",
+      "workflows": [
+        "1688976731"
+      ],
+      "title": "facility performance"
+    },
+    {
+      "name": "AI Lien Process",
+      "workflows": [
+        "1688964146"
+      ],
+      "title": "ai lien"
+    },
+    {
+      "name": "BOG Oversight",
+      "workflows": [
+        "1770960918"
+      ],
+      "title": "bog oversight"
+    },
+    {
+      "name": "NPS Detractor Recovery Actions",
+      "workflows": [
+        "1770961042"
+      ],
+      "title": "nps detractor"
+    }
   ],
-  "no_task_workflows": ["1689020435"],
-  "expected_off": ["1774165521", "1697631666", "1682549368", "1682101413", "1682545542"],
-  "not_readable": [{"name": "Create Tasks | Respond to reviews at Storage Reach", "known_issue": "F-08"}],
+  "no_task_workflows": [],
+  "expected_off": [
+    "1774165521",
+    "1697631666",
+    "1682549368",
+    "1682101413",
+    "1682545542"
+  ],
+  "not_readable": [
+    {
+      "name": "Create Tasks | Respond to reviews at Storage Reach",
+      "known_issue": "F-08"
+    }
+  ],
   "branch_reasons": [
-    {"branch": "^\"SOA\"", "kind": "excluded", "reason": "excluded by rule: SOA facility", "label": "VERIFIED (config)"},
-    {"branch": "> \"(T1|Tier 1) SM\"$", "kind": "missing", "reason": "Tier 1 SM gap (Waiting on Cherine)", "label": "VERIFIED (config)", "waiting_on": "W-1"},
-    {"branch": "> \"Tier 2 - L1 SM\"$", "kind": "missing", "reason": "Tier 2 - L1 SM gap (Waiting on Cherine)", "label": "VERIFIED (config)", "waiting_on": "W-5"},
-    {"branch": "^\"[^\"]+\" > None met$", "kind": "missing", "reason": "no SM or OM on the facility", "label": "VERIFIED (records)"}
+    {
+      "branch": "^None met$",
+      "when": [
+        {
+          "property": "name",
+          "starts_with": "SOA - "
+        }
+      ],
+      "kind": "excluded",
+      "reason": "excluded by rule: SOA facility",
+      "label": "VERIFIED (config)"
+    },
+    {
+      "branch": "^\"SOA\"",
+      "kind": "excluded",
+      "reason": "excluded by rule: SOA facility",
+      "label": "VERIFIED (config)"
+    },
+    {
+      "branch": "^\"Tier 2 - L1\" > (None met|\"Tier 2 - L1 SM\")$",
+      "workflows": [
+        "1682559152"
+      ],
+      "when": [
+        {
+          "property": "operations_manager",
+          "is": "unknown"
+        }
+      ],
+      "kind": "excluded",
+      "reason": "excluded by rule: Tier 2 - L1 with no OM gets no Update Customer Sentiment task (Cherine, 2026-10-08)",
+      "label": "VERIFIED (config)"
+    },
+    {
+      "branch": "^\"(T1|Tier 1)\" > (None met|\"(T1|Tier 1) SM\")$",
+      "when": [
+        {
+          "property": "site_manager",
+          "is": "known"
+        }
+      ],
+      "kind": "missing",
+      "reason": "Tier 1 SM gap (Waiting on Cherine)",
+      "label": "VERIFIED (config)",
+      "waiting_on": "W-1"
+    },
+    {
+      "branch": "^\"[^\"]+\" > None met$",
+      "when": [
+        {
+          "property": "site_manager",
+          "is": "unknown"
+        },
+        {
+          "property": "operations_manager",
+          "is": "unknown"
+        }
+      ],
+      "kind": "missing",
+      "reason": "no SM or OM on the facility",
+      "label": "VERIFIED (records)"
+    }
   ],
   "waiting_on": [
-    {"id": "W-1", "title": "Tier 1 SM gap", "detail": "In 7 workflows the T1 SM branch ends with no task, so a Tier 1 facility with an SM but no OM gets none of those tasks."},
-    {"id": "W-2", "title": "Weekly KPI workflow making Weekly Call tasks", "detail": "Its Tier 2 - L1, Tier 2 - L2 and Tier 3 branches create the same Weekly Call task as the Weekly calls workflow. Duplicates found are listed here, not as a broken rule.", "duplicate_task_type": "Weekly Call: First 90 days"},
-    {"id": "W-3", "title": "First-90-days tasks before a facility is live", "detail": "The first-90-days workflows check the go-live date, not Status = Live. Tasks for facilities that aren't live are flagged as a Potential Issue under rule 1.", "task_types": ["Weekly Call: First 90 days", "Weekly KPI Review: First 90 days"]},
-    {"id": "W-4", "title": "R+S - Reminders: should it create a task?", "detail": "R+S - Reminders: Respond within 1 day to external emails (1689020435) only branches and waits; it creates nothing (known issue F-05)."},
-    {"id": "W-5", "title": "Tier 2 - L1 SM gap", "detail": "In Update Customer Sentiment (Ent, Tier 1, Tier 2.1) the Tier 2 - L1 SM branch ends with no task, so a Tier 2 - L1 facility with an SM but no OM gets no Update Customer Sentiment task."},
-    {"id": "W-6", "title": "Set task queue moves BOG tasks from Ops Tasks to BOG - Run and Sustain", "detail": "The task workflow Set task queue (1677143128) puts any new task whose title contains BOG into queue 9999918 BOG - Run and Sustain, replacing Ops Tasks. Should CS Ops BOG tasks stay in Ops Tasks?", "queue_move": "9999918"},
-    {"id": "W-7", "title": "demo Facility (44541671248): test record?", "detail": "Live, Full TPM, Tier 2 - L1, with no SM and no OM. Should it be excluded from the audit? Until then, anything the audit finds for it is listed here, not as a problem.", "company_ids": ["44541671248"]}
+    {
+      "id": "W-1",
+      "title": "Tier 1 SM gap",
+      "detail": "In 7 workflows Tier 1 tasks go only to the OM. The empty T1 SM branches were deleted on 2026-10-08, but a Tier 1 facility with an SM and no OM still gets none of those tasks. Are Tier 1 tasks meant to go only to the OM?"
+    },
+    {
+      "id": "W-2",
+      "title": "Weekly KPI review is on and creates duplicate Weekly Call tasks. Should it be off?",
+      "detail": "Its Tier 2 - L1, Tier 2 - L2 and Tier 3 branches create the same Weekly Call task as the Weekly calls workflow. It was switched off on 2026-10-07 and back on on 2026-10-08. Duplicates found are listed here, not as new problems.",
+      "duplicate_task_type": "Weekly Call: First 90 days"
+    },
+    {
+      "id": "W-3",
+      "title": "First-90-days tasks before a facility is live",
+      "detail": "The first-90-days workflows check the go-live date, not Status = Live. Tasks for facilities that aren't live are flagged as a Potential Issue under rule 1.",
+      "task_types": [
+        "Weekly Call: First 90 days",
+        "Weekly KPI Review: First 90 days"
+      ]
+    },
+    {
+      "id": "W-7",
+      "title": "demo Facility (44541671248): test record?",
+      "detail": "Live, Full TPM, Tier 2 - L1, with no SM and no OM. Should it be excluded from the audit? Until then, anything the audit finds for it is listed here, not as a problem.",
+      "company_ids": [
+        "44541671248"
+      ]
+    }
   ],
-  "changes_not_confirmed": [
-    {"workflow": "1838568062", "what": "switched off", "first_seen": "2026-10-07", "status": "checking with Cherine"},
-    {"workflow": "1838565644", "what": "revision 39 -> 41, no change in the compared settings", "first_seen": "2026-10-07", "status": "checking with Cherine"}
-  ],
+  "changes_not_confirmed": [],
   "queue_names": {
-    "13519269": {"name": "Ops Tasks", "label": "confirmed by WLS", "confirmed": "2026-10-06"},
-    "9999918": {"name": "BOG - Run and Sustain", "label": "VERIFIED (screenshot)", "confirmed": "2026-10-07"}
+    "13519269": {
+      "name": "Ops Tasks",
+      "label": "confirmed by WLS",
+      "confirmed": "2026-10-06"
+    },
+    "9999918": {
+      "name": "BOG - Run and Sustain",
+      "label": "VERIFIED (screenshot)",
+      "confirmed": "2026-10-07"
+    }
   },
-  "known_queue_moves": [
-    {"queue": "9999918", "workflow": "1677143128", "known_issue": "BOG-Q", "waiting_on": "W-6"}
-  ],
+  "known_queue_moves": [],
   "known_issues": [
-    {"id": "F-03", "text": "In 13 workflows the OM branch is checked before the SM branch, so tasks go to the OM when both exist. Cherine is deciding the fix."},
-    {"id": "F-05", "text": "R+S - Reminders: Respond within 1 day to external emails (1689020435) creates no tasks: it only branches and waits, then loops back."},
-    {"id": "F-08", "text": "\"Create Tasks | Respond to reviews at Storage Reach\" didn't come back from the API. It's a User workflow, which may be why. Its tasks are in Ops Tasks but are not linked to any company.", "no_company_tasks": true},
-    {"id": "BOG-Q", "text": "Set task queue moves BOG tasks from Ops Tasks to BOG - Run and Sustain, waiting on Cherine.", "label": "VERIFIED (screenshot) for the queue name; VERIFIED (records) and (config) for the move"},
-    {"id": "OFF-5", "text": "5 workflows are switched off. That's expected unless WLS says otherwise."}
+    {
+      "id": "F-03",
+      "text": "In 13 workflows the OM branch is checked before the SM branch, so tasks go to the OM when both exist. Cherine is deciding the fix."
+    },
+    {
+      "id": "F-08",
+      "text": "\"Create Tasks | Respond to reviews at Storage Reach\" didn't come back from the API. It's a User workflow, which may be why. Its tasks are in Ops Tasks but are not linked to any company.",
+      "no_company_tasks": true
+    },
+    {
+      "id": "OFF-5",
+      "text": "5 workflows are switched off. That's expected unless WLS says otherwise."
+    }
+  ],
+  "closed": [
+    {
+      "id": "W-4",
+      "closed": "2026-10-08",
+      "answer": "R+S - Reminders deleted (also closes F-05)"
+    },
+    {
+      "id": "W-5",
+      "closed": "2026-10-08",
+      "answer": "Tier 2 - L1 SM gap in Update Customer Sentiment: fine, no action"
+    },
+    {
+      "id": "W-6",
+      "closed": "2026-10-08",
+      "answer": "Set task queue deleted; BOG tasks stay in Ops Tasks (also closes BOG-Q)"
+    }
   ]
 }
 ```
