@@ -128,13 +128,25 @@ def category(name):
     return "Other Fee"
 
 
-def invoice_month(invoice):
+def local_day(ts):
+    """Calendar day of a HubSpot timestamp as HubSpot shows it. Date-only values are
+    stored as midnight UTC and are taken as-is; real timestamps are read in Eastern time."""
+    if ts.hour == ts.minute == ts.second == ts.microsecond == 0 and ts.utcoffset().total_seconds() == 0:
+        return ts.date()
+    return ts.astimezone(EASTERN).date()
+
+
+def invoice_day(invoice):
     for prop, label in (("hs_invoice_date", "invoice date"), ("hs_createdate", "invoice create date")):
         ts = parse_ts(invoice.get(prop))
         if ts:
-            local = ts.astimezone(EASTERN)
-            return (local.year, local.month), label
+            return local_day(ts), label
     return None, "no date"
+
+
+def invoice_month(invoice):
+    day, label = invoice_day(invoice)
+    return ((day.year, day.month) if day else None), label
 
 
 def add_company_blocks(ws, companies=EXTRA_COMPANIES):
@@ -252,7 +264,7 @@ def fetch_hubspot_lines(facilities):
                 continue
             inv = invoices.get(inv_id, {})
             share = len(inv_companies[inv_id])
-            inv_ts = parse_ts(inv.get("hs_invoice_date")) or parse_ts(inv.get("hs_createdate"))
+            inv_day, _ = invoice_day(inv)
             for li_id in inv_li.get(inv_id, []):
                 if (cid, li_id) in seen:
                     continue
@@ -266,7 +278,7 @@ def fetch_hubspot_lines(facilities):
                     "invoice_status": inv.get("hs_invoice_status"),
                     "invoice_source": inv.get("hs_invoice_source"),
                     "invoice_total": float(inv.get("hs_amount_billed") or 0),
-                    "invoice_date": inv_ts.astimezone(EASTERN).date() if inv_ts else None,
+                    "invoice_date": inv_day,
                     "line_id": li_id, "line_name": li.get("name"), "description": li.get("description"),
                     "amount": round(full_amount / share, 2), "full_amount": full_amount, "share": share,
                     "currency": li.get("hs_line_item_currency_code"),
