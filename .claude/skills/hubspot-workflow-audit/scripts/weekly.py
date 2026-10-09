@@ -307,6 +307,10 @@ def type_results(first, last, rows, pre=False):
             if cid in got:
                 continue
             e = s['eval']
+            cov = next((c for c in BEFORE.get('covered_by', []) if pre and c['type'] == name and cid in COVERED.get(c['covered_by_type'], set())), None)
+            if cov:                              # got the task type that replaced it under the old settings: shown, not flagged
+                missing[cid] = {'reason': cov['reason'], 'label': 'VERIFIED (records)', 'workflow': s['wf'], 'run': fmt_dt(s['run']), 'not_flagged': True}
+                continue
             if cid in pre_lists:                 # the old settings may have excluded it: shown, not flagged
                 missing[cid] = {'reason': 'probably excluded at the time: ' + BEFORE.get('excluded_reason', 'on an excluded list'), 'label': 'INFERENCE',
                                 'workflow': s['wf'], 'run': fmt_dt(s['run']), 'not_flagged': True}
@@ -359,6 +363,10 @@ def type_results(first, last, rows, pre=False):
     return out
 
 
+COVERED = collections.defaultdict(set)     # task type -> facilities that got it anywhere in the window (for "covered_by")
+for r in MAIN + PRE_MAIN:
+    if r['type']:
+        COVERED[r['type']] |= set(r['companies'])
 MAIN_FIRST = CUTOFF or FIRST
 TYPE_RESULTS = type_results(MAIN_FIRST, LAST, MAIN)
 PRE_TYPES = []
@@ -762,7 +770,10 @@ if BEFORE_START:
           + (f'{len(pm)} real problem(s).' if pm else 'no real problems.') + (f' {BEFORE_START["not_flagged"]} task(s) made under the old settings shown but not flagged.' if BEFORE_START['not_flagged'] else ''))
     for t in PRE_TYPES:
         if t['runs']:
-            print(f'- {t["name"]}: {len(t["got"])} of {len(t["should"])} got it' + (f', {len(t["missing"])} missing' if t['missing'] else ''))
+            fl = [m for m in t['missing'].values() if not m.get('not_flagged')]
+            nf = collections.Counter(m['reason'] for m in t['missing'].values() if m.get('not_flagged'))
+            print(f'- {t["name"]}: {len(t["got"])} of {len(t["should"])} got it' + (f'; {len(fl)} real problem(s)' if fl else '; no real problems')
+                  + ''.join(f'; {n} {r}' for r, n in nf.items()))
 print(f'\n**Waiting on {OWNER}**')
 if not waiting:
     print('- None')

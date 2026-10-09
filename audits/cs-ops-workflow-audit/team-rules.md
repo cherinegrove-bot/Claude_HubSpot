@@ -83,6 +83,7 @@ One task type can be made by several workflows, for example split by tier. Each 
 - **Tier 2 - L1 facilities with no OM in Update Customer Sentiment (Ent, Tier 1, Tier 2.1):** they get no task. Cherine confirmed on 2026-10-08 that this is fine, so it's reported as "excluded by rule", not as missing.
 - **Weekly KPI review** (1838568062) is switched off on purpose since 2026-10-08: it was the duplicate of the Weekly calls workflow (Cherine). Weekly Call tasks now come only from Weekly calls; if both workflows create one again, it's a broken rule 4.
 - **No SM or OM on the facility:** a facility that should get a task but has neither an SM nor an OM is shown as missing, with the reason "no SM or OM on the facility", labelled VERIFIED (records).
+- **BOG Weekly before 6 October:** Tier 1 facilities that got no BOG Weekly task but did get BOG Oversight are "covered by BOG Oversight since late August (old settings)", not flagged (WLS, 2026-10-09).
 - **Wrong company** (Question 2):
   - A main task with **no company** is flagged, VERIFIED (records).
   - A main task with **more than one company** is flagged, VERIFIED (records).
@@ -92,7 +93,10 @@ One task type can be made by several workflows, for example split by tier. Each 
 
 Report these once per run, in their own section, not as new problems every week.
 
-None open.
+8. **Tier 1 may get both BOG Weekly and BOG Oversight** (asked 2026-10-09)
+   - Workflows: R+S - BOG Weekly Walkthrough + BOG Performance Status, Create Tasks | BOG Oversight Ent and T1.
+   - Before 6 October, Tier 1 facilities stopped getting BOG Weekly after 24 August and got BOG Oversight every Wednesday instead. Today's settings give Tier 1 a BOG Weekly task again (Mondays), as well as BOG Oversight (Wednesdays), so from Monday 12 October Tier 1 facilities may get both.
+   - **Should Tier 1 facilities get both BOG Weekly and BOG Oversight each week?**
 
 ### Closed (answered by Cherine, 2026-10-08)
 
@@ -466,7 +470,19 @@ The scripts read this block. Keep it in step with the text above.
       "label": "VERIFIED (records)"
     }
   ],
-  "waiting_on": [],
+  "waiting_on": [
+    {
+      "id": "W-8",
+      "title": "Tier 1 may get both BOG Weekly and BOG Oversight",
+      "asked": "2026-10-09",
+      "workflows": [
+        "1682559061",
+        "1770960918"
+      ],
+      "detail": "Before 6 October, Tier 1 facilities stopped getting BOG Weekly after 24 August and got BOG Oversight every Wednesday instead. Today's settings give Tier 1 a BOG Weekly task again (Mondays), as well as BOG Oversight (Wednesdays), so from Monday 12 October Tier 1 facilities may get both.",
+      "question": "Should Tier 1 facilities get both BOG Weekly and BOG Oversight each week?"
+    }
+  ],
   "changes_not_confirmed": [],
   "queue_names": {
     "13519269": {
@@ -596,7 +612,15 @@ The scripts read this block. Keep it in step with the text above.
     "excluded_lists": [
       "4291"
     ],
-    "excluded_reason": "on the \"Exclude from Ops tasks\" list, which most workflows excluded until 6 October"
+    "excluded_reason": "on the \"Exclude from Ops tasks\" list, which most workflows excluded until 6 October",
+    "covered_by": [
+      {
+        "type": "BOG Weekly Walkthrough + BOG Performance Status",
+        "covered_by_type": "BOG Oversight",
+        "reason": "covered by BOG Oversight since late August (old settings)",
+        "decided": "2026-10-09"
+      }
+    ]
   }
 }
 ```
