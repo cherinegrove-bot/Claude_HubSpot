@@ -286,8 +286,17 @@ const RANK={grey:0,ok:1,known:2,wait:3,bad:4};
 function runsOn(y,m,d){const dow=DOWS[(new Date(Date.UTC(y,m,d)).getUTCDay()+6)%7],by={};
  (D.schedules||[]).forEach(s=>{const hit=s.kind==='daily'||(s.kind==='monthly'&&s.days.includes(d))||(s.kind==='weekly'&&s.days.includes(dow));if(!hit)return;
   const k=s.type+'|'+s.time,r=by[k]=by[k]||{type:s.type,time:s.time,wfs:[],off:true};r.wfs.push({id:s.workflow,name:s.workflow_name,off:s.off_now});r.off=r.off&&s.off_now;});
+ /* ticket teams: the tickets created that day, and the tickets that entered a stage (and so got its tasks) */
+ const date=ymd(y,m,d);(D.ticket_days||[]).filter(e=>e.date===date).forEach(e=>{const k='~'+e.kind+'|'+e.type,r=by[k]=by[k]||{type:e.type,time:'',wfs:e.workflow?[{id:e.workflow,name:e.workflow_name,off:false}]:[],off:false,ev:[],kind:e.kind};r.ev.push(e);});
  return Object.values(by).sort((a,b)=>a.time.localeCompare(b.time)||a.type.localeCompare(b.type));}
-function runResult(r,date){const pre=D.before_start&&date>=w0&&date<D.before_start.cutoff;const t=(pre?D.before_start.types:D.types).find(x=>x.name===r.type);
+function evResult(r,date){
+ if(date<(D.start_date||''))return{st:'grey',txt:'Before the audit start date, not checked'};
+ if(date<w0)return{st:'grey',txt:'Outside this week\'s window (checked in an earlier week)'};
+ if(date>w1||date>today)return{st:'grey',txt:'Hasn\'t happened yet'};
+ const bad=r.ev.filter(e=>e.status==='bad').length;
+ return{st:bad?'bad':'ok',txt:(r.kind==='created'?plural(r.ev.length,'ticket')+' created':plural(r.ev.length,'ticket')+' entered the stage')+(bad?`, ${bad} with problems`:', all as expected')};}
+function evLabel(r){return r.kind==='created'?`New ticket: ${r.ev.map(e=>e.ticket_name).join(', ')}`:`${r.type}: ${r.ev.map(e=>D.companies[e.company_id]||e.ticket_name).join(', ')}`;}
+function runResult(r,date){if(r.ev)return evResult(r,date);const pre=D.before_start&&date>=w0&&date<D.before_start.cutoff;const t=(pre?D.before_start.types:D.types).find(x=>x.name===r.type);
  if(date<(D.start_date||'')&&!pre)return{st:'grey',txt:'Before the audit start date, not checked'};
  if(date<w0)return{st:'grey',txt:'Outside this week\'s window (checked in an earlier week)'};
  if(date>w1||date>today)return{st:'grey',txt:'Hasn\'t happened yet'};
@@ -305,11 +314,13 @@ function dayState(y,m,d){const date=ymd(y,m,d),runs=runsOn(y,m,d).map(r=>({...r,
 const STLAB={ok:'All created',bad:'Problems',known:'Known issue',wait:'Waiting',grey:''};
 function dayCell(y,m,d,list){const S=dayState(y,m,d),cls=['cal-day','s-'+S.st];if(S.date===calSel)cls.push('sel');
  const head=`<div class="cal-num"><span>${list?esc(day(S.date)):d}</span><span class="cal-tag st">${S.runs.length?STLAB[S.st]:''}${S.date===today?(S.runs.length&&STLAB[S.st]?' · ':'')+'Today':''}</span></div>`;
- const body=S.runs.map(r=>`<span class="cal-run${r.off?' off':''}" title="${esc(r.type)}">${r.time?esc(r.time)+' ':''}${esc(r.type)}</span>`).join('');
+ const body=S.runs.map(r=>r.ev?`<span class="cal-run" title="${esc(evLabel(r))}">${esc(evLabel(r))}</span>`:`<span class="cal-run${r.off?' off':''}" title="${esc(r.type)}">${r.time?esc(r.time)+' ':''}${esc(r.type)}</span>`).join('');
  return S.runs.length?`<button class="${cls.join(' ')}" data-day="${S.date}">${head}${body}</button>`:`<div class="${cls.join(' ')}">${head}</div>`;}
 function dayDetail(date){const [y,m,d]=date.split('-').map(Number),S=dayState(y,m-1,d);
+ S.runs=[...S.runs.filter(r=>!r.ev),...S.runs.filter(r=>r.ev).flatMap(r=>r.ev.map(e=>({...r,ev:[e]})))].sort((a,b)=>((a.ev?a.ev[0].time:a.time)||'').localeCompare((b.ev?b.ev[0].time:b.time)||''));
  return `<div class="panel cal-detail"><h3>${esc(day(date))}${date===today?' (today)':''}</h3><div class="tw" style="margin-top:10px"><table><tr><th>Time</th><th>Task type</th><th>Made by</th><th>Result</th></tr>${S.runs.map(r=>{
   const c=r.res.st==='bad'?'badtxt':r.res.st==='ok'?'okg':'ok';
+  if(r.ev)return r.ev.map(e=>`<tr><td>${esc(e.time)}</td><td>${esc(r.kind==='created'?'New onboarding ticket':r.type)}<br><small class="ok">${e.company_id?coLink(e.company_id):''} ${ext(recUrl('0-5',e.ticket),esc(e.ticket_name))}</small></td><td>${r.wfs.map(w=>wfLink(w.id,w.name)).join('<br>')}</td><td class="${e.status==='bad'&&r.res.st!=='grey'?'badtxt':r.res.st==='grey'?'ok':'okg'}">${esc(r.res.st==='grey'?r.res.txt:e.detail)}</td></tr>`).join('');
   return `<tr><td>${esc(r.time||'When triggered')}</td><td>${r.res.t?`<a href="#" data-ty="${esc(r.type)}">${esc(r.type)}</a>`:esc(r.type)}</td><td>${r.wfs.map(w=>wfLink(w.id,w.name)+(w.off?' <span class="ok">(switched off now)</span>':'')).join('<br>')}</td><td class="${c}">${esc(r.res.txt)}</td></tr>`;}).join('')}</table></div>
  ${S.runs.some(r=>r.res.t)?'<p class="ok" style="margin:10px 0 0">Click a task type for the facilities. Results cover the whole window, so a task type that ran twice this week shows the same result on both days.</p>':''}</div>`;}
 function calHTML(){const first=(new Date(Date.UTC(calY,calM,1)).getUTCDay()+6)%7,n=new Date(Date.UTC(calY,calM+1,0)).getUTCDate();
@@ -320,10 +331,10 @@ function calHTML(){const first=(new Date(Date.UTC(calY,calM,1)).getUTCDay()+6)%7
  const off=(D.schedules||[]).filter(s=>s.off_now).map(s=>s.workflow_name).filter((v,i,a)=>a.indexOf(v)===i);
  const selIn=calSel&&calSel.slice(0,7)===ymd(calY,calM,1).slice(0,7);
  return `<div class="cal-top"><div><h2>${MONL[calM]} ${calY}</h2></div><div class="cal-nav"><button data-cal="-1" aria-label="Previous month">‹</button><b>${MONL[calM].slice(0,3)} ${calY}</b><button data-cal="1" aria-label="Next month">›</button></div></div>
- <p class="lead" style="margin-bottom:0">Every task type on the day its workflows are set to create it, from the master rules file. Click a day to see which task types ran and their result.</p>
+ <p class="lead" style="margin-bottom:0">${(D.ticket_days||[]).length?'Each day shows the onboarding tickets created that day, and the tickets that entered a stage (and so got its tasks). Click a day for the tickets and their result.':'Every task type on the day its workflows are set to create it, from the master rules file. Click a day to see which task types ran and their result.'}</p>
  <div class="cal-grid">${g}</div><div class="cal-list">${list||'<div class="empty">No scheduled runs this month.</div>'}</div>
  <div class="cal-key"><span><span class="cal-sw s-ok"></span>Created correctly</span><span><span class="cal-sw s-bad"></span>Problems</span><span><span class="cal-sw s-known"></span>Known issue only</span><span><span class="cal-sw s-wait"></span>Waiting on ${esc(D.decision_owner)}</span><span><span class="cal-sw s-grey"></span>Not happened yet, or outside this week's window</span></div>
- ${trig.length||off.length?`<div class="cal-key">${trig.length?`<span>${trig.map(esc).join(', ')}: no schedule, created when a facility meets the trigger.</span>`:''}${off.length?`<span>Switched off now: ${off.map(esc).join(', ')}.</span>`:''}</div>`:''}
+ ${trig.length||off.length?`<div class="cal-key">${trig.length?`<span>${trig.map(esc).join(', ')}: no schedule, created when ${(D.ticket_days||[]).length?'a ticket enters its stage':'a facility meets the trigger'}.</span>`:''}${off.length?`<span>Switched off now: ${off.map(esc).join(', ')}.</span>`:''}</div>`:''}
  <div id="calday">${selIn?dayDetail(calSel):''}</div>`;}
 $('#t-overview').insertAdjacentHTML('beforeend','<div class="cal" id="cal"></div>');
 function drawCal(){$('#cal').innerHTML=calHTML();}

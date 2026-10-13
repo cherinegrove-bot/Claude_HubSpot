@@ -321,6 +321,9 @@ def ticket_runs(wid, name, t0, t1):
     return out
 
 
+TICKET_DAYS = []      # calendar events for ticket teams: tickets created, and tickets entering a stage (with the result)
+
+
 def ticket_type_results(tt, first, last, rows):
     """Question 1 for a task type made by ticket-triggered workflows: tickets that entered the stage this period
     should have every task the stage creates; shown by facility."""
@@ -369,6 +372,10 @@ def ticket_type_results(tt, first, last, rows):
                     have.add(m)
             lack = [x for x in e['titles'] if x not in have]
             should.setdefault(fac, {'wf': wid, 'run': e['at'], 'ticket': tid})
+            TICKET_DAYS.append({'date': local(e['at']).date().isoformat(), 'time': local(e['at']).strftime('%H:%M'), 'kind': 'stage', 'type': name,
+                                'workflow': wid, 'workflow_name': wfname(wid), 'ticket': tid, 'ticket_name': e['subject'], 'company_id': fac,
+                                'status': 'ok' if not lack else 'bad', 'detail': 'all tasks created' if not lack else
+                                (f'got {len(have)} of {len(e["titles"])} tasks' if have else 'no tasks created')})
             if not lack:
                 got.add(fac)
                 continue
@@ -679,6 +686,16 @@ for r in MAIN:
     LINK_ROWS.append({'task': r['id'], 'title': r['title'], 'type': r['type'], 'workflow': wfname(r['flow']) if r['flow'] in M else r['source'],
                       'workflow_id': r['flow'] if r['flow'] in M else None,
                       'companies': [{'id': c, 'name': cname(c)} for c in r['companies']], 'status': st, 'label': label, 'known': r.get('known')})
+# calendar (ticket teams): a stage entry whose tasks have a link problem (not a known issue) is a problem day too
+_known_titles = [x for k in TEAM.get('known_issues', []) for x in k.get('link_titles', [])]
+for e in TICKET_DAYS:
+    if e['kind'] != 'stage':
+        continue
+    bad = [r for r in MAIN if e['ticket'] in r['tickets'] and r['type'] == e['type'] and r.get('link') not in (None, 'ok')
+           and not any(re.search(x, rules.norm(r['title']), re.I) for x in _known_titles)]
+    if bad:
+        e['status'] = 'bad'
+        e['detail'] += f'; {len(bad)} task{"s" if len(bad) > 1 else ""} with a link problem (' + ', '.join(sorted({r["link"] for r in bad})) + ')'
 SUB_ROWS = []
 for r in SUBS:
     bad = links.get('subtask_ticket_forbidden') and r['tickets']
@@ -1050,6 +1067,19 @@ if CUTOFF:
         'old_names': dict(collections.Counter(r['old_name'] for r in PRE_MAIN + MAIN if r.get('old_name'))),
     }
 
+if TF:
+    rc_wf = next((c.get('workflow') for c in TEAM.get('record_checks') or []), None)
+    for tid, t in TICKETS.items():
+        cd = P(t['properties'].get('createdate'))
+        if not cd or local(cd).date() > LAST or (TEAM.get('start_date') and local(cd).date().isoformat() < TEAM['start_date']):
+            continue
+        fac = facility_of(tid)
+        TICKET_DAYS.append({'date': local(cd).date().isoformat(), 'time': local(cd).strftime('%H:%M'), 'kind': 'created', 'type': 'New onboarding ticket',
+                            'workflow': rc_wf, 'workflow_name': wfname(rc_wf) if rc_wf else '', 'ticket': tid,
+                            'ticket_name': t['properties'].get('subject') or f'ticket {tid}', 'company_id': fac,
+                            'status': 'ok' if fac else 'bad', 'detail': 'ticket created' if fac else 'ticket created, no company linked now'})
+    TICKET_DAYS.sort(key=lambda x: (x['date'], x['time']))
+
 RESULT = {
     'team': TEAM_NAME, 'team_slug': rules.team_slug(A.team), 'decision_owner': OWNER, 'portal': str(ACCT.get('portalId', '')), 'queue': TEAM.get('queue_name'), 'queue_ids': sorted(QIDS),
     'window': [FIRST.isoformat(), LAST.isoformat()], 'report_day': rules.report_day(TEAM, LAST).isoformat(), 'time_zone': ACCT.get('timeZone'),
@@ -1058,10 +1088,10 @@ RESULT = {
     'excluded_tasks': EXCLUDED_TASKS,
     'counts': {'facilities_in_scope': in_scope_count, 'main_tasks': len(MAIN), 'subtasks': len(SUBS), 'workflows': len(M),
                'q1': q_counts[1], 'q2': q_counts[2], 'q3': q_counts[3]},
-    'top': TOP, 'types': TYPE_RESULTS, 'record_checks': RECORD_CHECKS, 'new_facilities': NEW, 'links': LINK_ROWS, 'subtasks': SUB_ROWS, 'changes': CHANGES,
+    'top': TOP, 'types': TYPE_RESULTS, 'record_checks': RECORD_CHECKS, 'ticket_days': TICKET_DAYS, 'new_facilities': NEW, 'links': LINK_ROWS, 'subtasks': SUB_ROWS, 'changes': CHANGES,
     'schedules': SCHEDULES, 'task_list': TASK_LIST, 'tier_columns': TIER_COLUMNS, 'switched_off': SWITCHED_OFF, 'before_start': BEFORE_START, 'known_days': [{'date': d, 'type': t, 'known_issue': k, 'tasks': n} for (d, t, k), n in sorted(KNOWN_DAYS.items())],
     'waiting_on': waiting, 'known_issues': known, 'expected_off': off_state, 'problems': PROBLEMS,
-    'companies': {cid: cname(cid) for cid in {x for tr in TYPE_RESULTS + PRE_TYPES for x in tr['should'] + tr['got'] + list(tr['missing']) + list(tr['shouldnt'])} | {c for r in MAIN + PRE_MAIN for c in r['companies']} | LIVE_NOW},
+    'companies': {cid: cname(cid) for cid in {x for tr in TYPE_RESULTS + PRE_TYPES for x in tr['should'] + tr['got'] + list(tr['missing']) + list(tr['shouldnt'])} | {c for r in MAIN + PRE_MAIN for c in r['companies']} | LIVE_NOW | {e['company_id'] for e in TICKET_DAYS if e['company_id']}},
     'tasks': [{'id': r['id'], 'title': r['title'], 'type': r['type'], 'workflow': wfname(r['flow']) if r['flow'] in M else r['source'],
                'workflow_id': r['flow'] if r['flow'] in M else None, 'created': fmt_dt(r['created']),
                'due': fmt_dt(r['due']) if r['due'] else '', 'companies': r['companies'], 'link': r.get('link'), 'in_queue': r['in_queue'],
