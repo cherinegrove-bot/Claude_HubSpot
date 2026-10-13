@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CS Ops weekly check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--amber:#F2A900;--navy:#00173C;--grey:#646F79;--red:#E62222;--white:#FFFFFF;--bg:#F7F9FA;
+ --ink:#00173C;--muted:#646F79;--card:#FFFFFF;--line:#E1E5E9;--soft:#EEF1F4;--redsoft:#FDECEC;--head:#00173C;--headtext:#FFFFFF;
+ box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--ink:#E8EDF3;--muted:#A3ADB7;--card:#14213A;--line:#26344F;--soft:#1B2944;--redsoft:#3A1A20;--bg:#0B1528;--head:#000E26;--headtext:#FFFFFF}}
+:root[data-theme="dark"]{--ink:#E8EDF3;--muted:#A3ADB7;--card:#14213A;--line:#26344F;--soft:#1B2944;--redsoft:#3A1A20;--bg:#0B1528;--head:#000E26;--headtext:#FFFFFF}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Inter,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+h1,h2,h3{font-family:Poppins,Inter,Arial,sans-serif;margin:0;line-height:1.25}
+button{font:inherit;color:inherit}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+header{background:var(--head);color:var(--headtext)}
+.top{display:flex;flex-wrap:wrap;gap:16px 32px;align-items:center;justify-content:space-between;padding:24px 0 18px}
+header h1{font-size:24px;font-weight:600}
+.sub{color:#B8C2CE;font-size:14px;margin-top:4px}
+.ro{display:inline-block;margin-top:8px;font-size:12px;color:#B8C2CE;border:1px solid #33456A;border-radius:20px;padding:2px 10px}
+.search{position:relative;flex:0 1 380px;min-width:240px}
+.search input{width:100%;padding:11px 14px 11px 40px;border-radius:10px;border:0;font:inherit;font-size:15px;background:#FFFFFF;color:#00173C}
+.search svg{position:absolute;left:13px;top:12px;width:18px;height:18px;color:#646F79}
+.sugg{position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px rgba(0,23,60,.18);max-height:340px;overflow:auto;z-index:20;display:none}
+.sugg button{display:block;width:100%;text-align:left;background:none;border:0;padding:10px 14px;cursor:pointer;border-top:1px solid var(--line)}
+.sugg button:first-child{border-top:0}
+.sugg button:hover,.sugg button.act{background:var(--soft)}
+.sugg small{color:var(--muted)}
+nav{display:flex;gap:4px;overflow-x:auto}
+nav button{background:none;border:0;color:#B8C2CE;padding:12px 16px;cursor:pointer;border-radius:10px 10px 0 0;white-space:nowrap;font-weight:500}
+nav button:hover{color:#fff}
+nav button.on{background:var(--bg);color:var(--ink);font-weight:600}
+.badge{display:inline-block;min-width:20px;padding:0 6px;margin-left:6px;border-radius:10px;font-size:12px;line-height:20px;text-align:center;background:#33456A;color:#fff}
+.badge.red{background:var(--red)}
+main{padding:28px 0 64px}
+section{display:none}section.on{display:block}
+.lead{font-size:17px;color:var(--muted);margin:6px 0 22px;max-width:760px}
+h2{font-size:22px;font-weight:600}
+h3{font-size:17px;font-weight:600}
+.qs{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin:18px 0 32px}
+.qcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;display:flex;flex-direction:column;gap:10px;cursor:pointer;text-align:left}
+.qcard:hover{border-color:var(--grey)}
+.qcard .qn{font-size:13px;color:var(--muted);font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.qcard h3{font-size:18px}
+.status{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:14px}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--grey)}
+.st-bad .dot{background:var(--red)}.st-bad{color:var(--red)}
+.st-wait{color:var(--ink)}.st-wait .dot{background:var(--amber)}
+.st-ok{color:var(--muted)}.st-ok .dot{background:transparent;border:2px solid var(--grey)}
+.qcard p{margin:0;color:var(--ink)}
+.more{color:var(--muted);font-size:14px;margin-top:auto}
+.stats{display:flex;flex-wrap:wrap;gap:8px 28px;color:var(--muted);font-size:14px;margin:0 0 28px}
+.stats b{color:var(--ink);font-size:16px}
+.list{display:flex;flex-direction:column;gap:10px;margin:14px 0 28px}
+.item{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.item.bad{border-left:5px solid var(--red)}
+.item.wait{border-left:5px solid var(--amber)}
+.itxt p.wq{margin:12px 0 0;font-weight:700;color:var(--ink);font-size:15px}
+.wfl{margin:10px 0 0}.wfl h4{margin:0 0 4px;font:600 13px Inter,Arial,sans-serif;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.wfl ul{margin:0;padding-left:18px}.wfl li{margin:2px 0}
+.item.known{border-left:5px solid var(--grey)}
+.item>summary,.item>.head{list-style:none;display:flex;gap:16px;align-items:flex-start;padding:16px 18px;cursor:pointer}
+.item>summary::-webkit-details-marker{display:none}
+.cnt{flex:0 0 auto;min-width:48px;text-align:center;font-family:Poppins,Arial,sans-serif;font-weight:700;font-size:22px;line-height:1.1;color:var(--ink)}
+.item.bad .cnt{color:var(--red)}
+.cnt small{display:block;font:500 11px Inter,Arial,sans-serif;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.itxt{flex:1;min-width:0}
+.itxt h3{font-size:16px}
+.itxt p{margin:4px 0 0;color:var(--muted)}
+.meta{display:flex;flex-wrap:wrap;gap:6px 8px;margin-top:10px}
+.chip{display:inline-block;font-size:12px;padding:2px 10px;border-radius:20px;background:var(--soft);color:var(--muted);border:1px solid var(--line);white-space:nowrap}
+.chip.who{background:transparent}
+.chev{flex:0 0 auto;color:var(--muted);transition:transform .15s;margin-top:4px}
+details[open]>summary .chev{transform:rotate(90deg)}
+.body{padding:0 18px 18px 82px}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{background:var(--grey);color:#fff;text-align:left;font-weight:600;padding:10px 12px;white-space:nowrap}
+td{padding:10px 12px;border-top:1px solid var(--line);vertical-align:top}
+tr.click{cursor:pointer}tr.click:hover td{background:var(--soft)}
+tr.dim td{color:var(--muted)}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+td.bad{color:var(--red);font-weight:600}
+.empty{background:var(--card);border:1px dashed var(--line);border-radius:12px;padding:18px;color:var(--muted)}
+.tool{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:14px 0}
+.tool label{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:14px;cursor:pointer}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin:14px 0}
+.panel h3{margin-bottom:8px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 18px;font-size:14px;margin:8px 0 14px}
+.kv dt{color:var(--muted)}.kv dd{margin:0}
+.diff{display:grid;grid-template-columns:160px minmax(80px,max-content) 24px max-content;justify-content:start;gap:8px 12px;align-items:center;font-size:14px;margin:10px 0}
+.diff .was{color:var(--muted);text-decoration:line-through}
+.diff .now{font-weight:600}
+.facil{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:24px}
+.facil .x{float:right;background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer}
+a{color:inherit}
+a.hs{text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:2px}a.hs:hover{text-decoration-color:currentColor}
+.wk{font-size:11px;padding:1px 7px;margin-left:4px;border-radius:20px;border:1px solid var(--line);background:var(--soft);color:var(--muted);cursor:pointer;vertical-align:1px}
+.wk:hover{border-color:var(--grey);color:var(--ink)}
+.legend{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:13px;display:flex;flex-wrap:wrap;gap:8px 20px}
+.ok{color:var(--muted)}.badtxt{color:var(--red);font-weight:600}
+@media (max-width:640px){.body{padding:0 16px 16px}.diff{grid-template-columns:1fr}.diff .arr{display:none}}
+/* monthly calendar (Overview). Green is used here only (asked for by WLS). */
+.cal{margin:36px 0 0;--c-ok:#2E9E5B;--c-bad:#E62222;--c-wait:#F2A900;--c-known:#2F80ED;--c-dash:var(--grey)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .cal{--c-dash:var(--muted)}}
+:root[data-theme="dark"] .cal{--c-dash:var(--muted)}
+.cal-top{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;margin-bottom:6px}
+.cal-nav{display:flex;align-items:center;gap:8px}
+.cal-nav button{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;color:var(--ink)}
+.cal-nav button:hover{border-color:var(--grey)}
+.cal-nav b{min-width:130px;text-align:center;font-family:Poppins,Inter,Arial,sans-serif}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-top:12px}
+.cal-dow{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding:0 4px}
+.cal-day{background:var(--card);border:1px solid var(--line);border-radius:10px;min-height:96px;padding:6px;display:flex;flex-direction:column;gap:4px;min-width:0;text-align:left;font:inherit;color:inherit}
+button.cal-day{cursor:pointer}button.cal-day:hover{border-color:var(--grey)}
+.cal-day.pad{background:transparent;border-color:transparent}
+.cal-day.sel{outline:3px solid var(--ink);outline-offset:2px}
+/* solid fills; text colour chosen for contrast on each fill */
+.cal-day.s-grey{background:transparent;border:1.5px dashed var(--c-dash)}
+.cal-day.s-ok{background:var(--c-ok);border-color:var(--c-ok);color:#FFFFFF}
+.cal-day.s-bad{background:var(--c-bad);border-color:var(--c-bad);color:#FFFFFF}
+.cal-day.s-known{background:var(--c-known);border-color:var(--c-known);color:#FFFFFF}
+.cal-day.s-wait{background:var(--c-wait);border-color:var(--c-wait);color:#00173C}
+button.cal-day.s-ok:hover,button.cal-day.s-bad:hover,button.cal-day.s-known:hover,button.cal-day.s-wait:hover{filter:brightness(1.08);border-color:transparent}
+.cal-num{font-size:13px;font-weight:600;color:var(--muted);display:flex;justify-content:space-between;align-items:center;gap:4px}
+.cal-day.s-ok .cal-num,.cal-day.s-bad .cal-num,.cal-day.s-known .cal-num,.cal-day.s-wait .cal-num{color:inherit}
+/* task list under the calendar (Overview) */
+.tlist{margin-top:36px}
+.tlist td.tname{font-weight:600;min-width:150px}
+.tlist .tnote{display:block;font-size:12px;color:var(--muted);margin-top:2px;font-weight:400}
+.tlist tr.tfirst td{border-top:1px solid var(--line)}
+.tlist tr:not(.tfirst):not(.tsec) td{border-top:1px dashed var(--line)}
+.tlist tr.tsec td{background:var(--soft);font-weight:700;font-family:Poppins,Inter,Arial,sans-serif;font-size:13px;text-transform:uppercase;letter-spacing:.04em;padding:8px 12px;border-top:2px solid var(--line)}
+.tlist tr.tsec .ok{text-transform:none;letter-spacing:0;font-weight:400}
+.tlist .tcell{text-align:center;white-space:nowrap}
+.tlist th.tcell{white-space:normal;min-width:64px}
+.tlist .tfreq{white-space:nowrap}
+.tlist .twf{font-size:13px;min-width:200px;max-width:320px}
+.tlist tr:nth-child(even):not(.tsec) td{background:color-mix(in srgb,var(--soft) 40%,transparent)}
+.who-chip{display:inline-block;padding:2px 8px;border-radius:20px;border:1px solid var(--line);background:var(--soft);font-size:12px;font-weight:600}
+.who-none{color:var(--muted)}
+@media (max-width:640px){.tlist td.tname,.tlist th:first-child{position:sticky;left:0;z-index:1;min-width:120px;max-width:140px;box-shadow:1px 0 0 var(--line)}
+ .tlist td.tname{background:var(--card)}.tlist th:first-child{background:var(--grey)}}
+.tlist tr.off .who-chip{font-weight:400;color:var(--muted);background:transparent}
+.tlist tr.off td{color:var(--muted)}
+.cal-tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.cal-day.s-ok .cal-tag,.cal-day.s-bad .cal-tag,.cal-day.s-known .cal-tag,.cal-day.s-wait .cal-tag{color:inherit}
+.cal-run{display:block;font-size:11px;line-height:1.3;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-day.s-ok .cal-run,.cal-day.s-bad .cal-run,.cal-day.s-known .cal-run,.cal-day.s-wait .cal-run{color:inherit;font-weight:500}
+.cal-run.off{text-decoration:line-through;opacity:.75}
+.cal-day.s-grey .cal-run{color:var(--muted)}
+.cal-list{display:none;margin-top:12px}
+.cal-detail{margin-top:14px}
+.cal-key{display:flex;flex-wrap:wrap;gap:8px 18px;color:var(--muted);font-size:13px;margin-top:12px;align-items:center}
+.cal-sw{display:inline-block;width:16px;height:16px;border-radius:4px;vertical-align:-3px;margin-right:6px}
+.cal-sw.s-ok{background:var(--c-ok)}.cal-sw.s-bad{background:var(--c-bad)}.cal-sw.s-wait{background:var(--c-wait)}.cal-sw.s-known{background:var(--c-known)}
+.cal-sw.s-grey{background:transparent;border:1.5px dashed var(--c-dash)}
+.okg{color:var(--c-ok);font-weight:600}
+@media (max-width:640px){.cal-grid{display:none}.cal-list{display:flex;flex-direction:column;gap:8px}.cal-list .cal-day{min-height:0}.cal-list .cal-run{white-space:normal}}
+</style></head><body>
+<header><div class="wrap">
+ <div class="top">
+  <div><h1 id="title"></h1><div class="sub" id="sub"></div><span class="ro">Read only. Nothing in HubSpot was changed.</span></div>
+  <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+   <input id="q" type="search" autocomplete="off" placeholder="Search a facility by name or ID" aria-label="Search a facility"><div class="sugg" id="sugg"></div></div>
+ </div>
+ <nav id="nav"></nav>
+</div></header>
+<main><div class="wrap">
+ <div id="facility"></div>
+ <section id="t-overview"></section>
+ <section id="t-tasks"></section>
+ <section id="t-links"></section>
+ <section id="t-changes"></section>
+ <section id="t-waiting"></section>
+ <section id="t-off"></section>
+ <div class="legend" id="legend"></div>
+</div></main>
+<script>
+const D = __DATA__;
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],DAY=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function day(s,withDay=true){if(!s)return'';if(!/^\d{4}-\d{2}-\d{2}/.test(s))return s;const [y,m,d]=s.slice(0,10).split('-').map(Number);const dt=new Date(Date.UTC(y,m-1,d));return (withDay?DAY[dt.getUTCDay()]+' ':'')+d+' '+MON[m-1];}
+function when(s){if(!s)return'';if(!/^\d{4}-\d{2}-\d{2}/.test(s))return s;return day(s)+(s.length>10?', '+s.slice(11,16):'');}
+const plural=(n,a,b)=>n+' '+(n===1?a:(b||a+'s'));
+const company=id=>D.companies[id]||('Company '+id);
+const qname=id=>(D.queue_names&&D.queue_names[id])||('queue '+id);
+/* links that open records in HubSpot (portal ID from the team's team-rules.md) */
+const HS='https://app.hubspot.com';
+const coUrl=id=>`${HS}/contacts/${D.portal}/record/0-2/${id}`;
+const wfUrl=id=>`${HS}/workflows/${D.portal}/platform/flow/${id}/edit`;
+const taskUrl=id=>`${HS}/tasks/${D.portal}/view/all/task/${id}`;
+const ext=(url,html)=>D.portal?`<a class="hs" href="${url}" target="_blank" rel="noopener" title="Open in HubSpot">${html}</a>`:html;
+const coLink=(id,name)=>id?`${ext(coUrl(id),esc(name||company(id)))} <button class="wk" data-f="${esc(id)}" title="Show this facility's tasks this week">Week</button>`:'<span class="ok">None</span>';
+const wfLink=(id,name)=>id?ext(wfUrl(id),esc(name)):esc(name);
+const taskLink=(id,title)=>id?ext(taskUrl(id),esc(title)):esc(title);
+const LABEL={'VERIFIED (records)':'Seen in records','VERIFIED (config)':'Seen in settings','VERIFIED (screenshot)':'Seen in a screenshot','INFERENCE':'Worked out','NEEDS VERIFICATION':'Needs checking'};
+function chips(label){return String(label||'').split('+').map(x=>x.trim()).filter(Boolean).map(x=>`<span class="chip" title="${esc(x)}">${esc(LABEL[x]||x)}</span>`).join('');}
+const chev='<svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 6 6 6-6 6"/></svg>';
+
+/* ---------- group problems into plain-language items ---------- */
+const groups={};
+D.problems.forEach(p=>{(groups[p.group]=groups[p.group]||[]).push(p);});
+const known=new Set((D.known_issues||[]).map(k=>k.id));
+function describe(key,ps){
+ const p=ps[0],n=ps.length;
+ if(p.kind==='not_in_queue'){const mb=p.moved_by||{};return{q:1,kind:'bad',title:`${plural(n,p.type+' task')} were moved out of ${D.queue}`,
+  text:`They were created in ${D.queue}, then the “${mb.workflow_name||'another'}” workflow moved them to ${qname(mb.queue)} a few seconds later.`,who:D.decision_owner,label:p.label,ps};}
+ if(p.kind==='link'){const isKnown=!!p.known_issue;return{q:2,kind:isKnown?'known':'bad',title:`${plural(n,'task')} ${n===1?'has':'have'} no company`,
+  text:isKnown?`All from “${(p.source||'').replace(/\s*\(from known issue [^)]*\)/,'')}”. This is known issue ${p.known_issue}.`:`From “${p.source||''}”.`,who:isKnown?'Known issue':'You',label:p.label,ps};}
+ if(p.kind==='missing'){return{q:1,kind:p.waiting_on?'wait':'bad',title:`${plural(n,'facility','facilities')} didn't get “${p.type}”`,
+  text:`Reason: ${p.reason}.`,who:p.waiting_on?D.decision_owner:'You',label:p.label,ps};}
+ if(p.kind==='shouldnt'){return{q:1,kind:'bad',title:`${plural(n,'facility','facilities')} got “${p.type}” but shouldn't have`,text:`Reason: ${p.reason||'not in scope'}.`,who:'You',label:p.label,ps};}
+ if(p.kind==='changed'){const c=D.changes.find(c=>c.workflow===p.workflow)||{};return{q:3,kind:'wait',title:`“${c.name||p.workflow}” changed`,
+  text:changeText(c),who:D.decision_owner,label:p.label,ps,wf:c.workflow?{id:c.workflow,name:c.name}:null};}
+ return{q:p.q,kind:'bad',title:p.text,text:'',who:'You',label:p.label,ps};
+}
+function changeText(c){if(!c.diffs)return'';const real=c.diffs.filter(d=>d.column!=='Revision');
+ if(!real.length)return'Only its revision number went up. Nothing in the checked settings changed.';
+ return real.map(d=>d.column==='On/Off'?`It was switched ${d.now==='OFF'?'off':'on'}`:`${d.column} changed`).join('. ')+'.';}
+const items=Object.entries(groups).map(([k,ps])=>describe(k,ps)).sort((a,b)=>({bad:0,wait:1,known:2}[a.kind]-{bad:0,wait:1,known:2}[b.kind])||b.ps.length-a.ps.length);
+
+function itemHTML(it,open){
+ const rows=it.ps.filter(p=>p.company_id||p.task_id);
+ let body='';
+ if(rows.length){body=`<div class="tw"><table><tr><th>Facility</th><th>Task</th><th>Detail</th></tr>${rows.slice(0,400).map(p=>`<tr><td>${p.company_id?`${coLink(p.company_id,p.company)}`:'<span class="ok">None</span>'}</td><td>${esc(p.type||'')}${p.task_id?` <small class="ok">${ext(taskUrl(p.task_id),'#'+esc(p.task_id))}</small>`:''}</td><td class="ok">${esc(p.moved_by?('Moved to '+qname(p.moved_by.queue)):(p.reason||''))}</td></tr>`).join('')}</table></div>`;}
+ else if(it.q===3){const c=D.changes.find(c=>c.workflow===it.ps[0].workflow);body=c?diffHTML(c):'';}
+ const unit=it.q===3?'change':(it.title.includes('facilit')?'facility':'tasks');
+ return `<details class="item ${it.kind}"${open?' open':''}><summary><div class="cnt">${it.q===3?'1':it.ps.length}<small>${it.q===3?'workflow':(it.ps.length===1&&unit==='tasks'?'task':unit==='facility'?(it.ps.length===1?'facility':'facilities'):'tasks')}</small></div>
+ <div class="itxt"><h3>${it.wf?esc(it.title).replace(esc(it.wf.name),wfLink(it.wf.id,it.wf.name)):esc(it.title)}</h3><p>${esc(it.text)}</p><div class="meta"><span class="chip who">${it.who==='Known issue'?'Known issue':'Decision: '+esc(it.who)}</span><span class="chip">Question ${it.q}</span>${chips(it.label)}</div></div>${chev}</summary>
+ <div class="body">${body}</div></details>`;
+}
+function diffHTML(c){return `<div class="diff"><b>Setting</b><b>Was</b><span></span><b>Now</b>${c.diffs.map(d=>`<span>${esc(d.column)}</span><span class="was">${esc(d.was)}</span><span class="arr">→</span><span class="now">${esc(d.now)}</span>`).join('')}</div>
+ <p class="ok">Last edited ${esc(when(c.updated))}. ${c.pending?`First seen ${esc(day(c.pending.first_seen))}, ${esc(c.pending.status)}.`:''} If it was planned, ask Claude to update the master rules file.</p>`;}
+
+/* ---------- header + tabs ---------- */
+const w0=D.window[0],w1=D.window[1];
+$('#title').textContent=`${D.team} weekly check`;
+$('#sub').textContent=`${day(w0)} to ${day(w1)} ${w1.slice(0,4)}  ·  Report for ${day(D.report_day)}  ·  Data read ${when(D.fetched_at)} (${(D.time_zone||'').replace('US/','US ')})`;
+const q1=items.filter(i=>i.q===1),q2=items.filter(i=>i.q===2),q3=items.filter(i=>i.q===3);
+const nBad=a=>a.filter(i=>i.kind==='bad').length;
+const TABS=[['overview','Overview',nBad(items),true],['tasks','Tasks created',nBad(q1),true],['links','Company links',nBad(q2),true],['changes','Workflow changes',q3.length,false],['waiting',`Waiting on ${D.decision_owner}`,D.waiting_on.length,false],['off','Switched off',(D.switched_off||[]).length,(D.switched_off||[]).some(w=>w.status!=='off_expected')]];
+$('#nav').innerHTML=TABS.map(([id,l,n,red])=>`<button data-t="${id}">${l}${n?`<span class="badge${red?' red':''}">${n}</span>`:''}</button>`).join('');
+function show(id){document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===id));document.querySelectorAll('main section').forEach(s=>s.classList.toggle('on',s.id==='t-'+id));$('#facility').innerHTML='';window.scrollTo(0,0);}
+$('#nav').onclick=e=>{const b=e.target.closest('button');if(b)show(b.dataset.t);};
+
+/* ---------- overview ---------- */
+const q1wait=D.types.reduce((n,t)=>n+Object.values(t.missing).filter(m=>m.waiting_on).length,0);
+function qStatus(arr,extraWait){if(nBad(arr))return['st-bad','Needs attention'];if(extraWait||arr.some(i=>i.kind==='wait'))return['st-wait','Waiting on '+D.decision_owner];if(arr.length)return['st-ok','Only known issues'];return['st-ok','All good'];}
+function qLine(arr,good,extraWait){if(!arr.length)return extraWait?`${good.replace(/\.$/,'')}, except ${plural(extraWait,'facility','facilities')} waiting on ${D.decision_owner}.`:good;return arr.map(i=>i.title).join('. ')+'.';}
+const isDate=s=>/^\d{4}-\d{2}-\d{2}/.test(s||'');
+const runs=D.types.flatMap(t=>t.runs.filter(r=>isDate(r.when)).map(r=>({...r,type:t.name})));
+const events=D.types.filter(t=>t.runs.some(r=>!isDate(r.when))).map(t=>t.name);
+const Q=[[1,'Were the tasks created?',q1,'Every facility that should have got a task this week got it.','tasks',q1wait],
+ [2,'Are they linked to the right company?',q2,'Every task is linked to exactly one qualifying company.','links',0],
+ [3,'Did anyone change the workflows?',q3,'All workflows match the master rules file.','changes',0]];
+$('#t-overview').innerHTML=`<h2>This week at a glance</h2>
+<p class="lead">${runs.length?`${plural(runs.length,'scheduled run')} this week: ${runs.map(r=>esc(r.type)+' ('+esc(day(r.when))+')').join(' and ')}.`:'No scheduled workflow runs fell in this window.'}${events.length?` ${events.map(esc).join(', ')} can run any time a facility meets ${events.length===1?'its':'their'} trigger.`:''}</p>
+<div class="qs">${Q.map(([n,t,arr,good,tab,xw])=>{const [cls,lab]=qStatus(arr,xw);return `<button class="qcard" data-go="${tab}"><span class="qn">Question ${n}</span><h3>${t}</h3><span class="status ${cls}"><span class="dot"></span>${lab}</span><p>${esc(qLine(arr,good,xw))}</p><span class="more">See details →</span></button>`;}).join('')}</div>
+<div class="stats"><span><b>${D.counts.facilities_in_scope}</b> facilities checked</span><span><b>${D.counts.main_tasks}</b> tasks created</span><span><b>${D.counts.subtasks}</b> subtasks</span><span><b>${D.counts.workflows}</b> workflows compared</span></div>
+<h2>What needs attention</h2><p class="lead">Grouped so each problem shows once. Click one to see the facilities.</p>
+<div class="list">${items.length?items.map(i=>itemHTML(i,false)).join(''):'<div class="empty">Nothing needs attention this week.</div>'}</div>
+<details class="item known"><summary><div class="cnt">${D.known_issues.length}<small>known</small></div><div class="itxt"><h3>Known issues</h3><p>Already reported. They're listed once here, not as new problems every week.</p></div>${chev}</summary>
+<div class="body"><div class="list" style="margin:0">${D.known_issues.map(k=>`<div class="panel" style="margin:0"><b>${esc(k.id)}</b>  ${esc(k.text)}${k.this_week?` <span class="ok">${esc(k.this_week)}</span>`:''}</div>`).join('')}</div></div></details>`;
+$('#t-overview').onclick=e=>{const b=e.target.closest('[data-go]');if(b)show(b.dataset.go);};
+if(D.before_start){const n=D.before_start.problems.length;
+ $('#t-overview').insertAdjacentHTML('beforeend',`<div class="item ${n?'bad':'known'}" style="margin-top:18px"><div class="head" data-go="tasks" style="cursor:pointer"><div class="cnt">${n}<small>${n===1?'problem':'problems'}</small></div><div class="itxt"><h3>${esc(D.before_start.title)}</h3><p>${esc(day(D.before_start.window[0]))} to ${esc(day(D.before_start.window[1]))}: ${plural(D.before_start.main_tasks,'task')} found through their workflows. ${n?'Real problems only; see Tasks created.':'No real problems.'}</p></div>${chev}</div></div>`);}
+
+/* ---------- monthly calendar (Overview) ---------- */
+/* Every task type on the day(s) its workflows are set to create it this month, from the master rules file.
+   Day colour: green = tasks created correctly, red = problems, grey = not happened yet / outside the window,
+   known = only a known issue, waiting = only something waiting on the decision owner. */
+const DOWS=['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY','SUNDAY'],MONL=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const ymd=(y,m,d)=>`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+const today=(D.fetched_at||'').slice(0,10);
+let calY=+w1.slice(0,4),calM=+w1.slice(5,7)-1,calSel=null;
+const RANK={grey:0,ok:1,known:2,wait:3,bad:4};
+function runsOn(y,m,d){const dow=DOWS[(new Date(Date.UTC(y,m,d)).getUTCDay()+6)%7],by={};
+ (D.schedules||[]).forEach(s=>{const hit=s.kind==='daily'||(s.kind==='monthly'&&s.days.includes(d))||(s.kind==='weekly'&&s.days.includes(dow));if(!hit)return;
+  const k=s.type+'|'+s.time,r=by[k]=by[k]||{type:s.type,time:s.time,wfs:[],off:true};r.wfs.push({id:s.workflow,name:s.workflow_name,off:s.off_now});r.off=r.off&&s.off_now;});
+ return Object.values(by).sort((a,b)=>a.time.localeCompare(b.time)||a.type.localeCompare(b.type));}
+function runResult(r,date){const pre=D.before_start&&date>=w0&&date<D.before_start.cutoff;const t=(pre?D.before_start.types:D.types).find(x=>x.name===r.type);
+ if(date<(D.start_date||'')&&!pre)return{st:'grey',txt:'Before the audit start date, not checked'};
+ if(date<w0)return{st:'grey',txt:'Outside this week\'s window (checked in an earlier week)'};
+ if(date>w1||date>today)return{st:'grey',txt:'Hasn\'t happened yet'};
+ if(r.off)return{st:'grey',txt:'Workflow switched off now'};
+ if(!t)return{st:'grey',txt:'No result'};
+ const mv=Object.values(t.missing).filter(m=>!m.not_flagged),miss=mv.filter(m=>!m.waiting_on).length,wait=mv.length-miss,sh=pre?0:Object.keys(t.shouldnt).length,
+  other=(pre?D.before_start.problems:D.problems).filter(p=>p.q===1&&p.type===t.name&&p.kind!=='missing'&&p.kind!=='shouldnt').length,
+  kd=(D.known_days||[]).filter(k=>k.date===date&&k.type===r.type),base=`${t.got.length} of ${t.should.length} facilities got it`;
+ if(miss||sh||other)return{st:'bad',txt:base+[miss?`${miss} missing`:'',sh?`${sh} shouldn't have it`:'',other?plural(other,'other problem'):''].filter(Boolean).map(x=>', '+x).join(''),t};
+ if(kd.length)return{st:'known',txt:base+'. Known issue '+kd.map(k=>`${k.known_issue} (${plural(k.tasks,'task')}): ${(D.known_issues.find(x=>x.id===k.known_issue)||{}).text||''}`).join('; '),t};
+ if(wait)return{st:'wait',txt:base+`, ${wait} waiting on ${D.decision_owner}`,t};
+ return{st:'ok',txt:base+', created correctly',t};}
+function dayState(y,m,d){const date=ymd(y,m,d),runs=runsOn(y,m,d).map(r=>({...r,res:runResult(r,date)}));
+ return{date,runs,st:runs.reduce((a,r)=>RANK[r.res.st]>RANK[a]?r.res.st:a,'grey')};}
+const STLAB={ok:'All created',bad:'Problems',known:'Known issue',wait:'Waiting',grey:''};
+function dayCell(y,m,d,list){const S=dayState(y,m,d),cls=['cal-day','s-'+S.st];if(S.date===calSel)cls.push('sel');
+ const head=`<div class="cal-num"><span>${list?esc(day(S.date)):d}</span><span class="cal-tag st">${S.runs.length?STLAB[S.st]:''}${S.date===today?(S.runs.length&&STLAB[S.st]?' · ':'')+'Today':''}</span></div>`;
+ const body=S.runs.map(r=>`<span class="cal-run${r.off?' off':''}" title="${esc(r.type)}">${r.time?esc(r.time)+' ':''}${esc(r.type)}</span>`).join('');
+ return S.runs.length?`<button class="${cls.join(' ')}" data-day="${S.date}">${head}${body}</button>`:`<div class="${cls.join(' ')}">${head}</div>`;}
+function dayDetail(date){const [y,m,d]=date.split('-').map(Number),S=dayState(y,m-1,d);
+ return `<div class="panel cal-detail"><h3>${esc(day(date))}${date===today?' (today)':''}</h3><div class="tw" style="margin-top:10px"><table><tr><th>Time</th><th>Task type</th><th>Made by</th><th>Result</th></tr>${S.runs.map(r=>{
+  const c=r.res.st==='bad'?'badtxt':r.res.st==='ok'?'okg':'ok';
+  return `<tr><td>${esc(r.time||'When triggered')}</td><td>${r.res.t?`<a href="#" data-ty="${esc(r.type)}">${esc(r.type)}</a>`:esc(r.type)}</td><td>${r.wfs.map(w=>wfLink(w.id,w.name)+(w.off?' <span class="ok">(switched off now)</span>':'')).join('<br>')}</td><td class="${c}">${esc(r.res.txt)}</td></tr>`;}).join('')}</table></div>
+ ${S.runs.some(r=>r.res.t)?'<p class="ok" style="margin:10px 0 0">Click a task type for the facilities. Results cover the whole window, so a task type that ran twice this week shows the same result on both days.</p>':''}</div>`;}
+function calHTML(){const first=(new Date(Date.UTC(calY,calM,1)).getUTCDay()+6)%7,n=new Date(Date.UTC(calY,calM+1,0)).getUTCDate();
+ let g=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(x=>`<div class="cal-dow">${x}</div>`).join(''),list='';
+ for(let i=0;i<first;i++)g+='<div class="cal-day pad"></div>';
+ for(let d=1;d<=n;d++){g+=dayCell(calY,calM,d,false);if(runsOn(calY,calM,d).length)list+=dayCell(calY,calM,d,true);}
+ const trig=(D.schedules||[]).filter(s=>s.kind==='trigger').map(s=>s.type).filter((v,i,a)=>a.indexOf(v)===i);
+ const off=(D.schedules||[]).filter(s=>s.off_now).map(s=>s.workflow_name).filter((v,i,a)=>a.indexOf(v)===i);
+ const selIn=calSel&&calSel.slice(0,7)===ymd(calY,calM,1).slice(0,7);
+ return `<div class="cal-top"><div><h2>${MONL[calM]} ${calY}</h2></div><div class="cal-nav"><button data-cal="-1" aria-label="Previous month">‹</button><b>${MONL[calM].slice(0,3)} ${calY}</b><button data-cal="1" aria-label="Next month">›</button></div></div>
+ <p class="lead" style="margin-bottom:0">Every task type on the day its workflows are set to create it, from the master rules file. Click a day to see which task types ran and their result.</p>
+ <div class="cal-grid">${g}</div><div class="cal-list">${list||'<div class="empty">No scheduled runs this month.</div>'}</div>
+ <div class="cal-key"><span><span class="cal-sw s-ok"></span>Created correctly</span><span><span class="cal-sw s-bad"></span>Problems</span><span><span class="cal-sw s-known"></span>Known issue only</span><span><span class="cal-sw s-wait"></span>Waiting on ${esc(D.decision_owner)}</span><span><span class="cal-sw s-grey"></span>Not happened yet, or outside this week's window</span></div>
+ ${trig.length||off.length?`<div class="cal-key">${trig.length?`<span>${trig.map(esc).join(', ')}: no schedule, created when a facility meets the trigger.</span>`:''}${off.length?`<span>Switched off now: ${off.map(esc).join(', ')}.</span>`:''}</div>`:''}
+ <div id="calday">${selIn?dayDetail(calSel):''}</div>`;}
+$('#t-overview').insertAdjacentHTML('beforeend','<div class="cal" id="cal"></div>');
+function drawCal(){$('#cal').innerHTML=calHTML();}
+$('#cal').addEventListener('click',e=>{
+ const nv=e.target.closest('[data-cal]');if(nv){e.stopPropagation();calM+=+nv.dataset.cal;if(calM<0){calM=11;calY--;}if(calM>11){calM=0;calY++;}drawCal();return;}
+ const ty=e.target.closest('[data-ty]');if(ty){e.preventDefault();e.stopPropagation();const i=D.types.findIndex(t=>t.name===ty.dataset.ty);show('tasks');const row=document.querySelector(`#types tr[data-i="${i}"]`);if(row){row.style.display='';row.click();}return;}
+ if(e.target.closest('a.hs'))return;
+ const dd=e.target.closest('[data-day]');if(dd){e.stopPropagation();calSel=calSel===dd.dataset.day?null:dd.dataset.day;drawCal();if(calSel)$('#calday').scrollIntoView({behavior:'smooth',block:'nearest'});}});
+drawCal();
+
+/* ---------- task list (Overview, under the calendar) ---------- */
+/* Every task type the team's workflows create, from the master rules file (same source as the calendar).
+   One row per task type; a type made by several workflows or branches gets one line per workflow and tier group. */
+function taskListHTML(){const L=D.task_list||[];if(!L.length)return'';
+ const TC=D.tier_columns||[],onlyRe=/^(.*) only$/,notRe=/^not (.*)$/;
+ const extra=[...new Set(L.flatMap(e=>e.groups.flatMap(g=>g.notes.map(n=>(n.match(onlyRe)||[])[1]).filter(Boolean))))];
+ const cols=TC.length?[...TC,...extra]:['Who'];
+ /* one line per workflow: who gets it in each tier column, plus any other conditions */
+ const lines=[];L.forEach(e=>{const by={};e.groups.forEach(g=>{const k=g.workflow||'-';const ln=by[k]=by[k]||{type:e.type,wf:g.workflow,wfn:g.workflow_name,freq:g.frequency,kind:g.kind||'trigger',trig:g.trigger,off:g.off,cells:{},notes:new Set(),none:!g.who};
+   const only=g.notes.map(n=>(n.match(onlyRe)||[])[1]).find(x=>extra.includes(x));
+   const targets=only?[only]:(TC.length?g.tier_list:['Who']);targets.forEach(c=>{if(g.who)ln.cells[c]=ln.cells[c]?ln.cells[c]+' / '+g.who:g.who;});
+   g.notes.forEach(n=>{const x=(n.match(onlyRe)||n.match(notRe)||[])[1];if(!extra.includes(x))ln.notes.add(n);});});
+  Object.values(by).forEach(l=>lines.push(l));});
+ const SEC=[['weekly','Weekly'],['monthly','Monthly'],['daily','Daily'],['trigger','When triggered']];
+ const num=f=>+((f.match(/\d+/)||[99])[0]),DW=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],dw=f=>{const i=DW.findIndex(d=>f.includes(d));return i<0?9:i;};
+ const short=f=>f.replace(/^Weekly on /,'').replace(/^Monthly on the /,'').replace(/^Daily, /,'');
+ const chip=w=>w?`<span class="who-chip">${esc(w)}</span>`:'<span class="who-none">–</span>';
+ const body=SEC.map(([k,lab])=>{const ls=lines.filter(l=>l.kind===k);if(!ls.length)return'';
+  ls.sort((a,b)=>k==='weekly'?dw(a.freq)-dw(b.freq):k==='monthly'?num(a.freq)-num(b.freq):0);
+  const types=[...new Set(ls.map(l=>l.type))];
+  return `<tr class="tsec"><td colspan="${cols.length+3}">${lab} <span class="ok">· ${plural(types.length,'task')}</span></td></tr>`+types.map(t=>{const tl=ls.filter(l=>l.type===t);
+   return tl.map((l,i)=>`<tr class="${i?'':'tfirst'}${l.off?' off':''}">${i?'':`<td class="tname" rowspan="${tl.length}">${esc(t)}</td>`}
+    <td class="tfreq">${esc(k==='trigger'?'Any time':short(l.freq))}</td>
+    ${cols.map(c=>`<td class="tcell">${chip(l.cells[c])}</td>`).join('')}
+    <td class="twf">${l.wf?wfLink(l.wf,l.wfn):''}${l.off?' <span class="ok">(switched off)</span>':''}${l.notes.size?`<span class="tnote">${[...l.notes].map(esc).join('; ')}</span>`:''}${l.trig?`<span class="tnote">Trigger: ${esc(l.trig.replace(/^Filter-based: /,''))}</span>`:''}</td></tr>`).join('');}).join('');}).join('');
+ return `<h2>Every task the workflows create</h2>
+ <p class="lead">From the master rules file, so it matches the calendar. Times are in ${esc((D.time_zone||'').replace('US/','US '))} time. Each tier column shows who the task is assigned to; "–" means that tier doesn't get it. "A, else B" means it goes to A, or to B if the facility has no A.</p>
+ <div class="tw"><table class="tgrid"><tr><th>Task</th><th>When</th>${cols.map(c=>`<th class="tcell">${esc(c)}</th>`).join('')}<th>Workflow</th></tr>${body}</table></div>`;}
+$('#t-overview').insertAdjacentHTML('beforeend',`<div class="tlist" id="tlist">${taskListHTML()}</div>`);
+
+/* ---------- tasks ---------- */
+function typeRow(t,i){const ran=t.runs.length>0,mv=Object.values(t.missing),miss=mv.filter(m=>!m.waiting_on).length,wait=mv.length-miss,sh=Object.keys(t.shouldnt).length,other=D.problems.filter(p=>p.q===1&&p.type===t.name&&p.kind!=='missing'&&p.kind!=='shouldnt').length;
+ const ev=t.runs.some(r=>!isDate(r.when));const st=ev&&!t.should.length?'<span class="ok">Runs when triggered, none this week</span>':!ran?'<span class="ok">Not scheduled this week</span>':(miss||sh||other)?'<span class="badtxt">Needs attention</span>':wait?`<span class="status st-wait"><span class="dot"></span>Waiting on ${esc(D.decision_owner)}</span>`:'<span class="ok">All good</span>';
+ return `<tr class="click${ran?'':' dim'}" data-i="${i}"><td><b>${esc(t.name)}</b></td><td>${ran?t.runs.map(r=>isDate(r.when)?esc(when(r.when)):'When triggered').join('<br>'):'None'}</td><td class="num">${ran?t.should.length:''}</td><td class="num">${ran?t.got.length:''}</td><td class="num${miss?' bad':''}">${ran?miss:''}${ran&&wait?`<br><small class="ok">${wait} waiting</small>`:''}</td><td class="num${(sh+other)?' bad':''}">${ran?sh+other:''}</td><td>${st}</td></tr>`;}
+const order=D.types.map((t,i)=>[t,i]).sort((a,b)=>(b[0].runs.length>0)-(a[0].runs.length>0));
+$('#t-tasks').innerHTML=`<h2>Were the tasks created?</h2><p class="lead">One row per task type. Click a row to see who should have got it, who did, and who's missing it.</p>
+<div class="tool"><label><input type="checkbox" id="onlyran" checked> Only show task types that ran this week</label></div>
+<div class="tw"><table id="types"><tr><th>Task type</th><th>Ran</th><th style="text-align:right">Should get it</th><th style="text-align:right">Got it</th><th style="text-align:right">Missing</th><th style="text-align:right">Other problems</th><th>Status</th></tr>${order.map(([t,i])=>typeRow(t,i)).join('')}</table></div>
+<div id="typedetail"></div>
+<h3 style="margin-top:28px">New facilities this week</h3>
+${D.new_facilities.length?`<div class="tw"><table><tr><th>Facility</th><th>Went live</th><th>Tasks so far</th></tr>${D.new_facilities.map(f=>`<tr><td>${coLink(f.id)}</td><td>${esc(day(f.live))}</td><td>${esc((f.got||[]).join(', ')||'None yet')}</td></tr>`).join('')}</table></div>`:'<div class="empty">No facility became live this week.</div>'}`;
+/* ---------- made before the start date (test runs that look back past it) ---------- */
+const PRE=D.before_start;
+const preItems=PRE?(()=>{const g={};PRE.problems.forEach(p=>{(g[p.group]=g[p.group]||[]).push(p);});return Object.entries(g).map(([k,ps])=>describe(k,ps));})():[];
+function preHTML(){if(!PRE)return'';
+ const rows=PRE.types.filter(t=>t.runs.length).map(t=>{const mv=Object.values(t.missing),flag=mv.filter(m=>!m.not_flagged&&!m.waiting_on).length,nf=mv.filter(m=>m.not_flagged).length,sh=Object.keys(t.shouldnt).length;
+  return `<tr><td><b>${esc(t.name)}</b></td><td>${t.runs.map(r=>/^\d{4}-/.test(r.when)?esc(when(r.when)):'When triggered').join('<br>')}</td><td class="num">${t.should.length}</td><td class="num">${t.got.length}</td><td class="num${flag?' bad':''}">${flag}</td><td class="num">${nf+sh}</td><td>${flag?'<span class="badtxt">Needs attention</span>':'<span class="ok">No real problems</span>'}</td></tr>`;}).join('');
+ return `<h2 style="margin-top:36px">${esc(PRE.title)}</h2><p class="lead">${esc(day(PRE.window[0]))} to ${esc(day(PRE.window[1]))}. ${esc(PRE.note)}</p>
+ <div class="tw"><table><tr><th>Task type</th><th>Ran</th><th style="text-align:right">Should get it</th><th style="text-align:right">Got it</th><th style="text-align:right">Missing</th><th style="text-align:right">Old settings, not flagged</th><th>Status</th></tr>${rows||'<tr><td colspan="7" class="ok">No scheduled runs in this period.</td></tr>'}</table></div>
+ <h3 style="margin-top:18px">Real problems</h3><div class="list">${preItems.length?preItems.map(i=>itemHTML(i,false)).join(''):'<div class="empty">No real problems.</div>'}</div>
+ ${PRE.known&&PRE.known.length?`<p class="ok">Known issues: ${PRE.known.map(esc).join('; ')}.</p>`:''}`;}
+function applyOnly(){const on=$('#onlyran').checked;document.querySelectorAll('#types tr.dim').forEach(r=>r.style.display=on?'none':'');}
+$('#onlyran').onchange=applyOnly;applyOnly();
+if(PRE)$('#t-tasks').insertAdjacentHTML('beforeend',preHTML());
+$('#types').onclick=e=>{const r=e.target.closest('tr[data-i]');if(!r)return;const t=D.types[r.dataset.i];
+ const miss=Object.entries(t.missing),sh=Object.entries(t.shouldnt),ne=Object.entries(t.not_expected||{});
+ const probs=items.filter(it=>it.q===1&&it.ps[0].type===t.name&&it.ps[0].kind!=='missing'&&it.ps[0].kind!=='shouldnt');
+ $('#typedetail').innerHTML=`<div class="panel"><h3>${esc(t.name)}</h3>
+ <dl class="kv"><dt>Made by</dt><dd>${t.workflows.map(w=>wfLink(w.id,w.name)+(w.on_live?'':' <span class="ok">(off)</span>')).join('<br>')}</dd>
+ <dt>Ran</dt><dd>${t.runs.length?t.runs.map(r=>esc(when(r.when))).join(', '):'Not scheduled in this window'}</dd>
+ ${t.runs.length?`<dt>Result</dt><dd>${t.got.length} of ${t.should.length} facilities got it</dd>`:''}
+ ${ne.length?`<dt>Not expected</dt><dd>${ne.map(([k,v])=>plural(v,'facility','facilities')+': '+esc(k)).join('<br>')}</dd>`:''}</dl>
+ ${miss.length?`<h3>Missing</h3><div class="tw"><table><tr><th>Facility</th><th>Why</th><th>How we know</th></tr>${miss.map(([id,m])=>`<tr><td>${coLink(id)}</td><td>${esc(m.reason)}${m.waiting_on?` <span class="chip">Waiting on ${esc(D.decision_owner)}</span>`:''}</td><td>${chips(m.label)}</td></tr>`).join('')}</table></div>`:''}
+ ${sh.length?`<h3 style="margin-top:14px">Got it but shouldn't have</h3><div class="tw"><table><tr><th>Facility</th><th>Why</th></tr>${sh.map(([id,m])=>`<tr><td>${coLink(id)}</td><td>${esc(m.reason||'')}</td></tr>`).join('')}</table></div>`:''}
+ ${probs.length?`<h3 style="margin-top:14px">Other problems</h3><div class="list" style="margin:8px 0 0">${probs.map(i=>itemHTML(i,false)).join('')}</div>`:''}
+ ${!miss.length&&!sh.length&&!probs.length&&t.runs.length?'<p class="ok">No problems for this task type.</p>':''}</div>`;
+ $('#typedetail').scrollIntoView({behavior:'smooth',block:'start'});};
+
+/* ---------- links ---------- */
+const okLinks=D.links.filter(l=>l.status==='ok').length;
+$('#t-links').innerHTML=`<h2>Are they linked to the right company?</h2>
+<p class="lead">${okLinks} of ${D.links.length} tasks are linked to exactly one company that qualifies.${D.counts.subtasks?'':' No subtasks were created this week, so the subtask rule had nothing to check.'}</p>
+<div class="list">${q2.length?q2.map(i=>itemHTML(i,true)).join(''):'<div class="empty">Every task is linked correctly.</div>'}</div>
+<div class="tool"><label><input type="checkbox" id="allinks"> Show every task</label></div><div id="linktable"></div>`;
+$('#allinks').onchange=e=>{$('#linktable').innerHTML=e.target.checked?`<div class="tw"><table><tr><th>Task</th><th>Facility</th><th>Status</th></tr>${D.links.map(l=>`<tr><td>${taskLink(l.task,l.title)}</td><td>${l.companies.length?l.companies.map(c=>coLink(c.id,c.name)).join(', '):'<span class="badtxt">None</span>'}</td><td>${l.status==='ok'?'<span class="ok">OK</span>':`<span class="badtxt">${esc(l.status)}</span>`}</td></tr>`).join('')}</table></div>`:'';};
+
+/* ---------- changes ---------- */
+const changed=D.changes.filter(c=>c.status!=='same'),same=D.changes.filter(c=>c.status==='same');
+$('#t-changes').innerHTML=`<h2>Did anyone change the workflows?</h2>
+<p class="lead">${changed.length?`${plural(changed.length,'workflow')} of ${D.changes.length} ${changed.length===1?'is':'are'} different from the master rules file. A change isn't wrong by itself. Someone just needs to confirm it was planned.`:'Every workflow matches the master rules file.'}</p>
+${changed.map(c=>`<div class="panel" style="border-left:5px solid var(--amber)"><h3>${wfLink(c.workflow,c.name)}</h3><p style="margin:4px 0 0">${esc(changeText(c))}</p>${diffHTML(c)}<div class="meta">${c.pending?`<span class="chip who">Waiting on ${esc(D.decision_owner)}</span>`:''}${chips(c.label)}</div></div>`).join('')}
+<details class="item known" style="margin-top:18px"><summary><div class="cnt">${same.length}<small>same</small></div><div class="itxt"><h3>Workflows with no changes</h3><p>Including ${D.expected_off.length} that are switched off, as expected.</p></div>${chev}</summary>
+<div class="body"><div class="tw"><table><tr><th>Workflow</th><th>On or off</th></tr>${same.map(c=>{const off=D.expected_off.some(o=>o.id===c.workflow);return `<tr><td>${wfLink(c.workflow,c.name)}</td><td class="ok">${off?'Off, as expected':'On'}</td></tr>`;}).join('')}</table></div></div></details>`;
+
+/* ---------- switched off ---------- */
+(function(){const list=D.switched_off||[],flag=list.filter(w=>w.status!=='off_expected');
+ const ST={off_expected:['ok','Off, as expected'],
+  on_now:['badtxt','Switched on in HubSpot, but off in the master rules file. See Workflow changes.'],
+  off_now:['badtxt','Switched off in HubSpot, but on in the master rules file. See Workflow changes.'],
+  not_returned:['badtxt','Not returned by HubSpot this week. See Workflow changes.']};
+ $('#t-off').innerHTML=`<h2>Switched off <span class="ok" style="font-weight:500">(${list.length})</span></h2>
+ <p class="lead">These are kept switched off on purpose, so they can be turned back on quickly if the client asks.</p>
+ ${flag.length?`<p class="badtxt" style="margin:-8px 0 18px">${plural(flag.length,'workflow')} ${flag.length===1?"doesn't":"don't"} match the master rules file.</p>`:''}
+ <div class="list">${list.length?list.map(w=>{const [c,t]=ST[w.status]||['ok',w.status];
+  return `<div class="item ${w.status==='off_expected'?'known':'bad'}"><div class="head"><div class="itxt"><h3>${wfLink(w.workflow,w.name)}</h3>
+  <p style="color:var(--ink);margin-top:6px">${w.summary?esc(w.summary):'<span class="ok">No summary written yet.</span>'}</p>
+  ${w.summary_stale?`<p class="ok" style="margin-top:6px">This summary was written for revision ${esc(w.summary_revision)}; the workflow has changed since (master rules file: revision ${esc(w.master_revision)}). Ask Claude to rewrite it.</p>`:''}
+  <div class="meta"><span class="chip">Last edited ${esc(when(w.last_edited.slice(0,16)))} UTC</span><span class="${c}" style="font-size:14px">${w.status==='off_expected'?esc(t):`${esc(t.replace(' See Workflow changes.',''))} <a href="#" data-go="changes">See Workflow changes →</a>`}</span></div></div></div></div>`;}).join(''):'<div class="empty">No workflow is switched off.</div>'}</div>`;
+ $('#t-off').onclick=e=>{const b=e.target.closest('[data-go]');if(b){e.preventDefault();show(b.dataset.go);}};})();
+
+/* ---------- waiting ---------- */
+$('#t-waiting').innerHTML=`<h2>Waiting on ${esc(D.decision_owner)}</h2><p class="lead">Open questions. Until they're answered, anything they affect is listed here instead of as a new problem.</p>
+<div class="list">${D.waiting_on.map(w=>{const wf=w.workflow_list||[];
+ return `<div class="item wait"><div class="head"><div class="cnt">${esc(w.id.replace('W-',''))}<small>question</small></div><div class="itxt"><h3>${esc(w.title)}</h3>
+ ${w.asked?`<p style="margin-top:2px">Asked on ${esc(day(w.asked))} ${esc(w.asked.slice(0,4))}</p>`:''}
+ <p style="color:var(--ink);margin-top:8px">${esc(w.detail)}</p>
+ ${wf.length?`<div class="wfl"><h4>Workflows</h4><ul>${wf.map(x=>`<li>${wfLink(x.id,x.name)}${x.on?'':' <span class="ok">(switched off)</span>'}</li>`).join('')}</ul></div>`:''}
+ <div class="meta"><span class="chip">${w.found&&w.found.length?plural(w.found.length,'facility','facilities')+' affected this week':'Nothing affected this week'}</span></div>
+ ${w.question?`<p class="wq">${esc(w.question)}</p>`:''}</div></div></div>`;}).join('')}
+${!D.waiting_on.length&&!changed.some(c=>c.pending)?`<div class="empty">Nothing is waiting on ${esc(D.decision_owner)}. Answered questions are kept in the team's rules file.</div>`:''}
+${changed.filter(c=>c.pending).map(c=>`<div class="item wait"><div class="head"><div class="cnt">Q3<small>change</small></div><div class="itxt"><h3>Was this change planned? ${wfLink(c.workflow,c.name)}</h3><p>${esc(changeText(c))}</p></div></div></div>`).join('')}</div>`;
+
+/* ---------- facility search ---------- */
+const cid=c=>typeof c==='object'?c.id:String(c);
+const byCompany={};D.tasks.forEach(t=>t.companies.forEach(c=>{const k=cid(c);(byCompany[k]=byCompany[k]||[]).push(t);}));
+const probsBy={};D.problems.forEach(p=>{if(p.company_id)(probsBy[p.company_id]=probsBy[p.company_id]||[]).push(p);});
+const allCos=Object.entries(D.companies).map(([id,name])=>({id,name,low:(name+' '+id).toLowerCase()}));
+const inp=$('#q'),sg=$('#sugg');let act=-1;
+inp.oninput=()=>{const v=inp.value.trim().toLowerCase();act=-1;if(v.length<2){sg.style.display='none';return;}
+ const vid=v.replace(/[\s#]/g,'');   /* a company ID may be pasted with spaces or a # */
+ const m=allCos.filter(c=>c.low.includes(v)||(/^\d+$/.test(vid)&&c.id.includes(vid))).sort((a,b)=>(b.id===vid)-(a.id===vid)).slice(0,12);
+ sg.innerHTML=m.length?m.map(c=>`<button data-f="${c.id}">${esc(c.name)} <small>· ${(byCompany[c.id]||[]).length} tasks${probsBy[c.id]?' · <span class="badtxt">'+probsBy[c.id].length+' problem'+(probsBy[c.id].length>1?'s':'')+'</span>':''}</small></button>`).join(''):'<div style="padding:12px 14px;color:var(--muted)">No facility in this week\'s audit matches. Facilities outside the team\'s scope (for example not live) aren\'t listed.</div>';sg.style.display='block';};
+inp.onkeydown=e=>{const bs=[...sg.querySelectorAll('button')];if(!bs.length)return;if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();act=(act+(e.key==='ArrowDown'?1:-1)+bs.length)%bs.length;bs.forEach((b,i)=>b.classList.toggle('act',i===act));}if(e.key==='Enter'){(bs[act]||bs[0]).click();}if(e.key==='Escape'){sg.style.display='none';}};
+document.addEventListener('click',e=>{const f=e.target.closest('[data-f]');if(f){e.preventDefault();openFacility(f.dataset.f);return;}if(!e.target.closest('.search'))sg.style.display='none';});
+function facTypes(id){const rows=D.types.filter(t=>t.runs.length).map(t=>{let st;
+  if(t.got.includes(id))st='<span class="ok">Got it</span>';
+  else if(t.missing[id])st=t.missing[id].waiting_on?`<span class="ok">Missing: ${esc(t.missing[id].reason)}</span>`:`<span class="badtxt">Missing: ${esc(t.missing[id].reason)}</span>`;
+  else if(t.should.includes(id))st='<span class="ok">Due</span>';
+  else st='<span class="ok">Not due this week (workflow settings)</span>';
+  return `<tr><td>${esc(t.name)}</td><td>${st}</td></tr>`;});
+ return rows.length?`<h3>Task types that ran this week</h3><div class="tw" style="margin:8px 0 18px"><table><tr><th>Task type</th><th>This facility</th></tr>${rows.join('')}</table></div>`:'';}
+function openFacility(id){sg.style.display='none';inp.value='';const ts=byCompany[id]||[],ps=probsBy[id]||[];
+ $('#facility').innerHTML=`<div class="facil"><button class="x" onclick="document.getElementById('facility').innerHTML=''">Close</button>
+ <h2>${ext(coUrl(id),esc(company(id)))}</h2><p class="ok" style="margin:2px 0 16px">Company ID ${esc(id)}  ·  ${plural(ts.length,'task')} this week${ps.length?`  ·  <span class="badtxt">${plural(ps.length,'problem')}</span>`:''}</p>
+ ${ps.length?`<h3>Problems</h3><div class="list" style="margin:8px 0 18px">${ps.map(p=>`<div class="panel" style="margin:0;border-left:5px solid var(--red)"><b>${esc(p.type||'')}</b>: ${esc(p.moved_by?('moved out of '+D.queue+' to '+qname(p.moved_by.queue)+' by the “'+p.moved_by.workflow_name+'” workflow'):(p.reason||p.kind))}<div class="meta">${chips(p.label)}</div></div>`).join('')}</div>`:''}
+ ${facTypes(id)}
+ <h3>Tasks this week</h3>${ts.length?`<div class="tw" style="margin-top:8px"><table><tr><th>Task</th><th>Created</th><th>Due</th><th>Queue</th></tr>${ts.map(t=>`<tr><td>${taskLink(t.id,t.title)}</td><td>${esc(when(t.created))}</td><td>${esc(when(t.due))}</td><td>${t.in_queue?'<span class="ok">'+esc(D.queue)+'</span>':t.before_start?'<span class="ok">Before the queue existed</span>':'<span class="badtxt">Moved out</span>'}</td></tr>`).join('')}</table></div>`:'<div class="empty" style="margin-top:8px">No tasks for this facility this week.</div>'}</div>`;
+ window.scrollTo({top:0,behavior:'smooth'});}
+
+/* ---------- legend ---------- */
+$('#legend').innerHTML=`<span><b>How we know:</b></span>${Object.entries(LABEL).map(([k,v])=>`<span><span class="chip">${v}</span> ${k}</span>`).join('')}<span>Who should get a task comes from the master rules file and each facility's details at the time the workflow ran.</span>`;
+show('overview');
+</script></body></html>

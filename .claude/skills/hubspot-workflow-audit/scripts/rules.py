@@ -5,12 +5,50 @@ import datetime as dt, json, os, re
 SKILL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(SKILL)))   # repository root (.claude/skills/<skill> -> repo)
+
+
+def team_slug(name):
+    return re.sub(r'[^a-z0-9]+', '-', (name or '').lower()).strip('-')
+
+
+def team_dir(name):
+    return os.path.join(ROOT, 'audits', f'{team_slug(name)}-workflow-audit')
+
+
 def load_team(name):
-    teams = json.load(open(os.path.join(SKILL, 'teams.json')))
-    for k, v in teams.items():
-        if k.lower() == (name or '').lower():
-            return k, v
-    return name, None
+    """(team name, settings) from the ```json block in audits/<team>-workflow-audit/team-rules.md.
+    Returns (name, None) when the team has no team-rules.md yet. Nothing team-specific lives in the scripts."""
+    if not name:
+        return None, None
+    path = os.path.join(team_dir(name), 'team-rules.md')
+    if not os.path.exists(path):
+        return name, None
+    m = re.search(r'```json\s*\n(.*?)\n```', open(path).read(), re.S)
+    if not m:
+        raise SystemExit(f'STOP: no ```json settings block in {path}.')
+    t = json.loads(m.group(1))
+    t['_dir'] = team_dir(name)
+    # derived settings used by the full-map checks in build.py
+    excl = t.get('exclusion') or {}
+    excl_wfs = sorted({w for tt in t.get('task_types', []) if tt['name'] in excl.get('only_in_task_types', []) for w in tt['workflows']})
+    t.setdefault('rules', {
+        'subtasks_not_on_ticket': (t.get('links') or {}).get('subtask_ticket_forbidden', False),
+        'owner_property': t.get('owner_property'),
+        'exclusion_list': excl.get('list_id'),
+        'exclusion_only_in_workflows': excl_wfs if excl else None,
+        'flag_tasks_from_off_or_removed_actions': True,
+        'every_task_action_in_queue': True,
+    })
+    return t.get('team_name', name), t
+
+
+def task_type_of(team, flow_id, title):
+    """Name of the team task type a task belongs to (by workflow and title), or None."""
+    for tt in (team or {}).get('task_types', []):
+        if str(flow_id) in tt['workflows'] and re.search(tt['title'], norm(title), re.I):
+            return tt['name']
+    return None
 
 
 # ------------------------------------------------------------------ filter evaluation
@@ -49,20 +87,24 @@ def eval_filter(f, props, lists=None):
         if not have:
             return bool(op.get('includeObjectsWithNoValueSet', True))
         return not any(c in vals for c in cur)
-    txt = str(raw).lower() if have else ''
+    txt = str(raw).strip().lower() if have else ''
+    vals_t = [v.strip().lower() for v in vals]   # HubSpot ignores case and the value's outer spaces ("SOA - " matches "SOA -L002 ...")
     if o in ('CONTAINS', 'CONTAINS_EXACTLY'):
-        return have and any(v.lower() in txt for v in vals)
+        return have and any(v in txt for v in vals_t)
     if o in ('DOES_NOT_CONTAIN', 'DOES_NOT_CONTAIN_EXACTLY'):
-        return (not have) or not any(v.lower() in txt for v in vals)
+        return (not have) or not any(v in txt for v in vals_t)
     if o == 'STARTS_WITH':
-        return have and any(txt.startswith(v.lower()) for v in vals)
+        return have and any(txt.startswith(v) for v in vals_t)
     if o == 'ENDS_WITH':
-        return have and any(txt.endswith(v.lower()) for v in vals)
+        return have and any(txt.endswith(v) for v in vals_t)
     if o in ('IS_BETWEEN', 'IS_NOT_BETWEEN', 'IS_AFTER', 'IS_BEFORE') and op.get('operationType') in ('TIME_RANGED', 'TIME_POINT'):
         if not have:
             return False
-        val = _to_dt(raw)
-        lo, hi = _time_point(op.get('lowerBoundTimePoint') or op.get('timePoint')), _time_point(op.get('upperBoundTimePoint'))
+        tp0 = op.get('lowerBoundTimePoint') or op.get('timePoint') or {}
+        zone = tp0.get('zoneId') or 'UTC'
+        val = _to_dt(raw, zone)
+        asof = _to_dt(props.get('_as_of')) if props.get('_as_of') else None
+        lo, hi = _time_point(tp0, asof), _time_point(op.get('upperBoundTimePoint'), asof)
         if val is None or (o in ('IS_BETWEEN', 'IS_NOT_BETWEEN') and (lo is None or hi is None)):
             return None
         if o == 'IS_AFTER':
@@ -80,21 +122,36 @@ def eval_filter(f, props, lists=None):
     return None  # dates, rolling windows, associations, etc.
 
 
-def _to_dt(v):
+def _zone(name):
     try:
+        from zoneinfo import ZoneInfo
+        return ZoneInfo(name or 'UTC')
+    except Exception:
+        return dt.timezone.utc
+
+
+def _to_dt(v, zone=None):
+    """A date-only value ("2026-07-13") is that day at midnight in the filter's time zone, as HubSpot reads it."""
+    try:
+        if isinstance(v, dt.datetime):
+            return v if v.tzinfo else v.replace(tzinfo=dt.timezone.utc)
         if str(v).isdigit():
             return dt.datetime.fromtimestamp(int(v) / 1000, dt.timezone.utc)
-        d = dt.datetime.fromisoformat(str(v).replace('Z', '+00:00'))
+        s = str(v)
+        if len(s) == 10:
+            return dt.datetime.fromisoformat(s).replace(tzinfo=_zone(zone))
+        d = dt.datetime.fromisoformat(s.replace('Z', '+00:00'))
         return d if d.tzinfo else d.replace(tzinfo=dt.timezone.utc)
     except ValueError:
         return None
 
 
-def _time_point(tp):
-    """Resolve a HubSpot time point (INDEXED: TODAY/NOW + offset; DATE/STATIC: fixed). None if unsupported."""
+def _time_point(tp, asof=None):
+    """Resolve a HubSpot time point (INDEXED: TODAY/NOW + offset; DATE/STATIC: fixed). None if unsupported.
+    `asof` is when the workflow ran (default: now); TODAY is that day's midnight in the time point's zone."""
     if not tp:
         return None
-    now = dt.datetime.now(dt.timezone.utc)
+    now = (asof or dt.datetime.now(dt.timezone.utc)).astimezone(_zone(tp.get('zoneId')))
     if tp.get('timeType') == 'INDEXED':
         ref = tp.get('indexReference', {}).get('referenceType')
         base = now if ref == 'NOW' else (now.replace(hour=0, minute=0, second=0, microsecond=0) if ref == 'TODAY' else None)
@@ -276,3 +333,117 @@ def branch_props(cfg):
         if a.get('type') == 'STATIC_BRANCH' and a.get('inputValue', {}).get('propertyName'):
             out.add(a['inputValue']['propertyName'])
     return out
+
+
+# ------------------------------------------------------------------ weekly audit helpers
+DAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']
+
+
+def week_window(team, today, start=None, end=None, ignore_start=False):
+    """(first day, last day) of the audit window, as dates in the portal's time zone.
+    Default: the 7 days ending on the team's window end day (e.g. Thursday) before today; on other days,
+    the window that contains today (up to today). Never earlier than the team's start date."""
+    w = (team or {}).get('window') or {'ends_on': 'Thursday', 'days': 7}
+    days = int(w.get('days', 7))
+    end_wd = DAYS.index(w.get('ends_on', 'Thursday').upper())
+    if end is None:
+        if (today.weekday() - end_wd) % 7 == 1:          # report day (e.g. Friday): the 7 days just finished
+            last = today - dt.timedelta(days=1)
+        else:                                             # any other day: the window that contains today
+            last = today + dt.timedelta(days=(end_wd - today.weekday()) % 7)
+        end = min(last, today)
+        first = last - dt.timedelta(days=days - 1)
+    else:
+        first = end - dt.timedelta(days=days - 1)
+    if start is not None:
+        first = start
+    sd = (team or {}).get('start_date')
+    if sd and not ignore_start:          # test runs may look back past the start date on purpose
+        first = max(first, dt.date.fromisoformat(sd))
+    return first, end
+
+
+def report_day(team, window_end):
+    """The day the report is for: the day after the window's planned end (e.g. Friday)."""
+    w = (team or {}).get('window') or {'ends_on': 'Thursday'}
+    end_wd = DAYS.index(w.get('ends_on', 'Thursday').upper())
+    return window_end + dt.timedelta(days=(end_wd - window_end.weekday()) % 7 + 1)
+
+
+def schedule_runs(cfg, first, last, tz, now=None):
+    """Scheduled re-check times of a workflow that fall in [first, last] (dates in tz) and are not in the future."""
+    sc = cfg.get('enrollmentSchedule')
+    if not sc:
+        return None
+    t = sc.get('timeOfDay', {})
+    out, d = [], first
+    while d <= last:
+        hit = (sc.get('type') == 'DAILY' or
+               (sc.get('type') == 'WEEKLY' and DAYS[d.weekday()] in [x.upper() for x in sc.get('daysOfWeek', [])]) or
+               (sc.get('type') == 'MONTHLY_SPECIFIC_DAYS' and d.day in sc.get('daysOfMonth', [])))
+        if hit:
+            r = dt.datetime(d.year, d.month, d.day, t.get('hour', 0), t.get('minute', 0), tzinfo=tz)
+            if now is None or r <= now:
+                out.append(r)
+        d += dt.timedelta(days=1)
+    return out
+
+
+def value_at(history, when):
+    """Value of a property at a moment, from HubSpot property history (newest first or any order). None if unknown."""
+    best = None
+    for h in history or []:
+        ts = parse_date(h.get('timestamp'))
+        if ts and ts <= when and (best is None or ts > best[0]):
+            best = (ts, h.get('value'))
+    return best[1] if best else None
+
+
+def props_at(company, when):
+    """Company properties as they were at `when`, for every property we have history for; others as now."""
+    p = dict(company.get('properties', {}))
+    for k, hist in (company.get('propertiesWithHistory') or {}).items():
+        if hist:
+            p[k] = value_at(hist, when)
+    p['_as_of'] = when          # date filters like "today - 91 days" count from the run, not from now
+    return p
+
+
+def task_path(cfg, props, lists=None):
+    """Follow a workflow for one record. Returns (outcome, action, path):
+    outcome 'task' (reached a Create task action), 'end' (path ends with no task) or None (could not evaluate);
+    action = the Create task action reached; path = branch names taken, like '"Tier 1" > "T1 SM"' or '... > None met'."""
+    acts = {a['actionId']: a for a in cfg.get('actions', [])}
+    aid, seen, path = cfg.get('startActionId'), set(), []
+    while aid and aid in acts and aid not in seen:
+        seen.add(aid)
+        a = acts[aid]
+        k = a.get('actionTypeId') or a.get('type')
+        if k == '0-3':
+            return 'task', a, ' > '.join(path)
+        if k == 'LIST_BRANCH':
+            nxt, taken = None, None
+            for b in a.get('listBranches', []):
+                r = eval_branch(b.get('filterBranch'), props, lists)
+                if r is None:
+                    return None, None, ' > '.join(path + [f'"{b.get("branchName")}"?'])
+                if r:
+                    nxt, taken = b.get('connection', {}).get('nextActionId'), f'"{b.get("branchName")}"'
+                    break
+            if taken is None:
+                nxt = (a.get('defaultBranch') or {}).get('nextActionId')
+                taken = f'"{a.get("defaultBranchName")}"' if a.get('defaultBranch') else 'None met'
+            path.append(taken)
+            aid = nxt
+            continue
+        if k == 'STATIC_BRANCH':
+            prop = a.get('inputValue', {}).get('propertyName')
+            if not prop:
+                return None, None, ' > '.join(path)
+            cur = str(props.get(prop) or '')
+            nxt = next((b.get('connection', {}).get('nextActionId') for b in a.get('staticBranches', []) if str(b.get('branchValue')) == cur), None)
+            path.append(f'= {cur}' if nxt else 'any other value')
+            aid = nxt or (a.get('defaultBranch') or {}).get('nextActionId')
+            continue
+        aid = a.get('connection', {}).get('nextActionId')
+    return 'end', None, ' > '.join(path)
