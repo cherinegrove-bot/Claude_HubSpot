@@ -539,6 +539,28 @@ if CUTOFF:
     SECTION = 'main'
 
 # other task-level checks (Question 1)
+# records that should have got a record from a workflow (team-rules.md "record_checks"), e.g. Closed Won deal -> onboarding ticket
+RECORD_CHECKS = []
+for rc in W('record_checks.json', []):
+    c = rc['check']
+    keep = set(c.get('created_in_pipelines') or [])
+    made = {m['id']: m for m in rc['created'] if not keep or m['properties'].get('hs_pipeline') in keep}
+    rows_ = []
+    for rec in rc['records']:
+        p = rec['properties']
+        at = P(p.get(f'hs_v2_date_entered_{c["stage"]}'))
+        mine = [x['id'] for x in rc['links'].get(rec['id'], []) if x['id'] in made]
+        nm = p.get('dealname') or p.get('subject') or p.get('name') or f'record {rec["id"]}'
+        rows_.append({'id': rec['id'], 'name': nm, 'entered': fmt_dt(at) if at else '', 'created': mine, 'status': 'ok' if mine else 'none'})
+        if not mine:
+            problem(1, 'record_missing', f'{c["object"][:-1].capitalize()} "{nm}" ({rec["id"]}) moved to {c.get("stage_label", "the stage")} on {fmt_dt(at) if at else "?"} '
+                    f'but has no {c.get("creates_label", c["creates"][:-1])}.', 'VERIFIED (records)', 'Confirmed', c['name'], None, None, c.get('workflow'),
+                    f'no {c.get("creates_label", c["creates"][:-1])}', group=f'record_missing:{c["name"]}',
+                    extra={'record': {'id': rec['id'], 'name': nm, 'object_type': c.get('object_type_id', '0-3'), 'entered': fmt_dt(at) if at else ''},
+                           'check_name': c['name'], 'creates_label': c.get('creates_label'), 'object_label': c.get('object_label', c['object'][:-1])})
+    RECORD_CHECKS.append({'name': c['name'], 'workflow': c.get('workflow'), 'workflow_name': wfname(c.get('workflow')) if c.get('workflow') else '',
+                          'creates_label': c.get('creates_label'), 'object_type': c.get('object_type_id', '0-3'), 'records': rows_})
+
 DUPES, W3 = [], []
 by_day = collections.defaultdict(list)
 TICKET_TYPES = {t['name'] for t in TYPES if t['workflows'] and all(is_ticket_wf(w) for w in t['workflows'])}
@@ -762,7 +784,7 @@ q_counts = {q: len([p for p in PROBLEMS if p['q'] == q]) for q in (1, 2, 3)}
 groups = collections.OrderedDict()
 for p in PROBLEMS:
     groups.setdefault(p['group'], []).append(p)
-WEIGHT = {'missing': 4, 'link': 5, 'subtask_ticket': 5, 'rule2': 5, 'off_task': 5, 'changed': 4, 'not_in_queue': 5, 'shouldnt': 3, 'duplicate': 3,
+WEIGHT = {'record_missing': 5, 'missing': 4, 'link': 5, 'subtask_ticket': 5, 'rule2': 5, 'off_task': 5, 'changed': 4, 'not_in_queue': 5, 'shouldnt': 3, 'duplicate': 3,
           'not_returned': 3, 'unknown_source': 2, 'unknown_type': 2, 'not_live_90': 2, 'golive_gap': 1}
 
 
@@ -773,6 +795,8 @@ def headline(g, ps):
     if k == 'missing':
         r = p['reason']
         return f'{n} facilit{"y" if n == 1 else "ies"} did not get "{p["type"]}" — reason: {r}.'
+    if k == 'record_missing':
+        return f'{n} record{"s" if n > 1 else ""} with no {p.get("creates_label") or "record"} ({p["type"]}): ' + ', '.join(f'{x["record"]["name"]} ({x["record"]["id"]})' for x in ps[:5]) + ('…' if n > 5 else '') + '.'
     if k == 'shouldnt':
         return f'{n} facilit{"y" if n == 1 else "ies"} got "{p["type"]}" but should not have ({p["reason"]}).'
     if k == 'link':
@@ -1031,7 +1055,7 @@ RESULT = {
     'excluded_tasks': EXCLUDED_TASKS,
     'counts': {'facilities_in_scope': in_scope_count, 'main_tasks': len(MAIN), 'subtasks': len(SUBS), 'workflows': len(M),
                'q1': q_counts[1], 'q2': q_counts[2], 'q3': q_counts[3]},
-    'top': TOP, 'types': TYPE_RESULTS, 'new_facilities': NEW, 'links': LINK_ROWS, 'subtasks': SUB_ROWS, 'changes': CHANGES,
+    'top': TOP, 'types': TYPE_RESULTS, 'record_checks': RECORD_CHECKS, 'new_facilities': NEW, 'links': LINK_ROWS, 'subtasks': SUB_ROWS, 'changes': CHANGES,
     'schedules': SCHEDULES, 'task_list': TASK_LIST, 'tier_columns': TIER_COLUMNS, 'switched_off': SWITCHED_OFF, 'before_start': BEFORE_START, 'known_days': [{'date': d, 'type': t, 'known_issue': k, 'tasks': n} for (d, t, k), n in sorted(KNOWN_DAYS.items())],
     'waiting_on': waiting, 'known_issues': known, 'expected_off': off_state, 'problems': PROBLEMS,
     'companies': {cid: cname(cid) for cid in {x for tr in TYPE_RESULTS + PRE_TYPES for x in tr['should'] + tr['got'] + list(tr['missing']) + list(tr['shouldnt'])} | {c for r in MAIN + PRE_MAIN for c in r['companies']} | LIVE_NOW},
@@ -1048,6 +1072,9 @@ if EXCLUDED:
     print(f'Excluded from the audit: ' + '; '.join(f'{v.get("name") or k} ({k}): {v.get("reason")}' for k, v in EXCLUDED.items()) + (f' ({EXCLUDED_TASKS} task(s) linked only to them not checked)' if EXCLUDED_TASKS else ''))
 print(f'Checked {in_scope_count} ' + ('facilities with an open ticket in the team pipeline' if TF and TICKET_TYPES == set(TYPE_NAMES) else f'companies in scope ({(TEAM.get("company_scope") or {}).get("description", "all companies")})') + f', {len(MAIN)} main tasks and {len(SUBS)} subtasks created in the window, and {len(M)} workflows.\n')
 print(f'1. **Were the tasks created?** {line(q_counts[1], "")}' + (f' ({len(NEW)} new facilit{"y" if len(NEW) == 1 else "ies"} this week)' if NEW else ''))
+for rc_ in RECORD_CHECKS:
+    nm_ = sum(1 for r_ in rc_['records'] if r_['status'] != 'ok')
+    print(f'   - {rc_["name"]}: {len(rc_["records"])} checked, ' + ('all good' if not nm_ else f'{nm_} without one'))
 print(f'2. **Are they linked to the right company?** {line(q_counts[2], "")}')
 print(f'3. **Did anyone change the workflows?** ' + ('no changes' if not q_counts[3] else f'{sum(1 for c in CHANGES if c["status"] != "same")} workflow(s) differ from the master rules file'))
 if TOP:

@@ -452,6 +452,23 @@ def fetch_weekly(a, flows):
     save(a.work, 'weekly_tickets.json', wtickets)
     save(a.work, 'ticket_companies.json', tco)
 
+    # 2c. team-rules.md "record_checks": records that entered a stage in the window and should have got a record from
+    #     a workflow (e.g. a Closed Won deal -> an onboarding ticket): the records, and what they are linked to
+    rchecks = []
+    for rc in team.get('record_checks') or []:
+        prop = f'hs_v2_date_entered_{rc["stage"]}'
+        ms = lambda x: str(int(x.timestamp() * 1000))      # date-time filters take epoch milliseconds
+        recs = search_all(rc['object'], [{'propertyName': rc.get('pipeline_property', 'pipeline'), 'operator': 'EQ', 'value': rc['pipeline']},
+                                         {'propertyName': prop, 'operator': 'GTE', 'value': ms(t0)},
+                                         {'propertyName': prop, 'operator': 'LT', 'value': ms(t1)}],
+                          ['dealname', 'subject', 'name', 'pipeline', 'dealstage', prop])
+        links = batch_assoc(rc['object'], rc['creates'], [r['id'] for r in recs]) if recs else {}
+        made = sorted({x['id'] for v in links.values() for x in v})
+        made = batch_read(rc['creates'], made, ['subject', 'hs_pipeline', 'hs_pipeline_stage', 'createdate']) if made else []
+        rchecks.append({'check': rc, 'records': recs, 'links': links, 'created': made})
+        print(f'{rc["name"]}: {len(recs)} record(s) entered the stage in the window')
+    save(a.work, 'record_checks.json', rchecks)
+
     # 3. companies: every live company, every company changed during the window, and every company a task is linked to
     mcfgs = [e['cfg'] for e in M.values() if e.get('cfg')] + list(cfg.values())
     hist = sorted(set(rules.scope_props(team)) | {p for c in mcfgs for p in rules.referenced_props_all(c)} |

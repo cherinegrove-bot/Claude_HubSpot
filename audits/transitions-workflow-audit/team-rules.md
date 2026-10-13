@@ -42,9 +42,11 @@ Transitions workflows don't run on a schedule. Each one starts when a **ticket**
 
 1. Each stage's tasks go to every ticket that enters that stage in the Onboarding Pipeline (see above). There is no company filter: the ticket's stage decides, because onboarding facilities aren't live yet.
 2. Every Create task action uses the Transitions queue (13519270).
-3. Main tasks are linked to the **ticket** and to exactly **one company**.
-   - Subtasks must **not** be linked to the ticket.
+3. **Main tasks and subtasks** (Cherine, 2026-10-13):
+   - **Main tasks** are the tasks the workflows create, including every task named "... | Subtask - [person]" (e.g. "Transition | TRANSITION KICK-OFF | Subtask - Bryn"). Despite the word "Subtask" in the name, these are main tasks. Each must be linked to the **ticket** and to exactly **one company**.
+   - **Subtasks** are only the real checklist items inside a task (HubSpot's "Is subtask" = true, with a parent task). They must **not** be linked to the ticket.
 4. Tasks that shouldn't exist (a ticket that didn't enter the stage, or a second set for the same ticket) are reported.
+5. **Every Closed Won deal gets an onboarding ticket** (Cherine, 2026-10-13). Every deal in the White Label Storage SALES pipeline that moved to Closed won in the window must have a ticket in the Onboarding Pipeline. Any deal without one is reported under question 1, with a link to the deal. VERIFIED (records): the deal's "Date entered Closed won" and its ticket links.
 
 ## Task types
 
@@ -61,7 +63,7 @@ One type per stage, plus the marketing proposal. "Tasks" is the number of Create
 | 7 | 30-Day Monitoring | 1866659765 | Ticket enters Post 30-Day Monitoring (OM/SM) | 2 | Every Onboarding ticket |
 | 8 | Transition Complete | 1867929348 | Ticket enters Transition Completed | 1 | Every Onboarding ticket |
 
-**Not a task type:** Closed Won | Create Ticket in INITIAL SETUP - UNASSIGNED (1670039203) creates the ticket, not tasks. It's only checked for changes (question 3).
+**Not a task type:** Closed Won | Create Ticket in INITIAL SETUP - UNASSIGNED (1670039203) creates the ticket, not tasks. It's checked by rule 5 (every Closed Won deal got an onboarding ticket) and for changes (question 3).
 
 ## Decisions so far
 
@@ -70,8 +72,10 @@ All agreed with Cherine on 2026-10-13:
 - **Facility of a ticket:** the "Transitions" company, else the Primary company.
 - **Task types:** one per stage, plus Marketing Proposal. A ticket missing some of a stage's tasks is "partial".
 - **Company scope:** none. The ticket's stage decides.
-- **Links:** main task to the ticket and exactly one company; subtasks not linked to the ticket.
+- **Links:** main task to the ticket and exactly one company; subtasks not linked to the ticket. "Subtask - [person]" tasks are main tasks (rule 3).
 - **Went live this week:** shown, using Status = Live and the go-live date, flagged when more than 7 days apart.
+  - Checked on 2026-10-13: this is the same property as CS Ops. Company property `live` (label "Status"); Live is the internal value `Yes`. The go-live date is `go_live_date` (label "Actual Go-Live Date").
+- **Closed Won deals:** every deal that moved to Closed won (White Label Storage SALES) in the window must have an Onboarding Pipeline ticket (rule 5).
 - **Excluded companies:** demo Facility (44541671248), the same as CS Ops.
 - **Page colours:** the WLS brand colours, the same as CS Ops.
 
@@ -121,6 +125,7 @@ The WLS brand colours, the same as CS Ops: navy `#00173C` (title bar and heading
 The scripts read this block. Keep it in step with the text above.
 - `title` is a pattern matched against the task title, ignoring case and spacing.
 - `ticket_facility` says how a ticket-triggered workflow is audited: the pipelines its tickets are in, and which company is the ticket's facility.
+- `record_checks` lists records that must get a record from a workflow: here, deals that entered Closed won (pipeline 79187488, stage 150102819) must have a ticket in the Onboarding Pipeline (751582029).
 
 ```json
 {
@@ -153,6 +158,24 @@ The scripts read this block. Keep it in step with the text above.
     "company_label": "Transitions",
     "fallback_label": "Primary"
   },
+  "record_checks": [
+    {
+      "name": "Closed Won deal got an onboarding ticket",
+      "workflow": "1670039203",
+      "object": "deals",
+      "object_label": "deal",
+      "object_type_id": "0-3",
+      "pipeline": "79187488",
+      "pipeline_property": "pipeline",
+      "stage": "150102819",
+      "stage_label": "Closed won (White Label Storage SALES)",
+      "creates": "tickets",
+      "creates_label": "onboarding ticket",
+      "created_in_pipelines": [
+        "751582029"
+      ]
+    }
+  ],
   "excluded_companies": [
     {
       "id": "44541671248",

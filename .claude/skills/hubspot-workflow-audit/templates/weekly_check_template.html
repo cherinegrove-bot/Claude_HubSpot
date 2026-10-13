@@ -194,6 +194,7 @@ const HS='https://app.hubspot.com';
 const coUrl=id=>`${HS}/contacts/${D.portal}/record/0-2/${id}`;
 const wfUrl=id=>`${HS}/workflows/${D.portal}/platform/flow/${id}/edit`;
 const taskUrl=id=>`${HS}/tasks/${D.portal}/view/all/task/${id}`;
+const recUrl=(t,id)=>`${HS}/contacts/${D.portal}/record/${t}/${id}`;
 const ext=(url,html)=>D.portal?`<a class="hs" href="${url}" target="_blank" rel="noopener" title="Open in HubSpot">${html}</a>`:html;
 const coLink=(id,name)=>id?`${ext(coUrl(id),esc(name||company(id)))} <button class="wk" data-f="${esc(id)}" title="Show this facility's tasks this week">Week</button>`:'<span class="ok">None</span>';
 const wfLink=(id,name)=>id?ext(wfUrl(id),esc(name)):esc(name);
@@ -214,6 +215,7 @@ function describe(key,ps){
   text:isKnown?`All from “${(p.source||'').replace(/\s*\(from known issue [^)]*\)/,'')}”. This is known issue ${p.known_issue}.`:`From “${p.source||''}”.`,who:isKnown?'Known issue':'You',label:p.label,ps};}
  if(p.kind==='missing'){return{q:1,kind:p.waiting_on?'wait':'bad',title:`${plural(n,'facility','facilities')} didn't get “${p.type}”`,
   text:`Reason: ${p.reason}.`,who:p.waiting_on?D.decision_owner:'You',label:p.label,ps};}
+ if(p.kind==='record_missing'){return{q:1,kind:'bad',title:`${plural(n,p.object_label||'record')} got no ${p.creates_label||'record'}`,text:`${p.check_name||p.type}: each moved to the stage this week, but nothing was created for it.`,who:'You',label:p.label,ps,records:true};}
  if(p.kind==='shouldnt'){return{q:1,kind:'bad',title:`${plural(n,'facility','facilities')} got “${p.type}” but shouldn't have`,text:`Reason: ${p.reason||'not in scope'}.`,who:'You',label:p.label,ps};}
  if(p.kind==='changed'){const c=D.changes.find(c=>c.workflow===p.workflow)||{};return{q:3,kind:'wait',title:`“${c.name||p.workflow}” changed`,
   text:changeText(c),who:D.decision_owner,label:p.label,ps,wf:c.workflow?{id:c.workflow,name:c.name}:null};}
@@ -227,10 +229,11 @@ const items=Object.entries(groups).map(([k,ps])=>describe(k,ps)).sort((a,b)=>({b
 function itemHTML(it,open){
  const rows=it.ps.filter(p=>p.company_id||p.task_id);
  let body='';
- if(rows.length){body=`<div class="tw"><table><tr><th>Facility</th><th>Task</th><th>Detail</th></tr>${rows.slice(0,400).map(p=>`<tr><td>${p.company_id?`${coLink(p.company_id,p.company)}`:'<span class="ok">None</span>'}</td><td>${esc(p.type||'')}${p.task_id?` <small class="ok">${ext(taskUrl(p.task_id),'#'+esc(p.task_id))}</small>`:''}</td><td class="ok">${esc(p.moved_by?('Moved to '+qname(p.moved_by.queue)):(p.reason||''))}</td></tr>`).join('')}</table></div>`;}
+ if(it.records){body=`<div class="tw"><table><tr><th>Record</th><th>Moved to the stage</th><th>Detail</th></tr>${it.ps.map(p=>`<tr><td>${ext(recUrl(p.record.object_type,p.record.id),esc(p.record.name))} <small class="ok">#${esc(p.record.id)}</small></td><td>${esc(when(p.record.entered))}</td><td class="ok">${esc(p.reason||'')}</td></tr>`).join('')}</table></div>`;}
+ else if(rows.length){body=`<div class="tw"><table><tr><th>Facility</th><th>Task</th><th>Detail</th></tr>${rows.slice(0,400).map(p=>`<tr><td>${p.company_id?`${coLink(p.company_id,p.company)}`:'<span class="ok">None</span>'}</td><td>${esc(p.type||'')}${p.task_id?` <small class="ok">${ext(taskUrl(p.task_id),'#'+esc(p.task_id))}</small>`:''}</td><td class="ok">${esc(p.moved_by?('Moved to '+qname(p.moved_by.queue)):(p.reason||''))}</td></tr>`).join('')}</table></div>`;}
  else if(it.q===3){const c=D.changes.find(c=>c.workflow===it.ps[0].workflow);body=c?diffHTML(c):'';}
  const unit=it.q===3?'change':(it.title.includes('facilit')?'facility':'tasks');
- return `<details class="item ${it.kind}"${open?' open':''}><summary><div class="cnt">${it.q===3?'1':it.ps.length}<small>${it.q===3?'workflow':(it.ps.length===1&&unit==='tasks'?'task':unit==='facility'?(it.ps.length===1?'facility':'facilities'):'tasks')}</small></div>
+ return `<details class="item ${it.kind}"${open?' open':''}><summary><div class="cnt">${it.q===3?'1':it.ps.length}<small>${it.records?(it.ps.length===1?it.ps[0].object_label:it.ps[0].object_label+'s'):it.q===3?'workflow':(it.ps.length===1&&unit==='tasks'?'task':unit==='facility'?(it.ps.length===1?'facility':'facilities'):'tasks')}</small></div>
  <div class="itxt"><h3>${it.wf?esc(it.title).replace(esc(it.wf.name),wfLink(it.wf.id,it.wf.name)):esc(it.title)}</h3><p>${esc(it.text)}</p><div class="meta"><span class="chip who">${it.who==='Known issue'?'Known issue':'Decision: '+esc(it.who)}</span><span class="chip">Question ${it.q}</span>${chips(it.label)}</div></div>${chev}</summary>
  <div class="body">${body}</div></details>`;
 }
