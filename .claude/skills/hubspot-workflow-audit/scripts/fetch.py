@@ -435,6 +435,23 @@ def fetch_weekly(a, flows):
             assoc.setdefault(k, {})[obj] = v
     save(a.work, 'task_assoc.json', assoc)
 
+    # 2b. ticket-triggered workflows (team-rules.md "ticket_facility"): every ticket in the team's pipelines, with the
+    #     history of the properties the triggers read (stage entries), and its company links (the ticket's facility)
+    tf = team.get('ticket_facility') or {}
+    ticket_wfs = [i for i, e in M.items() if (e.get('cfg') or {}).get('objectTypeId') == '0-5']
+    wtickets, tco = [], {}
+    if ticket_wfs and tf.get('pipelines'):
+        thist = sorted({p for i in ticket_wfs for p in rules.referenced_props(M[i]['cfg'])} | {'hs_pipeline', 'hs_pipeline_stage'})
+        tids = set()
+        for p in tf['pipelines']:
+            tids |= {t['id'] for t in search_all('tickets', [{'propertyName': 'hs_pipeline', 'operator': 'EQ', 'value': p}], ['subject'])}
+        tids |= {x['id'] for v in assoc.values() for x in v.get('tickets', [])}
+        wtickets = batch_read_history('tickets', sorted(tids), sorted(set(thist) | {'subject', 'createdate'}), thist)
+        tco = batch_assoc('tickets', 'companies', sorted(tids))
+        print(f'tickets in the team pipelines (with stage history): {len(wtickets)}')
+    save(a.work, 'weekly_tickets.json', wtickets)
+    save(a.work, 'ticket_companies.json', tco)
+
     # 3. companies: every live company, every company changed during the window, and every company a task is linked to
     mcfgs = [e['cfg'] for e in M.values() if e.get('cfg')] + list(cfg.values())
     hist = sorted(set(rules.scope_props(team)) | {p for c in mcfgs for p in rules.referenced_props_all(c)} |
@@ -446,7 +463,8 @@ def fetch_weekly(a, flows):
     cids |= {c['id'] for c in search_all('companies', [{'propertyName': 'hs_lastmodifieddate', 'operator': 'GTE', 'value': iso(t0)},
                                                        {'propertyName': sp, 'operator': 'HAS_PROPERTY'}], ['name'])}
     cids |= {x['id'] for v in assoc.values() for x in v.get('companies', [])}
-    fc = (team.get('scope_exempt_workflows') or {}).get('fetch_companies')
+    cids |= {x['id'] for v in tco.values() for x in v}          # the companies of the team's tickets (facilities, branch checks)
+    fc =(team.get('scope_exempt_workflows') or {}).get('fetch_companies')
     if fc:      # companies the scope-exempt workflows may pick up although they're outside the team scope (e.g. recent go-live date)
         d0 = first - dt.timedelta(days=int(fc.get('within_days', 92)))
         since_ms = str(int(dt.datetime(d0.year, d0.month, d0.day, tzinfo=dt.timezone.utc).timestamp() * 1000))   # date filters take epoch ms

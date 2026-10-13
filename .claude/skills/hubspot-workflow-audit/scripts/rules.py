@@ -447,3 +447,89 @@ def task_path(cfg, props, lists=None):
             continue
         aid = a.get('connection', {}).get('nextActionId')
     return 'end', None, ' > '.join(path)
+
+
+# ------------------------------------------------------------------ ticket-triggered workflows
+def eval_branch_assoc(fb, props, assoc_props=None, lists=None):
+    """eval_branch, plus association branches: a branch on associated companies (objectTypeId 0-2) is True when any of
+    `assoc_props` (property dicts of the record's associated companies) meets its filters. Tri-state."""
+    if not fb:
+        return True
+    typ = fb.get('filterBranchType')
+    if typ == 'ASSOCIATION':
+        if fb.get('objectTypeId') != '0-2' or assoc_props is None:
+            return None
+        inner = {'filterBranchType': 'AND', 'filters': fb.get('filters', []), 'filterBranches': fb.get('filterBranches', [])}
+        res = [eval_branch_assoc(inner, p, None, lists) for p in assoc_props]
+        if any(r is True for r in res):
+            return True
+        return None if any(r is None for r in res) else False
+    parts = [eval_filter(f, props, lists) for f in fb.get('filters', [])] + [eval_branch_assoc(b, props, assoc_props, lists) for b in fb.get('filterBranches', [])]
+    if not parts:
+        return True
+    if typ == 'OR':
+        if any(p is True for p in parts):
+            return True
+        return None if any(p is None for p in parts) else False
+    if any(p is False for p in parts):
+        return False
+    return None if any(p is None for p in parts) else True
+
+
+def reached_tasks(cfg, props, assoc_props=None, lists=None, aid=None, seen=None):
+    """Every Create task action one record reaches, following its branches (a workflow can create several tasks).
+    Returns (actions, path, certain). A branch on a value we can't read (e.g. a fetched record's property) is followed
+    down every side; the result is certain only if every side reaches the same task titles."""
+    acts = {a['actionId']: a for a in cfg.get('actions', [])}
+    aid = cfg.get('startActionId') if aid is None else aid
+    seen, out, path = set(seen or ()), [], []
+    while aid and aid in acts and aid not in seen:
+        seen.add(aid)
+        a = acts[aid]
+        k = a.get('actionTypeId') or a.get('type')
+        if k == '0-3':
+            out.append(a)
+        if k == 'LIST_BRANCH':
+            nxt, taken = None, None
+            for b in a.get('listBranches', []):
+                r = eval_branch_assoc(b.get('filterBranch'), props, assoc_props, lists)
+                if r is None:
+                    return out, ' > '.join(path + [f'"{b.get("branchName")}"?']), False
+                if r:
+                    nxt, taken = b.get('connection', {}).get('nextActionId'), f'"{b.get("branchName")}"'
+                    break
+            if taken is None:
+                nxt = (a.get('defaultBranch') or {}).get('nextActionId')
+                taken = f'"{a.get("defaultBranchName")}"' if a.get('defaultBranch') else 'None met'
+            path.append(taken)
+            aid = nxt
+            continue
+        if k == 'STATIC_BRANCH':
+            prop = a.get('inputValue', {}).get('propertyName')
+            targets = [b.get('connection', {}).get('nextActionId') for b in a.get('staticBranches', [])] + [(a.get('defaultBranch') or {}).get('nextActionId')]
+            if prop:
+                cur = str(props.get(prop) or '')
+                nxt = next((b.get('connection', {}).get('nextActionId') for b in a.get('staticBranches', []) if str(b.get('branchValue')) == cur), None)
+                path.append(f'= {cur}' if nxt else 'any other value')
+                aid = nxt or (a.get('defaultBranch') or {}).get('nextActionId')
+                continue
+            subs = [reached_tasks(cfg, props, assoc_props, lists, t, seen) for t in targets if t]
+            titles = {tuple(sorted(norm(x.get('fields', {}).get('subject')) for x in s[0])) for s in subs}
+            path.append('any value')
+            if len(titles) == 1 and all(s[2] for s in subs):
+                return out + subs[0][0], ' > '.join(path), True
+            return out, ' > '.join(path + ['?']), False
+        aid = a.get('connection', {}).get('nextActionId')
+    return out, ' > '.join(path), True
+
+
+def stage_entries(record, prop='hs_pipeline_stage'):
+    """[(timestamp, value)] each time the property took a new value, oldest first, from property history."""
+    hist = sorted(((parse_date(h.get('timestamp')), h.get('value')) for h in (record.get('propertiesWithHistory') or {}).get(prop, []) or []
+                   if h.get('timestamp')), key=lambda x: x[0])
+    out, prev = [], object()
+    for ts, v in hist:
+        if v != prev:
+            out.append((ts, v))
+        prev = v
+    return out

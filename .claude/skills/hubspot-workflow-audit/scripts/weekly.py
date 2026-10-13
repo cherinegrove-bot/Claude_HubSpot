@@ -50,6 +50,29 @@ for _tid, _a in TASSOC.items():
             _a['_only_excluded'] = True
 LISTS = W('lists.json', {})
 LIST_NAMES = W('list_names.json', {})
+# Ticket-triggered workflows (team-rules.md "ticket_facility"): who should get a task comes from tickets entering the
+# trigger stage, and each ticket is shown under its facility (the company with the team's label, else the Primary one).
+TF = TEAM.get('ticket_facility') or {}
+TICKETS = {t['id']: t for t in W('weekly_tickets.json', [])}
+TCO = W('ticket_companies.json', {})
+STAGES = {s['id']: s for p in (W('pipelines.json', {}) or {}).get('tickets', []) for s in p['stages']}
+
+
+def is_ticket_wf(wid):
+    return bool(TF) and ((M.get(wid) or {}).get('cfg') or {}).get('objectTypeId') == '0-5'
+
+
+def facility_of(tid):
+    cs = [c for c in TCO.get(tid, []) if c['id'] not in EXCLUDED]
+    for lbl in (TF.get('company_label'), TF.get('fallback_label')):
+        hit = [c['id'] for c in cs if lbl and lbl in (c.get('labels') or [])]
+        if hit:
+            return hit[0]
+    return cs[0]['id'] if cs else None
+
+
+def ticket_open(tid):
+    return (STAGES.get((TICKETS.get(tid) or {}).get('properties', {}).get('hs_pipeline_stage')) or {}).get('metadata', {}).get('isClosed') != 'true'
 ACCT = W('account.json', {})
 QHIST = W('queue_history.json', {})
 MOVERS = W('queue_movers.json', [])
@@ -258,6 +281,131 @@ def went_live(c):
 
 # ------------------------------------------------------------------ Question 1
 LIVE_NOW = {cid for cid, c in COMP.items() if rules.in_scope(c.get('properties', {}), TEAM)}
+if TF and TYPES and all(is_ticket_wf(w) for t in TYPES for w in t['workflows']):
+    # a ticket team: the facilities in scope are those with an open ticket in the team's pipelines
+    LIVE_NOW = {f for f in (facility_of(t) for t in TICKETS if ticket_open(t)) if f and f in COMP}
+
+
+def ticket_runs(wid, name, t0, t1):
+    """Tickets that entered the trigger of a ticket-triggered workflow between t0 and t1, by the MASTER settings.
+    One entry per ticket (its first qualifying entry in the period): state expected / not_expected / unknown,
+    with the task titles its path reaches for this task type."""
+    cfg = M[wid]['cfg']
+    trig = cfg.get('enrollmentCriteria', {}).get('listFilterBranch')
+    reenroll = cfg.get('enrollmentCriteria', {}).get('shouldReEnroll')
+    born = P((LIVE.get(wid) or {}).get('createdAt') or '') or None
+    tt = next(t for t in TYPES if t['name'] == name)
+    out = []
+    for tid, t in TICKETS.items():
+        entries = rules.stage_entries(t)
+        hits = [ts for ts, _ in entries if rules.eval_branch(trig, rules.props_at(t, ts), LISTS)]
+        now = [ts for ts in hits if t0 <= ts < t1]
+        if not now:
+            continue
+        at = now[0]
+        stage = (STAGES.get(rules.props_at(t, at).get('hs_pipeline_stage')) or {}).get('label', 'the trigger stage')
+        e = {'ticket': tid, 'subject': t['properties'].get('subject') or f'ticket {tid}', 'facility': facility_of(tid), 'at': at, 'stage': stage}
+        before = [ts for ts in hits if ts < at and (born is None or ts >= born)]
+        if before and not reenroll:
+            out.append({**e, 'state': 'not_expected', 'reason': f'already entered {stage} on {local(before[-1]).date()}; re-enrollment is off', 'label': 'VERIFIED (config)'})
+            continue
+        comps = [rules.props_at(COMP[c['id']], at) for c in TCO.get(tid, []) if c['id'] in COMP]
+        acts, path, certain = rules.reached_tasks(cfg, rules.props_at(t, at), comps, LISTS)
+        titles = sorted({rules.norm(a.get('fields', {}).get('subject')) for a in acts if re.search(tt['title'], rules.norm(a.get('fields', {}).get('subject')), re.I)})
+        if not certain:
+            out.append({**e, 'state': 'unknown', 'reason': f'branch could not be checked ({path})', 'label': 'NEEDS VERIFICATION', 'titles': titles})
+        elif titles:
+            out.append({**e, 'state': 'expected', 'label': 'INFERENCE', 'titles': titles, 'path': path})
+        else:
+            out.append({**e, 'state': 'not_expected', 'reason': 'by the workflow settings: no ' + name + ' task on its path' + (f' ({path})' if path else ''), 'label': 'VERIFIED (config)'})
+    return out
+
+
+def ticket_type_results(tt, first, last, rows):
+    """Question 1 for a task type made by ticket-triggered workflows: tickets that entered the stage this period
+    should have every task the stage creates; shown by facility."""
+    name = tt['name']
+    t0 = dt.datetime(first.year, first.month, first.day, tzinfo=TZ)
+    t1 = dt.datetime(last.year, last.month, last.day, tzinfo=TZ) + dt.timedelta(days=1)
+    runs, notes = [], []
+    should, got, missing, shouldnt, not_exp = {}, set(), {}, {}, collections.Counter()
+    mine = [r for r in rows if r['type'] == name]
+    by_ticket = collections.defaultdict(list)
+    for r in mine:
+        for x in r['tickets']:
+            by_ticket[x].append(r)
+    seen_tickets = set()
+    for wid in tt['workflows']:
+        mc = M.get(wid, {}).get('cfg')
+        if not mc:
+            notes.append(f'{wfname(wid)} is not in the master rules file.')
+            continue
+        live = LIVE.get(wid)
+        off_now = live is not None and not live.get('isEnabled') and mc.get('isEnabled')
+        if not mc.get('isEnabled'):
+            continue
+        runs.append({'workflow': wid, 'name': wfname(wid), 'when': 'when a ticket enters its stage', 'off': off_now})
+        for e in ticket_runs(wid, name, t0, t1):
+            tid, fac = e['ticket'], e['facility']
+            if e['state'] == 'not_expected':
+                not_exp[e['reason'].split(' on 20')[0] if 'already entered' in e['reason'] else e['reason']] += 1
+                seen_tickets.add(tid)
+                continue
+            if e['state'] == 'unknown':
+                not_exp['could not be checked: ' + e['reason']] += 1
+                problem(1, 'unknown_branch', f'Ticket "{e["subject"]}" ({tid}) entered {e["stage"]} on {fmt_dt(e["at"])}: whether it should get "{name}" could not be worked out ({e["reason"]}).',
+                        'NEEDS VERIFICATION', 'Needs Verification', name, fac, None, wid, group=f'unknown_branch:{name}')
+                continue
+            seen_tickets.add(tid)
+            if not fac:
+                problem(1, 'no_facility', f'Ticket "{e["subject"]}" ({tid}) entered {e["stage"]} on {fmt_dt(e["at"])} but is not linked to any company, so it has no facility.',
+                        'VERIFIED (records)', 'Confirmed', name, None, None, wid, 'ticket has no company', group=f'no_facility:{name}')
+                continue
+            got_titles = {rules.norm(r['title']) for r in by_ticket.get(tid, [])}
+            have = set()
+            for gt in got_titles:                       # each task counts for the longest configured title it starts with
+                m = max((x for x in e['titles'] if gt.startswith(x)), key=len, default=None)
+                if m:
+                    have.add(m)
+            lack = [x for x in e['titles'] if x not in have]
+            should.setdefault(fac, {'wf': wid, 'run': e['at'], 'ticket': tid})
+            if not lack:
+                got.add(fac)
+                continue
+            if have:
+                missing[fac] = {'reason': f'partial: ticket {tid} got {len(have)} of {len(e["titles"])} tasks; missing ' + ', '.join(f'"{x}"' for x in lack),
+                                'label': 'VERIFIED (records)', 'workflow': wid, 'run': fmt_dt(e['at']), 'ticket': tid}
+            elif off_now:
+                missing[fac] = {'reason': 'workflow off', 'label': 'VERIFIED (config)', 'workflow': wid, 'run': fmt_dt(e['at']), 'ticket': tid}
+            else:
+                missing[fac] = {'reason': f'unknown: ticket {tid} entered {e["stage"]} on {fmt_dt(e["at"])} and got none of its {len(e["titles"])} tasks',
+                                'label': 'INFERENCE', 'workflow': wid, 'run': fmt_dt(e['at']), 'ticket': tid}
+    # tasks of this type on tickets that did not enter the stage this period
+    for tid, rs in by_ticket.items():
+        if tid in seen_tickets:
+            continue
+        t = TICKETS.get(tid)
+        r = rs[0]
+        if t:
+            trig = (M.get(r['flow'], {}).get('cfg') or {}).get('enrollmentCriteria', {}).get('listFilterBranch')
+            prior = [ts for ts, _ in rules.stage_entries(t) if ts <= r['created'] and rules.eval_branch(trig, rules.props_at(t, ts), LISTS)]
+            if prior and (r['created'] - prior[-1]).total_seconds() < 86400:
+                continue                                # entered the stage just before the period; created by that run
+        fac = facility_of(tid) or (r['companies'] or [None])[0]
+        reason = 'its ticket did not enter the stage before this task was created' if t else f'its ticket {tid} is not in the team pipeline'
+        shouldnt[fac or tid] = {'reason': reason + f' (ticket {tid})', 'label': 'INFERENCE', 'task': r['id'], 'workflow': r['flow'], 'created': fmt_dt(r['created'])}
+    for cid, m in missing.items():
+        problem(1, 'missing', f'{cname(cid)} did not get "{name}" ({m["reason"]}).', m['label'], 'Potential Issue' if m['reason'].startswith('unknown') else 'Confirmed',
+                name, cid, None, m['workflow'], m['reason'].split(':')[0], group=f'missing:{name}:{m["reason"].split(":")[0]}')
+    for cid, s in shouldnt.items():
+        problem(1, 'shouldnt', f'{cname(cid)} got "{name}" but should not have ({s["reason"]}).', s['label'], 'Potential Issue', name, cid, s['task'], s['workflow'], s['reason'],
+                group=f'shouldnt:{name}')
+    return {'name': name, 'workflows': [{'id': w, 'name': wfname(w), 'on_master': M.get(w, {}).get('cfg', {}).get('isEnabled'),
+                                         'on_live': (LIVE.get(w) or {}).get('isEnabled')} for w in tt['workflows']],
+            'runs': runs, 'notes': notes, 'should': sorted(should, key=cname), 'got': sorted(got, key=cname),
+            'missing': {cid: missing[cid] for cid in sorted(missing, key=cname)},
+            'shouldnt': {cid: shouldnt[cid] for cid in sorted(shouldnt, key=cname)},
+            'not_expected': dict(not_exp.most_common()), 'tasks': [r['id'] for r in mine]}
 
 
 def type_results(first, last, rows, pre=False):
@@ -270,6 +418,10 @@ def type_results(first, last, rows, pre=False):
                 by_co[(r['type'], cid)].append(r)
     for tt in TYPES:
         name = tt['name']
+        if tt['workflows'] and all(is_ticket_wf(w) for w in tt['workflows']):
+            if not pre:
+                out.append(ticket_type_results(tt, first, last, rows))
+            continue
         runs, notes = [], []
         should, missing, shouldnt, not_exp = {}, {}, {}, collections.Counter()
         for wid in tt['workflows']:
@@ -389,12 +541,16 @@ if CUTOFF:
 # other task-level checks (Question 1)
 DUPES, W3 = [], []
 by_day = collections.defaultdict(list)
+TICKET_TYPES = {t['name'] for t in TYPES if t['workflows'] and all(is_ticket_wf(w) for w in t['workflows'])}
 for r in MAIN:
-    if r['type']:
+    if r['type'] in TICKET_TYPES:      # a stage makes several tasks per ticket: a duplicate is the same task twice on the same ticket
+        for tid in r['tickets']:
+            by_day[(r['type'], facility_of(tid) or (r['companies'] or [None])[0], local(r['created']).date(), tid, rules.norm(r['title']))].append(r)
+    elif r['type']:
         for cid in r['companies']:
             by_day[(r['type'], cid, local(r['created']).date())].append(r)
 dup_type = {w.get('duplicate_task_type'): wid for wid, w in WAIT.items() if w.get('duplicate_task_type')}
-for (tname, cid, day), rs in by_day.items():
+for (tname, cid, day, *_), rs in by_day.items():
     if len(rs) < 2:
         continue
     flows = sorted({r['flow'] for r in rs})
@@ -449,6 +605,8 @@ for cid, c in COMP.items():
             st = 'got it'
         elif cid in tr['missing']:
             st = 'missing: ' + tr['missing'][cid]['reason']
+        elif tr['name'] in TICKET_TYPES:
+            st = 'not yet (no schedule: when its ticket enters the stage)'
         else:
             wid = next((w for w in next(t for t in TYPES if t['name'] == tr['name'])['workflows'] if M.get(w, {}).get('cfg', {}).get('isEnabled')), None)
             e = evaluate(cid, wid, NOW, tr['name']) if wid else {'state': 'not_expected', 'reason': 'workflow switched off'}
@@ -555,6 +713,10 @@ def known_move(p):
     if m.get('created_on_or_before') and (not r or local(r['created']).date().isoformat() > m['created_on_or_before']):
         return None
     return m
+def link_known(p):
+    """The team's known issue that covers a link problem by task title (known_issues[].link_titles), if any."""
+    t = rules.norm((ROW_BY_ID.get(p.get('task_id')) or {}).get('title'))
+    return next((k['id'] for k in TEAM.get('known_issues', []) if any(re.search(x, t, re.I) for x in k.get('link_titles', []))), None)
 wait_cos = {cid: wid for wid, w in WAIT.items() for cid in w.get('company_ids', [])}
 keep = []
 for p in PROBLEMS:
@@ -565,6 +727,8 @@ for p in PROBLEMS:
             FOLDED[('wait', km['waiting_on'])].append(p)
     elif p['kind'] == 'link' and p.get('nr_issue'):
         FOLDED[('known', p['nr_issue'])].append(p)
+    elif p['kind'] == 'link' and link_known(p):
+        FOLDED[('known', link_known(p))].append(p)
     elif p.get('company_id') in wait_cos:
         FOLDED[('wait', wait_cos[p['company_id']])].append(p)
     else:
@@ -882,7 +1046,7 @@ line = lambda n, what: 'all good' if n == 0 else f'{n} problem{"s" if n > 1 else
 print(f'## {TEAM_NAME} weekly audit — {FIRST} to {LAST}' + (' (window shortened by the start date)' if FIRST.isoformat() == TEAM.get('start_date') else ''))
 if EXCLUDED:
     print(f'Excluded from the audit: ' + '; '.join(f'{v.get("name") or k} ({k}): {v.get("reason")}' for k, v in EXCLUDED.items()) + (f' ({EXCLUDED_TASKS} task(s) linked only to them not checked)' if EXCLUDED_TASKS else ''))
-print(f'Checked {in_scope_count} companies in scope ({(TEAM.get("company_scope") or {}).get("description", "all companies")}), {len(MAIN)} main tasks and {len(SUBS)} subtasks created in the window, and {len(M)} workflows.\n')
+print(f'Checked {in_scope_count} ' + ('facilities with an open ticket in the team pipeline' if TF and TICKET_TYPES == set(TYPE_NAMES) else f'companies in scope ({(TEAM.get("company_scope") or {}).get("description", "all companies")})') + f', {len(MAIN)} main tasks and {len(SUBS)} subtasks created in the window, and {len(M)} workflows.\n')
 print(f'1. **Were the tasks created?** {line(q_counts[1], "")}' + (f' ({len(NEW)} new facilit{"y" if len(NEW) == 1 else "ies"} this week)' if NEW else ''))
 print(f'2. **Are they linked to the right company?** {line(q_counts[2], "")}')
 print(f'3. **Did anyone change the workflows?** ' + ('no changes' if not q_counts[3] else f'{sum(1 for c in CHANGES if c["status"] != "same")} workflow(s) differ from the master rules file'))
