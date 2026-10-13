@@ -35,6 +35,7 @@ data = {k: R[k] for k in ('team', 'decision_owner', 'portal', 'queue', 'queue_id
                           'counts', 'top', 'types', 'new_facilities', 'links', 'subtasks', 'changes', 'waiting_on', 'known_issues', 'expected_off',
                           'problems', 'companies', 'tasks')}
 data['schedules'] = R.get('schedules', [])
+data['task_list'] = R.get('task_list', [])
 data['known_days'] = R.get('known_days', [])
 data['switched_off'] = R.get('switched_off', [])
 data['before_start'] = R.get('before_start')      # test runs that look back past the start date

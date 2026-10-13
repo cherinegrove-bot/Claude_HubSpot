@@ -691,6 +691,125 @@ for tt in TYPES:
                           'time': f'{t.get("hour", 0):02d}:{t.get("minute", 0):02d}' if sc else '',
                           'off_now': bool(live is not None and not live.get('isEnabled'))})
 
+# Task list for the Overview (under the calendar): one entry per task type, from the MASTER RULES FILE, so it matches the calendar.
+# For each workflow that makes the type: how often, which tiers reach a Create task action for it, and who it's assigned to.
+TIER_PROP = TEAM.get('tier_property')
+TIER_ALL = TEAM.get('tiers') or list(((describe.PROPS.get('companies') or {}).get(TIER_PROP) or {}).get('options', {}))
+OWNER_SHORT = TEAM.get('owner_short') or {}
+ORD = lambda n: f'{n}{"th" if 10 <= n % 100 <= 20 else {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")}'
+
+
+def _and_list(xs):
+    xs = list(xs)
+    return ', '.join(xs[:-1]) + ' and ' + xs[-1] if len(xs) > 1 else (xs[0] if xs else '')
+
+
+def _freq(cfg):
+    sc = cfg.get('enrollmentSchedule') or {}
+    t = sc.get('timeOfDay', {})
+    at = f', {t.get("hour", 0):02d}:{t.get("minute", 0):02d}' if sc else ''
+    if sc.get('type') == 'MONTHLY_SPECIFIC_DAYS':
+        return f'Monthly on the {_and_list(ORD(d) for d in sorted(sc.get("daysOfMonth", [])))}{at}'
+    if sc.get('type') == 'WEEKLY':
+        return f'Weekly on {_and_list(d.capitalize() for d in sc.get("daysOfWeek", []))}{at}'
+    if sc.get('type') == 'DAILY':
+        return f'Daily{at}'
+    return 'When triggered'
+
+
+def _conds(fb, tiers, notes):
+    """Narrow the tier set by a filter branch (AND of filters, OR of sub-branches) and note name and list conditions."""
+    if not fb:
+        return tiers
+    subs = [f for f in fb.get('filters', [])]
+    for f in subs:
+        op = f.get('operation', {})
+        o, vals = op.get('operator'), [str(v) for v in (op.get('values') or ([op['value']] if 'value' in op else []))]
+        if TIER_PROP and f.get('property') == TIER_PROP:
+            if o in ('IS_ANY_OF', 'IS_EQUAL_TO'):
+                tiers = [x for x in tiers if x in vals]
+            elif o in ('IS_NONE_OF', 'IS_NOT_EQUAL_TO'):
+                tiers = [x for x in tiers if x not in vals]
+        elif f.get('property') == 'name' and vals:
+            v = re.sub(r'[\s\-]+$', '', vals[0])
+            notes.add(f'not {v}' if o in ('DOES_NOT_CONTAIN', 'DOES_NOT_CONTAIN_EXACTLY', 'IS_NOT_EQUAL_TO') else f'{v} only')
+        elif f.get('filterType') == 'IN_LIST' and f.get('operator') == 'NOT_IN_LIST':
+            notes.add(f'not on list "{describe.LIST_NAMES.get(str(f.get("listId")), f.get("listId"))}"')
+    kids = fb.get('filterBranches', [])
+    if kids and fb.get('filterBranchType') == 'OR':
+        got = []
+        for b in kids:
+            n2 = set()
+            got += [x for x in _conds(b, tiers, n2) if x not in got]
+            notes |= n2 if len(kids) == 1 else set()
+        tiers = [x for x in tiers if x in got]
+    else:
+        for b in kids:
+            tiers = _conds(b, tiers, notes)
+    return tiers
+
+
+def _who(f):
+    kind, v = rules.owner_spec(f)
+    if kind == 'property':
+        return OWNER_SHORT.get(v) or describe.plabel(v)
+    if kind == 'static':
+        return describe.OWN.get(str(v), f'user {v}')
+    return 'No owner'
+
+
+def task_list_entry(tt):
+    groups = []
+    for wid in tt['workflows']:
+        mc = (M.get(wid) or {}).get('cfg')
+        if not mc:
+            continue
+        notes = set()
+        base = _conds(mc.get('enrollmentCriteria', {}).get('listFilterBranch'), list(TIER_ALL), notes)
+        acts = {a['actionId']: a for a in mc.get('actions', [])}
+        per = {}                                       # (tier, conditions on the path) -> owners in branch order
+        def visit(aid, tiers, nts, seen):
+            while aid and aid in acts and aid not in seen:
+                seen = seen | {aid}
+                a = acts[aid]
+                k = describe.akind(a)
+                if k == 'LIST_BRANCH':
+                    for b in a.get('listBranches', []):
+                        n2 = set(nts)
+                        t2 = _conds(b.get('filterBranch'), tiers, n2)
+                        visit(b.get('connection', {}).get('nextActionId'), t2, frozenset(n2), seen)
+                    if a.get('defaultBranch'):
+                        visit(a['defaultBranch'].get('nextActionId'), tiers, nts, seen)
+                    return
+                if k in ('STATIC_BRANCH', 'AB_TEST_BRANCH'):
+                    for b in a.get('staticBranches', []) + ([a['defaultBranch']] if a.get('defaultBranch') else []):
+                        visit((b.get('connection') or b).get('nextActionId'), tiers, nts, seen)
+                    return
+                if k == '0-3' and re.search(tt['title'], rules.norm(a.get('fields', {}).get('subject')), re.I):
+                    w = _who(a.get('fields', {}))
+                    for x in (tiers if TIER_ALL else ['*']):
+                        lst = per.setdefault((x, tuple(sorted(nts))), [])
+                        if w not in lst:
+                            lst.append(w)
+                aid = a.get('connection', {}).get('nextActionId')
+        visit(mc.get('startActionId'), base, frozenset(notes), frozenset())
+        by = {}
+        for (x, nts), ws in per.items():
+            by.setdefault((', else '.join(ws), nts), []).append(x)
+        opts = ((describe.PROPS.get('companies') or {}).get(TIER_PROP) or {}).get('options', {})
+        order = {x: i for i, x in enumerate(TIER_ALL or ['*'])}
+        for (who, nts), ts in sorted(by.items(), key=lambda kv: (min(order.get(x, 99) for x in kv[1]), kv[0][1])):
+            ts = sorted(set(ts), key=lambda x: order.get(x, 99))
+            tiers = 'All tiers' if (not TIER_ALL or set(ts) == set(TIER_ALL)) else ', '.join(opts.get(x, x) for x in ts)
+            groups.append({'workflow': wid, 'workflow_name': wfname(wid), 'frequency': _freq(mc), 'trigger': describe.trigger_text(mc) if not mc.get('enrollmentSchedule') else '',
+                           'tiers': tiers, 'notes': list(nts), 'who': who, 'off': not mc.get('isEnabled')})
+        if not by:
+            groups.append({'workflow': wid, 'workflow_name': wfname(wid), 'frequency': _freq(mc), 'trigger': '', 'tiers': 'No task action found', 'notes': [], 'who': '', 'off': not mc.get('isEnabled')})
+    return {'type': tt['name'], 'groups': groups}
+
+
+TASK_LIST = [task_list_entry(tt) for tt in TYPES]
+
 # "Switched off" tab: every master-file workflow that is off in the master rules file or in HubSpot now.
 # Summaries come from team-rules.md (written from the master rules file); a summary written for an older revision is flagged.
 SUMS = TEAM.get('workflow_summaries') or {}
@@ -739,7 +858,7 @@ RESULT = {
     'counts': {'facilities_in_scope': in_scope_count, 'main_tasks': len(MAIN), 'subtasks': len(SUBS), 'workflows': len(M),
                'q1': q_counts[1], 'q2': q_counts[2], 'q3': q_counts[3]},
     'top': TOP, 'types': TYPE_RESULTS, 'new_facilities': NEW, 'links': LINK_ROWS, 'subtasks': SUB_ROWS, 'changes': CHANGES,
-    'schedules': SCHEDULES, 'switched_off': SWITCHED_OFF, 'before_start': BEFORE_START, 'known_days': [{'date': d, 'type': t, 'known_issue': k, 'tasks': n} for (d, t, k), n in sorted(KNOWN_DAYS.items())],
+    'schedules': SCHEDULES, 'task_list': TASK_LIST, 'switched_off': SWITCHED_OFF, 'before_start': BEFORE_START, 'known_days': [{'date': d, 'type': t, 'known_issue': k, 'tasks': n} for (d, t, k), n in sorted(KNOWN_DAYS.items())],
     'waiting_on': waiting, 'known_issues': known, 'expected_off': off_state, 'problems': PROBLEMS,
     'companies': {cid: cname(cid) for cid in {x for tr in TYPE_RESULTS + PRE_TYPES for x in tr['should'] + tr['got'] + list(tr['missing']) + list(tr['shouldnt'])} | {c for r in MAIN + PRE_MAIN for c in r['companies']} | LIVE_NOW},
     'tasks': [{'id': r['id'], 'title': r['title'], 'type': r['type'], 'workflow': wfname(r['flow']) if r['flow'] in M else r['source'],

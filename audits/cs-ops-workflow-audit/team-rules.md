@@ -384,6 +384,18 @@ The scripts read this block. Keep it in step with the text above.
       "title": "nps detractor"
     }
   ],
+  "tier_property": "customer_tier",
+  "tiers": [
+    "Enterprise",
+    "TIER 1",
+    "TIER 2",
+    "Tier 2 - L2",
+    "TIER 3"
+  ],
+  "owner_short": {
+    "operations_manager": "OM",
+    "site_manager": "SM"
+  },
   "no_task_workflows": [],
   "expected_off": [
     "1774165521",

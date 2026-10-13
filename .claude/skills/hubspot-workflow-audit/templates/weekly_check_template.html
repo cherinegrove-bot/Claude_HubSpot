@@ -127,6 +127,12 @@ button.cal-day{cursor:pointer}button.cal-day:hover{border-color:var(--grey)}
 button.cal-day.s-ok:hover,button.cal-day.s-bad:hover,button.cal-day.s-known:hover,button.cal-day.s-wait:hover{filter:brightness(1.08);border-color:transparent}
 .cal-num{font-size:13px;font-weight:600;color:var(--muted);display:flex;justify-content:space-between;align-items:center;gap:4px}
 .cal-day.s-ok .cal-num,.cal-day.s-bad .cal-num,.cal-day.s-known .cal-num,.cal-day.s-wait .cal-num{color:inherit}
+/* task list under the calendar (Overview) */
+.tlist{margin-top:36px}
+.tlist tr.tfirst td{border-top:2px solid var(--line)}
+.tlist td.tname{font-weight:600}
+.tlist .tnote{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.tlist tr.off td:not(.tname){color:var(--muted)}
 .cal-tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
 .cal-day.s-ok .cal-tag,.cal-day.s-bad .cal-tag,.cal-day.s-known .cal-tag,.cal-day.s-wait .cal-tag{color:inherit}
 .cal-run{display:block;font-size:11px;line-height:1.3;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -310,6 +316,21 @@ $('#cal').addEventListener('click',e=>{
  if(e.target.closest('a.hs'))return;
  const dd=e.target.closest('[data-day]');if(dd){e.stopPropagation();calSel=calSel===dd.dataset.day?null:dd.dataset.day;drawCal();if(calSel)$('#calday').scrollIntoView({behavior:'smooth',block:'nearest'});}});
 drawCal();
+
+/* ---------- task list (Overview, under the calendar) ---------- */
+/* Every task type the team's workflows create, from the master rules file (same source as the calendar).
+   One row per task type; a type made by several workflows or branches gets one line per workflow and tier group. */
+function taskListHTML(){const L=D.task_list||[];if(!L.length)return'';
+ const body=L.map(e=>{const g=e.groups.length?e.groups:[{frequency:'',tiers:'No workflow in the master rules file',notes:[],who:'',workflow:'',workflow_name:''}];
+  return g.map((x,i)=>`<tr class="${i?'':'tfirst'}${x.off?' off':''}">${i?'':`<td class="tname" rowspan="${g.length}">${esc(e.type)}</td>`}
+   <td>${esc(x.frequency)}${x.trigger?`<span class="tnote">${esc(x.trigger)}</span>`:''}</td>
+   <td>${esc(x.tiers)}${x.notes.length?`<span class="tnote">${x.notes.map(esc).join('; ')}</span>`:''}</td>
+   <td>${esc(x.who)}</td>
+   <td>${x.workflow?wfLink(x.workflow,x.workflow_name):''}${x.off?' <span class="ok">(switched off)</span>':''}</td></tr>`).join('');}).join('');
+ return `<h2>Every task the workflows create</h2>
+ <p class="lead">From the master rules file, so it matches the calendar. Times are in ${esc((D.time_zone||'').replace('US/','US '))} time. "A, else B" means the task goes to A, or to B if the facility has no A.</p>
+ <div class="tw"><table><tr><th>Task</th><th>How often</th><th>Tiers</th><th>Assigned to</th><th>Workflow</th></tr>${body}</table></div>`;}
+$('#t-overview').insertAdjacentHTML('beforeend',`<div class="tlist" id="tlist">${taskListHTML()}</div>`);
 
 /* ---------- tasks ---------- */
 function typeRow(t,i){const ran=t.runs.length>0,mv=Object.values(t.missing),miss=mv.filter(m=>!m.waiting_on).length,wait=mv.length-miss,sh=Object.keys(t.shouldnt).length,other=D.problems.filter(p=>p.q===1&&p.type===t.name&&p.kind!=='missing'&&p.kind!=='shouldnt').length;
