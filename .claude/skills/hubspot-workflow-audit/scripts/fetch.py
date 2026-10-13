@@ -338,7 +338,8 @@ def reference_data(work):
             pipes[obj] = []
     save(work, 'pipelines.json', pipes)
     labels = {}
-    for pair in ['tasks/tickets', 'tasks/companies', 'tasks/contacts', 'tasks/deals', 'companies/tickets']:
+    for pair in ['tasks/tickets', 'tasks/companies', 'tasks/contacts', 'tasks/deals', 'companies/tickets',
+                 'tickets/companies', 'tickets/contacts', 'tickets/deals', 'deals/companies', 'deals/contacts']:
         try:
             labels[pair] = req(f'/crm/v4/associations/{pair}/labels')['results']
         except RuntimeError:

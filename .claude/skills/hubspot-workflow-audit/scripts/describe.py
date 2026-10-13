@@ -180,6 +180,28 @@ def assoc_text(f):
     return ', '.join(out) or 'none'
 
 
+def assoc_full(x):
+    """One association setting in full, with its label: what it links and where the records come from."""
+    t = x['target']['associationTypeId']
+    what = ASSOC.get(t, f'association type {t}')
+    v = x.get('value', {})
+    if v.get('type') == 'ENROLLED_OBJECT':
+        return f'{what}: the enrolled record'
+    src = (v.get('sourceSpec') or {}).get('associationTypeId')
+    return f'{what}: copied from the enrolled record\'s ' + ASSOC.get(src, f'association type {src}')
+
+
+def create_record_text(f):
+    """A Create record action: which object, the values it sets and every association (with labels)."""
+    obj = OBJ.get(f.get('object_type_id'), f.get('object_type_id'))
+    vals = []
+    for p in f.get('properties', []):
+        v = p.get('value', {})
+        vals.append(f'{plabel(p.get("targetProperty"))} = ' + (str(pval(p.get('targetProperty'), v.get('staticValue'))) if v.get('type') == 'STATIC_VALUE' else v.get('type', '?')))
+    links = [assoc_full(x) for x in f.get('associations', [])]
+    return f'create a {obj}; set ' + ('; '.join(vals) or 'nothing') + '; links: ' + ('; '.join(links) or 'none')
+
+
 def akind(a):
     return a.get('actionTypeId') or a.get('type')
 
@@ -283,6 +305,8 @@ def other_lines(cfg):
         elif k == '0-5':
             v = f.get('value', {})
             d = f'set {plabel(f.get("property_name"))} = ' + (str(pval(f.get('property_name'), v.get('staticValue'))) if v.get('type') == 'STATIC_VALUE' else v.get('type', '?'))
+        elif k == '0-14':
+            d = create_record_text(f)
         else:
             d = json.dumps(f, sort_keys=True)[:200]
         out.append(f'{_path(br)}: {ATYPE.get(k, k)} - {d}')

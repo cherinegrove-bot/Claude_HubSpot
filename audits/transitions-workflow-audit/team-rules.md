@@ -88,6 +88,11 @@ Report these once per run, in their own section, not as new problems every week.
 | W-1 (F-13) | The 4 "Marketing \| Create Marketing Proposal" actions put the task in the Transitions queue, although it's assigned to a marketing manager. Should it sit there? | 2026-10-06 |
 | W-2 (F-15) | "Transition \| 30 - DAY MONITORING \| Subtask - Automated" is an ordinary task for the ticket owner. Is it meant to be manual? | 2026-10-06 |
 | W-3 (F-11) | The proposal checks PPC on any linked company, but takes the portfolio manager from the earliest "Transitions" company (anything else goes to Brock Hegr). Should both come from the same company? | 2026-10-06 |
+| W-4 | The Closed Won workflow no longer copies the deal's companies onto the ticket (edited 8 Oct). Was that on purpose? Workflow: [Closed Won \| Create Ticket in INITIAL SETUP - UNASSIGNED](https://app.hubspot.com/workflows/45059701/platform/flow/1670039203/edit) (1670039203). It affects: tickets created since 8 Oct may have no company, so their tasks can't link to a facility, and the marketing proposal's PPC check may not work. | 2026-10-13 |
+
+## Changes not yet confirmed
+
+- **Closed Won | Create Ticket in INITIAL SETUP - UNASSIGNED (1670039203), edited 2026-10-08 (revision 13 -> 14):** the Create record action no longer links the new ticket to the deal's companies with the label "Transitions". Not confirmed (Cherine, 2026-10-13), so it is **not** part of the baseline: the master rules file keeps revision 13, and the weekly audit reports this as "change, not yet confirmed" until Cherine answers W-4.
 
 ## Known issues
 
@@ -291,9 +296,26 @@ The scripts read this block. Keep it in step with the text above.
       "workflows": [
         "1866658899"
       ]
+    },
+    {
+      "id": "W-4",
+      "title": "Closed Won no longer links the deal's companies to the ticket",
+      "asked": "2026-10-13",
+      "detail": "The Closed Won workflow was edited on 8 Oct (revision 13 -> 14): its Create record action no longer links the new ticket to the deal's companies (it used to copy them with the label \"Transitions\"). What it affects: tickets created since 8 Oct may have no company, so their tasks can't link to a facility, and the marketing proposal's PPC check in Pre Launch Setup (which reads the ticket's companies) may not work.",
+      "question": "The Closed Won workflow no longer copies the deal's companies onto the ticket (edited 8 Oct). Was that on purpose?",
+      "workflows": [
+        "1670039203"
+      ]
     }
   ],
-  "changes_not_confirmed": [],
+  "changes_not_confirmed": [
+    {
+      "workflow": "1670039203",
+      "first_seen": "2026-10-13",
+      "status": "Waiting on Cherine (W-4)",
+      "change": "Revision 13 -> 14 (edited 2026-10-08): the Create record action no longer links the new ticket to the deal's companies (label \"Transitions\")."
+    }
+  ],
   "queue_names": {
     "13519270": {
       "name": "Transitions",
