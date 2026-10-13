@@ -1,0 +1,289 @@
+Workflow ID,Status,Object,Name,Created,Last Updated,# Actions,Contacts Enrolled (all time),Contacts Active,Risk Flag,Recommendation,Link
+1658741664,ON,Call,CS - Auto-assign Tickets from Calls (missed),2025-05-30,2025-06-10,2,,,"HIGH - exact duplicate of 1657719194 (same trigger, same action)",Turn off - duplicate,https://app.hubspot.com/workflows/45059701/platform/flow/1658741664/edit
+1849421954,ON,Company,Facility PPC Active NO,2026-07-10,2026-07-24,1,,,"HIGH - moves marketing ticket to stage 1396673192, which does not exist; action fails","Fix: add a Closed stage to Marketing Services, then merge into one workflow",https://app.hubspot.com/workflows/45059701/platform/flow/1849421954/edit
+1849608246,ON,Company,Lost - Close Marketing Ticket,2026-07-10,2026-07-10,1,,,"HIGH - moves marketing ticket to stage 1396673192, which does not exist; action fails","Fix: add a Closed stage to Marketing Services, then merge into one workflow",https://app.hubspot.com/workflows/45059701/platform/flow/1849608246/edit
+1851240200,ON,Company,Lost | Marketing Tickets,2026-07-14,2026-07-14,1,,,"HIGH - moves marketing ticket to stage 1396673192, which does not exist; action fails","Fix: add a Closed stage to Marketing Services, then merge into one workflow",https://app.hubspot.com/workflows/45059701/platform/flow/1851240200/edit
+1699702705,ON,Task,Transition Final Signoff tasks > 30 Day monitoring task (task complete),2025-09-29,2026-07-14,1,,,"HIGH - waits for a ""PM - FINAL SIGN OFF"" task that is no longer created (0 since Aug 20)","Point at new subtask names, or turn off",https://app.hubspot.com/workflows/45059701/platform/flow/1699702705/edit
+1699730300,ON,Task,Transition Go-Live Execution tasks > Final Signoff tasks (task complete),2025-09-29,2026-07-14,1,,,"HIGH - waits for a ""PM - FINAL SIGN OFF"" task that is no longer created (0 since Aug 20)","Point at new subtask names, or turn off",https://app.hubspot.com/workflows/45059701/platform/flow/1699730300/edit
+1699704693,ON,Task,Transition Kickoff Tasks > Pre Launch Setup Tasks (task complete),2025-09-29,2025-10-02,1,,,"HIGH - waits for a ""PM - FINAL SIGN OFF"" task that is no longer created (0 since Aug 20)","Point at new subtask names, or turn off",https://app.hubspot.com/workflows/45059701/platform/flow/1699704693/edit
+1699704743,ON,Task,Transition Launch Readiness Tasks > Go Live Execution Tasks (task complete),2025-09-29,2025-10-02,1,,,"HIGH - waits for a ""PM - FINAL SIGN OFF"" task that is no longer created (0 since Aug 20)","Point at new subtask names, or turn off",https://app.hubspot.com/workflows/45059701/platform/flow/1699704743/edit
+1699666189,ON,Task,Transition Pre Launch Setup Tasks > Launch Readiness Tasks (task complete),2025-09-29,2025-10-02,1,,,"HIGH - waits for a ""PM - FINAL SIGN OFF"" task that is no longer created (0 since Aug 20)","Point at new subtask names, or turn off",https://app.hubspot.com/workflows/45059701/platform/flow/1699666189/edit
+1849244990,ON,Company,Create marketing Ticket,2026-07-10,2026-09-29,13,,,"MED - also writes marketing_readiness on PPC=true, same as 1897047965",Fix - see risk flag,https://app.hubspot.com/workflows/45059701/platform/flow/1849244990/edit
+1849421906,ON,Company,Facility PPC Active,2026-07-10,2026-08-07,2,,,"MED - also writes marketing_readiness, same as 1897047965",Fix - see risk flag,https://app.hubspot.com/workflows/45059701/platform/flow/1849421906/edit
+1890156974,ON,Company,Marketing Proposal Task,2026-09-24,2026-09-24,7,,,"MED - proposal task also created by Pre Launch (+SubTask) 1866658899, so tasks are duplicated",Fix - see risk flag,https://app.hubspot.com/workflows/45059701/platform/flow/1890156974/edit
+1680870739,ON,Company,Set Actual Go-Live Date | Company,2025-08-07,2026-06-30,1,,,MED - go_live_date has 3 writers,Fix - see risk flag,https://app.hubspot.com/workflows/45059701/platform/flow/1680870739/edit
+1897047965,ON,Company,Set Marketing Readiness,2026-10-06,2026-10-06,9,,,"MED - new consolidated readiness flow, but old writers are still ON",Fix - see risk flag,https://app.hubspot.com/workflows/45059701/platform/flow/1897047965/edit
+1731304788,ON,Contact,Deliquency - Tickets (test),2025-11-25,2025-12-02,6,16997,15122,"MED - ""(test)"" workflow ON with 15,122 contacts parked in 5-year delays",Turn off (test),https://app.hubspot.com/workflows/45059701/platform/flow/1731304788/edit
+1828407450,ON,Contact,Outbound Lead Follow Up - Webhook Trigger,2026-05-28,2026-07-22,1,156,0,MED - live webhook points to a dev-support-agent (dev) URL,Fix - see risk flag,https://app.hubspot.com/workflows/45059701/platform/flow/1828407450/edit
+1661953698,ON,Deal,Ops - Sync Target GO LIVE Date in Deals to Go-Live Date in Companies,2025-06-11,2025-07-16,1,,,MED - copies deal TARGET go-live into company go_live_date (3 writers),Fix - see risk flag,https://app.hubspot.com/workflows/45059701/platform/flow/1661953698/edit
+1851635994,ON,Task,Associated Tasks To Marketing Ticket,2026-07-15,2026-07-24,1,,,"MED - near-duplicate of 1856610141 (same trigger, both custom code)",Fix - see risk flag,https://app.hubspot.com/workflows/45059701/platform/flow/1851635994/edit
+1856610141,ON,Task,Associated Tasks To associated Companies,2026-07-24,2026-07-24,1,,,MED - near-duplicate of 1851635994,Fix - see risk flag,https://app.hubspot.com/workflows/45059701/platform/flow/1856610141/edit
+1680956685,ON,Ticket,Company Actual Go-Live Date Unknown | But known on Master Ticket,2025-08-07,2025-08-07,2,,,MED - go_live_date has 3 writers,Fix - see risk flag,https://app.hubspot.com/workflows/45059701/platform/flow/1680956685/edit
+1799735312,ON,Ticket,Unassign Call tickets waiting on ...,2026-04-02,2026-06-11,1,,,MED - clears owner whenever a call ticket moves to Waiting on us/contact,Fix - see risk flag,https://app.hubspot.com/workflows/45059701/platform/flow/1799735312/edit
+1690856225,ON,Ticket,Unassign Ticket | No Customer Service Team,2025-09-03,2025-09-03,1,,,MED - re-enrolling owner wipe; competes with call auto-assign,Fix - see risk flag,https://app.hubspot.com/workflows/45059701/platform/flow/1690856225/edit
+1892165928,ON,Company,At Risk Monthly Performance Reviews | Marketing Services (UPDATED),2026-09-28,2026-10-06,19,,,LOW - Improving/At Risk flows never unenroll; a company can be in both,Fix - see risk flag,https://app.hubspot.com/workflows/45059701/platform/flow/1892165928/edit
+1642797743,ON,Company,FACILITY GOING LIVE/LOST SLACK PING (CX channel),2025-04-01,2026-07-22,3,,,LOW - 3 Slack alerts fire on Live=Yes,Fix - see risk flag,https://app.hubspot.com/workflows/45059701/platform/flow/1642797743/edit
+1814511242,ON,Company,Go-Live Announcements,2026-05-01,2026-06-04,1,,,LOW - 3 Slack alerts fire on Live=Yes,Fix - see risk flag,https://app.hubspot.com/workflows/45059701/platform/flow/1814511242/edit
+1892196753,ON,Company,Improving Monthly Performance Reviews | Marketing Services (UPDATED),2026-09-28,2026-10-06,19,,,LOW - Improving/At Risk flows never unenroll; a company can be in both,Fix - see risk flag,https://app.hubspot.com/workflows/45059701/platform/flow/1892196753/edit
+1863078482,ON,Company,New Company Created | Notification,2026-08-07,2026-08-07,1,,,LOW - 3 workflows notify on new company,Fix - see risk flag,https://app.hubspot.com/workflows/45059701/platform/flow/1863078482/edit
+1757288841,ON,Company,Notification for New Company Creation,2026-01-11,2026-01-11,2,,,LOW - 3 workflows notify on new company,Fix - see risk flag,https://app.hubspot.com/workflows/45059701/platform/flow/1757288841/edit
+1861202823,ON,Company,Operating Model Update (T2L2 + T3 SM),2026-08-03,2026-08-03,2,,,LOW - no live=Yes filter; enrolls Lost/Onboarding companies,Fix - see risk flag,https://app.hubspot.com/workflows/45059701/platform/flow/1861202823/edit
+1702193424,ON,Company,"Set System | Status ""Lost""",2025-10-06,2025-10-06,1,,,LOW - same timestamp as Actual offboarding date (1831965207),Fix - see risk flag,https://app.hubspot.com/workflows/45059701/platform/flow/1702193424/edit
+1664350212,ON,Deal,New Deal Notify Transitions (june 2025),2025-06-20,2026-07-28,1,,,LOW - Closed Won creates both a Transitions deal and an Onboarding ticket,Fix - see risk flag,https://app.hubspot.com/workflows/45059701/platform/flow/1664350212/edit
+1669436323,ON,Invoice,Send daily open invoice report to user,2025-07-07,2025-07-16,1,,,LOW - list-based on open invoices: one internal email per open invoice,Fix - see risk flag,https://app.hubspot.com/workflows/45059701/platform/flow/1669436323/edit
+1697763717,ON,Ticket,Clear Escalation of Tier 2 when its assigned out,2025-09-23,2026-09-10,1,,,LOW - clears escalation=Tier 2 while 1775093606 moves Tier 2 escalations; race,Fix - see risk flag,https://app.hubspot.com/workflows/45059701/platform/flow/1697763717/edit
+1657719194,ON,Call,CS - Auto-assign Tickets from Calls,2025-05-27,2025-06-10,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1657719194/edit
+1654886012,ON,Call,CS - MISSED CALL (Calls Side),2025-05-16,2025-08-06,3,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1654886012/edit
+1825513893,ON,Company,ACH Information Obtained,2026-05-22,2026-05-26,6,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1825513893/edit
+1831965207,ON,Company,Actual offboarding date,2026-06-04,2026-06-04,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1831965207/edit
+1685542745,ON,Company,Additional Services | Default Setting,2025-08-19,2025-08-26,3,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1685542745/edit
+1787002529,ON,Company,Alert - Company Association Created,2026-03-06,2026-03-06,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1787002529/edit
+1856232612,ON,Company,Aseel Notification to remove Service | Overdue Invoices,2026-07-24,2026-07-24,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1856232612/edit
+1705183241,ON,Company,Calculating the MRR (If Monthly Minimum is required and there is additional Revenue),2025-10-14,2026-10-02,3,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1705183241/edit
+1813618492,ON,Company,Company Status update Slack notifications,2026-04-30,2026-06-04,3,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1813618492/edit
+1846021222,ON,Company,Company | Set Lifecycle Stage to Customer on Deal Closed Won,2026-07-02,2026-07-08,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1846021222/edit
+1770961042,ON,Company,Create Tasks |  NPS Detractor Recovery Actions,2026-02-04,2026-10-08,12,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1770961042/edit
+1770960918,ON,Company,Create Tasks | BOG Oversight Ent and T1,2026-02-04,2026-10-08,6,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1770960918/edit
+1838568063,ON,Company,Create Tasks | Confirm contacts on facility are correct,2026-06-18,2026-10-08,11,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1838568063/edit
+1682560327,ON,Company,Create Tasks | Month End Call,2025-08-12,2026-10-08,12,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1682560327/edit
+1682549352,ON,Company,Create Tasks | Playbook Review/Maintenance,2025-08-12,2026-10-06,11,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1682549352/edit
+1682542430,ON,Company,"Create Tasks | Rate Review - Execution ENT, Tier 1 and Tier 2.1",2025-08-12,2026-10-08,10,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1682542430/edit
+1868006300,ON,Company,Create Tasks | Rate Review - Execution Tier 2.2 and Tier 3,2026-08-17,2026-10-08,3,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1868006300/edit
+1838565797,ON,Company,"Create Tasks | Review Tow and Unsold Auctions report, action as needed",2026-06-18,2026-10-08,9,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1838565797/edit
+1682548292,ON,Company,Create Tasks | Send Monthly Marketing Report Owner,2025-08-12,2026-10-08,12,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1682548292/edit
+1682559152,ON,Company,"Create Tasks | Update Customer Sentiment | Ent, Tier 1, Tier 2.1",2025-08-12,2026-10-08,8,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1682559152/edit
+1868006311,ON,Company,"Create Tasks | Update Customer Sentiment |Tier 2.2, Tier 3",2026-08-17,2026-10-08,3,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1868006311/edit
+1838565644,ON,Company,Create Tasks | Weekly calls first 90 days after go live,2026-06-18,2026-10-08,11,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1838565644/edit
+1820099845,ON,Company,Creative Intake - Create Task for Mandy,2026-05-12,2026-05-13,3,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1820099845/edit
+1695743604,ON,Company,Customer Ops Owner List Update,2025-09-17,2025-12-17,3,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1695743604/edit
+1833758557,ON,Company,Date stamp for Performance KPI Update,2026-06-08,2026-06-08,4,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1833758557/edit
+1833758352,ON,Company,Date stamp for Sentiment Update,2026-06-08,2026-06-08,4,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1833758352/edit
+1823269701,ON,Company,Default Property Values – Companies,2026-05-18,2026-05-19,6,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1823269701/edit
+1679649388,ON,Company,Escalate Company to SM | Label task,2025-08-04,2025-08-13,43,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1679649388/edit
+1856041650,ON,Company,Facility BOG changes |  Slack notification,2026-07-23,2026-07-24,2,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1856041650/edit
+1849636961,ON,Company,Facility moves to Live - Move Marketing Ticket,2026-07-10,2026-09-15,10,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1849636961/edit
+1897042192,ON,Company,Google Ads (PPC| Marketing Services,2026-10-06,2026-10-06,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1897042192/edit
+1819868201,ON,Company,Google Ads Intake - Create Task for Mohammed,2026-05-12,2026-05-13,3,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1819868201/edit
+1825153644,ON,Company,Invoice Follow up Flow,2026-05-21,2026-05-26,8,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1825153644/edit
+1711940928,ON,Company,Last Month Rev | Copy to Sitelink/Storedge Revenue,2025-10-27,2026-10-02,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1711940928/edit
+1792119645,ON,Company,MRR for this facility is $0,2026-03-16,2026-03-16,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1792119645/edit
+1780191885,ON,Company,New Company Created | Transitions Notification,2026-02-19,2026-02-20,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1780191885/edit
+1682560340,ON,Company,Offboarding in Onboarding Pipeline | New Ticket Create,2025-08-12,2026-05-31,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1682560340/edit
+1861203030,ON,Company,Operating Model Update (ENT + T1 +T2L1 OM),2026-08-03,2026-08-03,2,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1861203030/edit
+1707734111,ON,Company,Pre-up/downgrade MRR,2025-10-22,2025-10-22,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1707734111/edit
+1833760512,ON,Company,Pro Rata Task create,2026-06-08,2026-06-12,3,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1833760512/edit
+1688964146,ON,Company,R+S - AI Lien Process,2025-08-28,2026-10-08,5,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1688964146/edit
+1682559061,ON,Company,R+S - BOG Weekly Walkthrough + BOG Performance Status,2025-08-12,2026-10-06,12,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1682559061/edit
+1688976731,ON,Company,R+S - Facility Performance Monitoring and Escalation,2025-08-28,2026-10-08,11,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1688976731/edit
+1677080204,ON,Company,Sentiment is Unknown,2025-07-28,2025-07-28,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1677080204/edit
+1825514919,ON,Company,Set ACH Authorized,2026-05-22,2026-05-25,3,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1825514919/edit
+1705113673,ON,Company,"Set Additional Revenue to % ""0%""",2025-10-14,2025-10-14,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1705113673/edit
+1702193724,ON,Company,"Set System | Status ""Go Live Date""",2025-10-06,2025-10-06,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1702193724/edit
+1702109358,ON,Company,"Set System | Status ""Offboarding""",2025-10-06,2025-10-06,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1702109358/edit
+1705163106,ON,Company,"Set Total Revenue/Monthly to ""$0"" if Unknown",2025-10-14,2025-10-14,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1705163106/edit
+1827233106,ON,Company,Set Up On Stripe,2026-05-26,2026-05-26,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1827233106/edit
+1854594889,ON,Company,Set's Autopay,2026-07-21,2026-07-21,3,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1854594889/edit
+1844768894,ON,Company,Site Downgrades notification,2026-06-30,2026-07-01,3,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1844768894/edit
+1892197644,ON,Company,Standalone Marketing | Monthly Performance Reviews | Marketing Services (UPDATED),2026-09-28,2026-10-06,19,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1892197644/edit
+1688833555,ON,Company,T1 SM SOA | R+S - Execute Monthly Walk Through - BOG,2025-08-28,2026-10-06,2,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1688833555/edit
+1862212364,ON,Company,Transition Sentiment Notes-Time Stamp,2026-08-05,2026-08-05,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1862212364/edit
+1892493895,ON,Company,Transitions Welcome Email deploy,2026-09-28,2026-10-01,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1892493895/edit
+1711957778,ON,Company,"if Monthly Minimum MRR is UNKNOWN = ""0""",2025-10-27,2026-01-16,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1711957778/edit
+1664335429,ON,Contact,CS - When a Tenant Lead Comes in Create a Ticket,2025-06-20,2025-11-25,1,27745,0,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1664335429/edit
+1795800356,ON,Contact,Clean Industry Report Not Sent segment and set marketing contacts,2026-03-24,2026-03-24,4,12528,0,,Turn off - one-off March cleanup,https://app.hubspot.com/workflows/45059701/platform/flow/1795800356/edit
+1852542804,ON,Contact,Create Facility,2026-07-17,2026-08-20,3,23,0,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1852542804/edit
+1716534081,ON,Contact,Deliquency - Tickets,2025-11-02,2026-10-13,7,18718,0,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1716534081/edit
+1827232532,ON,Contact,Invoice Query Notification,2026-05-26,2026-05-27,2,1,0,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1827232532/edit
+1882112850,ON,Contact,MKT_Download_Welcome,2026-09-10,2026-09-16,10,746,24,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1882112850/edit
+1834806876,ON,Contact,MKT_Welcome_Storage-Rebellion-Segment-1,2026-06-10,2026-06-10,5,5251,0,,"Turn off - one-time June campaign, 0 active",https://app.hubspot.com/workflows/45059701/platform/flow/1834806876/edit
+1835305270,ON,Contact,MKT_Welcome_Storage-Rebellion-Segment-2,2026-06-11,2026-06-11,5,5187,0,,"Turn off - one-time June campaign, 0 active",https://app.hubspot.com/workflows/45059701/platform/flow/1835305270/edit
+1835780231,ON,Contact,MKT_Welcome_Storage-Rebellion-Segment-3,2026-06-12,2026-06-12,5,4985,0,,"Turn off - one-time June campaign, 0 active",https://app.hubspot.com/workflows/45059701/platform/flow/1835780231/edit
+1837084088,ON,Contact,MKT_Welcome_Storage-Rebellion-Segment-4,2026-06-15,2026-06-15,5,4959,0,,"Turn off - one-time June campaign, 0 active",https://app.hubspot.com/workflows/45059701/platform/flow/1837084088/edit
+1837620882,ON,Contact,MKT_Welcome_Storage-Rebellion-Segment-5,2026-06-16,2026-06-16,5,4895,0,,"Turn off - one-time June campaign, 0 active",https://app.hubspot.com/workflows/45059701/platform/flow/1837620882/edit
+1838148941,ON,Contact,MKT_Welcome_Storage-Rebellion-Segment-6,2026-06-17,2026-06-17,5,1853,0,,"Turn off - one-time June campaign, 0 active",https://app.hubspot.com/workflows/45059701/platform/flow/1838148941/edit
+1893860264,ON,Contact,Nonmarketing contacts,2026-09-30,2026-09-30,1,1966,0,,"Turn off - one-off Sept 30 batch, 0 active",https://app.hubspot.com/workflows/45059701/platform/flow/1893860264/edit
+1859101553,ON,Contact,Notification email for FB leads (BOFU),2026-07-29,2026-07-30,1,159,0,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1859101553/edit
+1862917385,ON,Contact,SYSADMIN | Form submission,2026-08-07,2026-08-07,1,472,0,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1862917385/edit
+1700009377,ON,Contact,Send Transitions CSAT,2025-09-30,2025-10-14,1,206,0,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1700009377/edit
+1847751687,ON,Contact,Send a follow-up email after form submission,2026-07-06,2026-07-06,1,11,0,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1847751687/edit
+1847802448,ON,Contact,Send a follow-up email after form submission,2026-07-06,2026-07-06,1,14,0,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1847802448/edit
+1847803563,ON,Contact,Send a follow-up email after form submission,2026-07-06,2026-07-07,1,2,0,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1847803563/edit
+1848176771,ON,Contact,Send a follow-up email after form submission,2026-07-07,2026-07-07,1,2,0,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1848176771/edit
+1848178037,ON,Contact,Send a follow-up email after form submission,2026-07-07,2026-07-07,1,3,0,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1848178037/edit
+1848178070,ON,Contact,Send a follow-up email after form submission,2026-07-07,2026-07-07,1,3,0,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1848178070/edit
+1848178281,ON,Contact,Send a follow-up email after form submission,2026-07-07,2026-07-07,1,19,0,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1848178281/edit
+1687801168,ON,Contact,Send notification email for new Facebook leads downloading case study,2025-08-25,2026-07-21,1,870,0,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1687801168/edit
+1700553750,ON,Contact,Set Last Sales Email Send Date,2025-10-02,2025-10-02,1,44088,0,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1700553750/edit
+1670039203,ON,Deal,Closed Won | Create Ticket in INITIAL SETUP - UNASSIGNED,2025-07-09,2026-10-08,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1670039203/edit
+620700182,ON,Deal,PING SLACK with new deals,2024-10-16,2026-08-17,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/620700182/edit
+1848838925,ON,Invoice,Invoice Past due 45days +,2026-07-09,2026-07-24,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1848838925/edit
+1868189992,ON,Invoice,Setup Fee Paid,2026-08-17,2026-09-10,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1868189992/edit
+1766553472,ON,Task,Create task for Operations manager | Slack trigger,2026-01-27,2026-01-29,9,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1766553472/edit
+1766465941,ON,Task,Create task for Site manager | Slack trigger,2026-01-27,2026-01-29,15,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1766465941/edit
+1897029773,ON,Task,Remove Ticket Association,2026-10-05,2026-10-05,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1897029773/edit
+1795953061,ON,Task,Set OM and SM overdue tasks to Deferred,2026-03-25,2026-08-27,3,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1795953061/edit
+1855066380,ON,Task,Update Marketing Ticket Last Performance Date,2026-07-21,2026-07-21,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1855066380/edit
+1849422092,ON,Ticket,Accountability Status Last Updated,2026-07-10,2026-07-10,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1849422092/edit
+1761006957,ON,Ticket,Assigning Tickets to Site managers for Escalations,2026-01-16,2026-09-10,3,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1761006957/edit
+1851635589,ON,Ticket,Associate Transitions and Marketing Ticket,2026-07-15,2026-07-15,2,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1851635589/edit
+1858382912,ON,Ticket,Association Label | Transitions Tickets,2026-07-28,2026-07-28,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1858382912/edit
+1851637583,ON,Ticket,Association Tag,2026-07-15,2026-07-15,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1851637583/edit
+1739193169,ON,Ticket,Auction Escalation,2025-12-09,2026-09-10,2,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1739193169/edit
+1802840212,ON,Ticket,Auction Escalation to Rahaf,2026-04-09,2026-09-10,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1802840212/edit
+1681243666,ON,Ticket,Automatically Close Tickets | Support Pipeline,2025-08-08,2025-08-08,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1681243666/edit
+1862212475,ON,Ticket,BOG Notes | Time Stamp,2026-08-05,2026-08-17,4,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1862212475/edit
+1760804415,ON,Ticket,BOG Pipeline - Pending to Open Tickets SMS,2026-01-16,2026-01-27,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1760804415/edit
+1861869204,ON,Ticket,Bog Maintenance Request Name Change | Unassign,2026-08-04,2026-08-04,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1861869204/edit
+1664341681,ON,Ticket,CS - Add Lead info to Ticket Note,2025-06-20,2025-07-16,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1664341681/edit
+1657590288,ON,Ticket,CS - Close All Emails from @hubspot.com,2025-05-27,2025-06-10,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1657590288/edit
+1657589252,ON,Ticket,CS - Close Missed Calls,2025-05-27,2026-06-04,4,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1657589252/edit
+1657590275,ON,Ticket,CS - Close New Channel Ticket Notifications,2025-05-27,2025-06-10,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1657590275/edit
+1657481112,ON,Ticket,CS - Create association between Brand and Facility Tag objects,2025-05-26,2025-06-11,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1657481112/edit
+1666428261,ON,Ticket,CS - Set Company From Number from Call Object,2025-06-27,2025-07-16,3,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1666428261/edit
+1659715681,ON,Ticket,CS - Set Company Name from Company Object to Ticket Object,2025-06-03,2026-03-03,3,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1659715681/edit
+1779635787,ON,Ticket,CS - Ticket To Company Association By Tag,2026-02-18,2026-02-19,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1779635787/edit
+1666444067,ON,Ticket,CS - When Outbound Call Created Associate with Company,2025-06-27,2025-08-05,2,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1666444067/edit
+1790669580,ON,Ticket,City Self Storage | Justine,2026-03-12,2026-03-12,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1790669580/edit
+1731433289,ON,Ticket,Close Open Delinquency Ticket | Contact Paid Through Today,2025-11-25,2025-11-25,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1731433289/edit
+1685467992,ON,Ticket,Close off Tickets,2025-08-20,2026-04-02,2,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1685467992/edit
+1698373718,ON,Ticket,Create Offboarding Tasks,2025-09-25,2026-05-29,21,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1698373718/edit
+1813124877,ON,Ticket,Deliquency - Close Previous Ticket,2026-04-29,2026-05-20,2,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1813124877/edit
+1766312116,ON,Ticket,Internal Helpdesk Closed,2026-01-27,2026-01-29,4,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1766312116/edit
+1766294849,ON,Ticket,Internal Helpdesk Open,2026-01-27,2026-01-29,4,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1766294849/edit
+1849421979,ON,Ticket,Marketing Accountability Status = No Started,2026-07-10,2026-07-10,2,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1849421979/edit
+1782414655,ON,Ticket,Measure the Time Difference between Slack to revert,2026-02-24,2026-02-25,4,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1782414655/edit
+1793581204,ON,Ticket,Onboard Portfolio Website = Yes | Notification,2026-03-19,2026-03-19,2,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1793581204/edit
+1806308528,ON,Ticket,Onboarding - Pause End,2026-04-17,2026-04-23,2,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1806308528/edit
+1806199371,ON,Ticket,Onboarding - Pause Start,2026-04-17,2026-04-21,2,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1806199371/edit
+1809641984,ON,Ticket,Onboarding Pipeline | Unassigned Stage - Notify Ryan,2026-04-23,2026-05-04,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1809641984/edit
+1711934602,ON,Ticket,Onboarding Ticket created by Converstation,2025-10-27,2025-10-27,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1711934602/edit
+1738518354,ON,Ticket,POC For SMS Templates on Tickets,2025-12-08,2025-12-09,3,,,,Turn off - Dec 2025 POC,https://app.hubspot.com/workflows/45059701/platform/flow/1738518354/edit
+1880732432,ON,Ticket,Pilot Pod,2026-09-08,2026-10-08,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1880732432/edit
+1773740443,ON,Ticket,"Pipeline is ""Onboarding Pipeline"", Ticket status is ""On Hold""",2026-02-09,2026-02-09,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1773740443/edit
+1875824310,ON,Ticket,Route Lead Tickets to Tenant Leads,2026-08-31,2026-09-01,2,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1875824310/edit
+1680956781,ON,Ticket,Set Actual Go-Live Date | Ticket,2025-08-07,2025-08-07,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1680956781/edit
+1763465005,ON,Ticket,Site Managers Escalations - Clone of: Support Pipeline: Automatically change ticket status when a customer replies to an email.,2026-01-22,2026-08-28,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1763465005/edit
+1862212900,ON,Ticket,Status/Comments | Time Stamp,2026-08-05,2026-08-06,4,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1862212900/edit
+1647346559,ON,Ticket,Support Pipeline: Automatically change ticket status when a customer replies to an email.,2025-04-17,2026-08-28,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1647346559/edit
+1647382170,ON,Ticket,Support Pipeline: Automatically change ticket status when an email is sent to a customer.,2025-04-17,2026-08-28,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1647382170/edit
+1711885914,ON,Ticket,Support Ticket moved to Onboarding,2025-10-27,2025-10-30,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1711885914/edit
+1663898235,ON,Ticket,Tenant Leads: Automatically change ticket status when a customer replies to an email.,2025-06-19,2026-08-28,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1663898235/edit
+1850742663,ON,Ticket,Ticket is Voicemail Source V2,2026-07-13,2026-07-13,3,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1850742663/edit
+1774935154,ON,Ticket,Ticket – Set Priority to High When Marked Urgent,2026-02-11,2026-02-11,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1774935154/edit
+1775093606,ON,Ticket,Ticket → Move to Tier 2 Pipeline,2026-02-11,2026-09-10,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1775093606/edit
+1757343759,ON,Ticket,Tier 2 - Clone of: Support Pipeline: Automatically change ticket status when a customer replies to an email.,2026-01-11,2026-08-28,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1757343759/edit
+1757492029,ON,Ticket,Tier 2 - Clone of: Support Pipeline: Automatically change ticket status when an email is sent to a customer.,2026-01-11,2026-08-28,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1757492029/edit
+1866659765,ON,Ticket,Transitions - 30-Day Monitoring (+SubTask),2026-08-14,2026-10-06,2,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1866659765/edit
+1866664327,ON,Ticket,Transitions - Final Sign Off Tasks (+SubTask),2026-08-14,2026-10-06,6,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1866664327/edit
+1866664222,ON,Ticket,Transitions - Go Live Execution Tasks (+SubTask),2026-08-14,2026-10-06,5,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1866664222/edit
+1866664080,ON,Ticket,Transitions - Launch Readiness Tasks (+SubTask),2026-08-14,2026-10-06,5,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1866664080/edit
+1866658899,ON,Ticket,Transitions - Pre Launch Setup Tasks (+SubTask),2026-08-14,2026-10-06,11,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1866658899/edit
+1867929348,ON,Ticket,Transitions - TRANSITION COMPLETE (+SubTask),2026-08-17,2026-10-06,1,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1867929348/edit
+1866384267,ON,Ticket,Transitions - Transition Kickoff Tasks (+SubTask),2026-08-14,2026-10-06,3,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1866384267/edit
+1857850789,ON,Ticket,Transitions | PM = Ticket Owner,2026-07-27,2026-07-27,6,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1857850789/edit
+1851081073,ON,Ticket,Update Ticket owner | Marketing Tickets,2026-07-14,2026-07-14,4,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1851081073/edit
+1775785310,ON,Ticket,Website Only Onboarding,2026-02-12,2026-09-08,13,,,,Keep,https://app.hubspot.com/workflows/45059701/platform/flow/1775785310/edit
+1847802431,ON,Ticket,fix target go live date retroactively,2026-07-06,2026-07-06,1,,,,Turn off - one-off retro fix,https://app.hubspot.com/workflows/45059701/platform/flow/1847802431/edit
+1794824762,OFF,2-59550553,Portal Users → Webhook-ready,2026-03-22,2026-03-22,0,,,,Delete - off and empty,https://app.hubspot.com/workflows/45059701/platform/flow/1794824762/edit
+1666435468,OFF,Call,CS - Create Ticket with Outbound Call,2025-06-27,2026-03-26,1,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1666435468/edit
+1854937991,OFF,Company,At Risk Monthly Performance Reviews | Marketing Services,2026-07-21,2026-10-05,21,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1854937991/edit
+1851240544,OFF,Company,Budget | Marketing Readiness,2026-07-14,2026-10-06,3,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1851240544/edit
+1887794331,OFF,Company,Campaign Completed | Marketing Readiness,2026-09-21,2026-10-06,2,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1887794331/edit
+1851243370,OFF,Company,Campaign Creation | Marketing Readiness,2026-07-14,2026-10-06,3,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1851243370/edit
+1705120112,OFF,Company,Clear our Ops Discount MRR,2025-10-14,2025-10-14,38,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1705120112/edit
+1705116221,OFF,Company,Clear our Ops Discount Services,2025-10-14,2025-10-14,38,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1705116221/edit
+1783361854,OFF,Company,Copy of MRR to Finance,2026-02-26,2026-03-02,1,,,,Delete - test/old/archive,https://app.hubspot.com/workflows/45059701/platform/flow/1783361854/edit
+1682545542,OFF,Company,Create Tasks | Playbook Review/Maintenance T1 OM,2025-08-12,2026-10-08,11,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1682545542/edit
+1682101413,OFF,Company,Create Tasks | Prepare Month End Report,2025-08-11,2026-10-08,12,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1682101413/edit
+1682549368,OFF,Company,Create Tasks | Prepare Rate Review,2025-08-12,2026-10-08,32,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1682549368/edit
+1697631666,OFF,Company,Create Tasks | Storage Reach,2025-09-23,2026-10-08,6,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1697631666/edit
+1838568062,OFF,Company,Create Tasks | Weekly KPI review to owner for first 90 days,2026-06-18,2026-10-08,11,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1838568062/edit
+1892197744,OFF,Company,Google Ads (PPC) | Marketing Services (UPDATED),2026-09-28,2026-09-28,2,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1892197744/edit
+1674852656,OFF,Company,IN PROGRESS | Run and Sustain Task Creation – Company Based,2025-07-22,2025-07-29,8,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1674852656/edit
+1854867276,OFF,Company,Improving Monthly Performance Reviews | Marketing Services,2026-07-21,2026-10-05,21,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1854867276/edit
+1856614489,OFF,Company,Marketing Request/Update Task,2026-07-24,2026-07-24,0,,,,Delete - off and empty,https://app.hubspot.com/workflows/45059701/platform/flow/1856614489/edit
+1854997274,OFF,Company,Marketing Sentiment Ent +1 +2.1 | Marketing Services,2026-07-21,2026-09-29,9,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1854997274/edit
+1854996367,OFF,Company,Marketing Sentiment2.2 + 3 | Marketing Services,2026-07-21,2026-09-29,1,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1854996367/edit
+1859477364,OFF,Company,Mohammed Task,2026-07-30,2026-07-30,1,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1859477364/edit
+1896915734,OFF,Company,Mohammeds Task,2026-10-05,2026-10-05,21,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1896915734/edit
+1774165521,OFF,Company,OM | RISK within the first 90 days,2026-02-10,2026-08-17,1,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1774165521/edit
+1677009758,OFF,Company,Ops Manager Add to Customer Ops Manager,2025-07-28,2025-09-17,7,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1677009758/edit
+1851239946,OFF,Company,Proposal | Marketing Readiness,2026-07-14,2026-10-06,3,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1851239946/edit
+1792401549,OFF,Company,Ramp Up Adjustment – Monthly Review Workflow,2026-03-17,2026-03-17,1,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1792401549/edit
+1703661657,OFF,Company,Set Invoice Date (First & Last),2025-10-10,2025-10-10,3,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1703661657/edit
+1840487316,OFF,Company,Set System | Status Date Stamps (Consolidated),2026-06-22,2026-06-22,0,,,,Delete - off and empty,https://app.hubspot.com/workflows/45059701/platform/flow/1840487316/edit
+1677009734,OFF,Company,Site Manager Add to Customer Ops Manager,2025-07-28,2025-09-17,15,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1677009734/edit
+1859197270,OFF,Company,Standalone Marketing | Monthly Performance Reviews | Marketing Services,2026-07-30,2026-10-05,20,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1859197270/edit
+1831204140,OFF,Company,Target Go Live on Facility = Target Go live for Transitions,2026-06-03,2026-06-30,1,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1831204140/edit
+1762262091,OFF,Company,Unnamed workflow - 2026-01-19 11:58:15 GMT+0000,2026-01-19,2026-01-19,0,,,,Delete - off and empty,https://app.hubspot.com/workflows/45059701/platform/flow/1762262091/edit
+1771588738,OFF,Company,Unnamed workflow - 2026-02-05 09:21:43 GMT+0000,2026-02-05,2026-02-05,0,,,,Delete - off and empty,https://app.hubspot.com/workflows/45059701/platform/flow/1771588738/edit
+1786196831,OFF,Company,Update Management Type,2026-03-04,2026-03-05,7,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1786196831/edit
+1862586243,OFF,Company,[SS] Trend to Goal,2026-08-06,2026-08-07,1,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1862586243/edit
+1851081745,OFF,Company,[SS] Update marketing Ticket Actual Go Live Date,2026-07-14,2026-08-07,1,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1851081745/edit
+1851080805,OFF,Company,[SS] Update marketing Ticket Target Go Live Date,2026-07-14,2026-08-07,1,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1851080805/edit
+1774936664,OFF,Contact,ACH Form → Copy to Company (Super Admin Only),2026-02-11,2026-05-12,2,73,0,,Delete - test/old/archive,https://app.hubspot.com/workflows/45059701/platform/flow/1774936664/edit
+1842566512,OFF,Contact,Associate invoice | Retro apply,2026-06-26,2026-08-13,1,34,0,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1842566512/edit
+1792751463,OFF,Contact,CSAT Response Ticket Create,2026-03-17,2026-05-08,1,750,0,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1792751463/edit
+1894546078,OFF,Contact,Create a facility,2026-10-01,2026-10-01,0,0,0,,Delete - off and empty,https://app.hubspot.com/workflows/45059701/platform/flow/1894546078/edit
+1865520492,OFF,Contact,Invoice Clean Up,2026-08-12,2026-08-12,0,0,0,,Delete - off and empty,https://app.hubspot.com/workflows/45059701/platform/flow/1865520492/edit
+555817811,OFF,Contact,Send a follow-up email after form submission,2024-01-26,2024-02-08,2,0,0,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/555817811/edit
+1848177974,OFF,Contact,Send a follow-up email after form submission,2026-07-07,2026-07-07,1,0,0,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1848177974/edit
+1848178270,OFF,Contact,Send a follow-up email after form submission,2026-07-07,2026-07-07,1,0,0,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1848178270/edit
+1848204376,OFF,Contact,Send a follow-up email after form submission,2026-07-07,2026-07-07,1,0,0,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1848204376/edit
+1793356578,OFF,Contact,StorBill Form – Create Task for Ryan,2026-03-19,2026-03-19,1,0,0,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1793356578/edit
+1707997827,OFF,Contact,Unengaged Contacts to Non-Marketing,2025-10-22,2025-10-27,1,6693,0,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1707997827/edit
+1703169952,OFF,Contact,Unnamed workflow - 2025-10-09 17:35:04 GMT+0000,2025-10-09,2025-10-09,0,0,0,,Delete - off and empty,https://app.hubspot.com/workflows/45059701/platform/flow/1703169952/edit
+1705422365,OFF,Contact,Unnamed workflow - 2025-10-15 15:55:03 GMT+0000,2025-10-15,2025-10-15,0,0,0,,Delete - off and empty,https://app.hubspot.com/workflows/45059701/platform/flow/1705422365/edit
+1635791164,OFF,Contact,Unnamed workflow - Wed Mar 05 2025 08:19:17 GMT-05:00,2025-03-05,2025-03-05,0,0,0,,Delete - off and empty,https://app.hubspot.com/workflows/45059701/platform/flow/1635791164/edit
+1663461648,OFF,Deal,CLOSED/WON to Onboarding,2025-06-17,2025-07-16,1,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1663461648/edit
+588255560,OFF,Deal,Copy Deals to Onboarding Pipeline,2024-06-20,2025-06-10,1,,,,Delete - test/old/archive,https://app.hubspot.com/workflows/45059701/platform/flow/588255560/edit
+592651151,OFF,Deal,ONBOARDING PIPELINE 3-active,2024-07-09,2025-06-25,1,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/592651151/edit
+609473324,OFF,Deal,OPERATIONS PIPELINE copy LIVE deals,2024-09-10,2025-06-10,1,,,,Delete - test/old/archive,https://app.hubspot.com/workflows/45059701/platform/flow/609473324/edit
+1866072468,OFF,Invoice,Invoice test (SA),2026-08-13,2026-08-13,1,,,,Delete - test/old/archive,https://app.hubspot.com/workflows/45059701/platform/flow/1866072468/edit
+1888155527,OFF,Invoice,Late Fee Test,2026-09-22,2026-09-22,0,,,,Delete - off and empty,https://app.hubspot.com/workflows/45059701/platform/flow/1888155527/edit
+1793406791,OFF,Invoice,Manual invoice send helper,2026-03-19,2026-03-19,1,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1793406791/edit
+1705768341,OFF,Invoice,Send outstanding Invoice,2025-10-16,2025-10-16,1,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1705768341/edit
+1644562314,OFF,Invoice,Unnamed workflow - 2025-04-08 00:52:11 GMT+0000,2025-04-08,2025-06-10,3,,,,Delete - test/old/archive,https://app.hubspot.com/workflows/45059701/platform/flow/1644562314/edit
+1665404717,OFF,Invoice,Unnamed workflow - 2025-06-24 02:36:10 GMT+0000,2025-06-24,2025-07-16,0,,,,Delete - off and empty,https://app.hubspot.com/workflows/45059701/platform/flow/1665404717/edit
+1773804032,OFF,Invoice,Unnamed workflow - 2026-02-09 19:52:27 GMT+0000,2026-02-09,2026-02-09,0,,,,Delete - off and empty,https://app.hubspot.com/workflows/45059701/platform/flow/1773804032/edit
+1887754593,OFF,Task,Backup | Task Created to PPC No Ticket,2026-09-21,2026-09-21,2,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1887754593/edit
+1858962504,OFF,Task,"PPC Enrolled ""No"" - Marketing Services Tickets",2026-07-29,2026-09-29,2,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1858962504/edit
+1864887975,OFF,Task,test,2026-08-11,2026-08-11,0,,,,Delete - off and empty,https://app.hubspot.com/workflows/45059701/platform/flow/1864887975/edit
+1757837383,OFF,Ticket,7 Day Ticket Hold - CS - CSAT Survey,2026-01-12,2026-05-11,2,,,,Delete - test/old/archive,https://app.hubspot.com/workflows/45059701/platform/flow/1757837383/edit
+1850664359,OFF,Ticket,Assign Ticket Owner - Marketing Portfolio Manager,2026-07-13,2026-07-13,0,,,,Delete - off and empty,https://app.hubspot.com/workflows/45059701/platform/flow/1850664359/edit
+1646814133,OFF,Ticket,Assign tickets to an owner,2025-04-15,2025-06-10,3,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1646814133/edit
+1658160821,OFF,Ticket,CS - CSAT Survey,2025-05-28,2025-08-11,3,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1658160821/edit
+1671774865,OFF,Ticket,CS - CSAT Survey Send [Phone or Email] - OLD,2025-07-14,2025-10-15,6,,,,Delete - test/old/archive,https://app.hubspot.com/workflows/45059701/platform/flow/1671774865/edit
+1674946126,OFF,Ticket,Escalate ticket to SM | Label task,2025-07-22,2026-09-10,79,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1674946126/edit
+1861842777,OFF,Ticket,Macro,2026-08-04,2026-08-04,0,,,,Delete - off and empty,https://app.hubspot.com/workflows/45059701/platform/flow/1861842777/edit
+1705077155,OFF,Ticket,NEW PROCESS - CSAT Survey Ticket Association and Mapping,2025-10-14,2026-01-27,10,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1705077155/edit
+1757837135,OFF,Ticket,NEW PROCESS CS - CSAT Survey Send [Phone or Email],2026-01-12,2026-05-08,12,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1757837135/edit
+1705073741,OFF,Ticket,OLD PROCESS CS - CSAT Survey Send [Phone or Email],2025-10-14,2026-01-15,12,,,,Delete - test/old/archive,https://app.hubspot.com/workflows/45059701/platform/flow/1705073741/edit
+1663227224,OFF,Ticket,Onboarding - AUTO: Stage 1 to Stage 2,2025-06-16,2025-07-16,1,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1663227224/edit
+1663248642,OFF,Ticket,Onboarding - AUTO: Stage 3 to Stage 4,2025-06-16,2025-07-16,1,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1663248642/edit
+1663254884,OFF,Ticket,Onboarding - AUTO: Stage 4 to Stage 5,2025-06-16,2025-07-16,1,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1663254884/edit
+1666703529,OFF,Ticket,Onboarding - Set Stage Task Summary,2025-06-29,2025-09-29,8,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1666703529/edit
+1663239513,OFF,Ticket,Onboarding – AUTO: Stage 2 to Stage 3,2025-06-16,2025-07-16,1,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1663239513/edit
+1674852466,OFF,Ticket,Onboarding → Run and Sustain Transition,2025-07-22,2025-07-28,1,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1674852466/edit
+1787183691,OFF,Ticket,Operations SLA - Company Association,2026-03-06,2026-03-06,2,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1787183691/edit
+1762955523,OFF,Ticket,"Pipeline is ""Customer Operations | SLA Tracking"", Ticket status is ""New""",2026-01-21,2026-09-23,1,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1762955523/edit
+1762880521,OFF,Ticket,"Pipeline is ""Support Pipeline"", Ticket status is ""Waiting on contact""",2026-01-20,2026-04-02,0,,,,Delete - off and empty,https://app.hubspot.com/workflows/45059701/platform/flow/1762880521/edit
+1799174448,OFF,Ticket,"Pipeline is ""Support Pipeline"", Ticket status is ""Waiting on us""",2026-04-01,2026-04-02,0,,,,Delete - off and empty,https://app.hubspot.com/workflows/45059701/platform/flow/1799174448/edit
+1762822914,OFF,Ticket,"Pipeline is ""Tier 2"", Ticket status is ""Waiting on contact""",2026-01-20,2026-02-11,0,,,,Delete - off and empty,https://app.hubspot.com/workflows/45059701/platform/flow/1762822914/edit
+1762879293,OFF,Ticket,"Pipeline is ""Tier 2"", Ticket status is ""Waiting on us""",2026-01-20,2026-02-11,0,,,,Delete - off and empty,https://app.hubspot.com/workflows/45059701/platform/flow/1762879293/edit
+1844769109,OFF,Ticket,Set Target Go Live Date,2026-06-30,2026-09-29,2,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1844769109/edit
+1763465006,OFF,Ticket,"Site Managers Escalations - Clone of: Pipeline is ""Support Pipeline"", Ticket status is ""Waiting on contact""",2026-01-22,2026-01-22,0,,,,Delete - off and empty,https://app.hubspot.com/workflows/45059701/platform/flow/1763465006/edit
+1763603570,OFF,Ticket,Site Managers Escalations - Clone of: Support Pipeline: Automatically change ticket status when an email is sent to a customer.,2026-01-22,2026-08-28,1,,,,Delete - test/old/archive,https://app.hubspot.com/workflows/45059701/platform/flow/1763603570/edit
+1851340557,OFF,Ticket,Stops Reopening tickets,2026-07-15,2026-07-15,3,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1851340557/edit
+1724817786,OFF,Ticket,Tenant Leads 18hours after 1st attempt,2025-11-17,2025-12-11,9,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1724817786/edit
+1813888266,OFF,Ticket,Ticket Move to Open if Ownership is taken,2026-04-30,2026-06-11,1,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1813888266/edit
+1667133573,OFF,Ticket,Transitions - 30-Day Monitoring,2025-06-30,2026-08-20,3,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1667133573/edit
+1663255201,OFF,Ticket,Transitions - Final Sign Off Tasks,2025-06-16,2026-08-20,14,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1663255201/edit
+1663235164,OFF,Ticket,Transitions - Go Live Execution Tasks,2025-06-16,2026-08-20,15,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1663235164/edit
+1663227055,OFF,Ticket,Transitions - Launch Readiness Tasks,2025-06-16,2026-08-20,13,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1663227055/edit
+1663213332,OFF,Ticket,Transitions - Pre Launch Setup Tasks,2025-06-16,2026-08-20,16,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1663213332/edit
+1663176317,OFF,Ticket,Transitions - Transition Kickoff Tasks,2025-06-16,2026-08-20,17,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1663176317/edit
+1699979331,OFF,Ticket,Transitions - Unassigned Tasks,2025-09-30,2025-09-30,1,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1699979331/edit
+1856426556,OFF,Ticket,Trend to Goal update on Marketing Ticket (Ticket-> Company,2026-07-24,2026-08-06,6,,,,Delete - off; replaced or abandoned (confirm with owner),https://app.hubspot.com/workflows/45059701/platform/flow/1856426556/edit
+1806300419,OFF,Ticket,Unnamed workflow - 2026-04-17 07:42:12 GMT+0000,2026-04-17,2026-04-17,0,,,,Delete - off and empty,https://app.hubspot.com/workflows/45059701/platform/flow/1806300419/edit
+1656031245,OFF,Ticket,[ARCHIVE ] - Send SMS CSAT When Ticket Closes,2025-05-21,2025-07-14,2,,,,Delete - test/old/archive,https://app.hubspot.com/workflows/45059701/platform/flow/1656031245/edit
