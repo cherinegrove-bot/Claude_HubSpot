@@ -311,6 +311,11 @@ def type_results(first, last, rows, pre=False):
             if cov:                              # got the task type that replaced it under the old settings: shown, not flagged
                 missing[cid] = {'reason': cov['reason'], 'label': 'VERIFIED (records)', 'workflow': s['wf'], 'run': fmt_dt(s['run']), 'not_flagged': True}
                 continue
+            gap = next((g for g in BEFORE.get('old_settings_gaps', []) if pre and g['type'] == name and
+                        rules.props_at(COMP[cid], s['run']).get(TEAM.get('tier_property')) in g.get('tiers', [])), None)
+            if gap:                              # the old settings didn't give this tier the task (decided by the user): shown, not flagged
+                missing[cid] = {'reason': gap['reason'], 'label': gap.get('label', 'VERIFIED (records)'), 'workflow': s['wf'], 'run': fmt_dt(s['run']), 'not_flagged': True}
+                continue
             if cid in pre_lists:                 # the old settings may have excluded it: shown, not flagged
                 missing[cid] = {'reason': 'probably excluded at the time: ' + BEFORE.get('excluded_reason', 'on an excluded list'), 'label': 'INFERENCE',
                                 'workflow': s['wf'], 'run': fmt_dt(s['run']), 'not_flagged': True}
