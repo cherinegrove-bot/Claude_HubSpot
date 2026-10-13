@@ -717,6 +717,10 @@ def _freq(cfg):
     return 'When triggered'
 
 
+def _kind(cfg):
+    return {'MONTHLY_SPECIFIC_DAYS': 'monthly', 'WEEKLY': 'weekly', 'DAILY': 'daily'}.get((cfg.get('enrollmentSchedule') or {}).get('type'), 'trigger')
+
+
 def _conds(fb, tiers, notes):
     """Narrow the tier set by a filter branch (AND of filters, OR of sub-branches) and note name and list conditions."""
     if not fb:
@@ -801,14 +805,15 @@ def task_list_entry(tt):
         for (who, nts), ts in sorted(by.items(), key=lambda kv: (min(order.get(x, 99) for x in kv[1]), kv[0][1])):
             ts = sorted(set(ts), key=lambda x: order.get(x, 99))
             tiers = 'All tiers' if (not TIER_ALL or set(ts) == set(TIER_ALL)) else ', '.join(opts.get(x, x) for x in ts)
-            groups.append({'workflow': wid, 'workflow_name': wfname(wid), 'frequency': _freq(mc), 'trigger': describe.trigger_text(mc) if not mc.get('enrollmentSchedule') else '',
-                           'tiers': tiers, 'notes': list(nts), 'who': who, 'off': not mc.get('isEnabled')})
+            groups.append({'workflow': wid, 'workflow_name': wfname(wid), 'frequency': _freq(mc), 'kind': _kind(mc), 'trigger': describe.trigger_text(mc) if not mc.get('enrollmentSchedule') else '',
+                           'tiers': tiers, 'tier_list': [opts.get(x, x) for x in ts] if TIER_ALL else [], 'notes': list(nts), 'who': who, 'off': not mc.get('isEnabled')})
         if not by:
-            groups.append({'workflow': wid, 'workflow_name': wfname(wid), 'frequency': _freq(mc), 'trigger': '', 'tiers': 'No task action found', 'notes': [], 'who': '', 'off': not mc.get('isEnabled')})
+            groups.append({'workflow': wid, 'workflow_name': wfname(wid), 'frequency': _freq(mc), 'kind': _kind(mc), 'trigger': '', 'tiers': 'No task action found', 'tier_list': [], 'notes': [], 'who': '', 'off': not mc.get('isEnabled')})
     return {'type': tt['name'], 'groups': groups}
 
 
 TASK_LIST = [task_list_entry(tt) for tt in TYPES]
+TIER_COLUMNS = [(((describe.PROPS.get('companies') or {}).get(TIER_PROP) or {}).get('options', {})).get(x, x) for x in TIER_ALL]
 
 # "Switched off" tab: every master-file workflow that is off in the master rules file or in HubSpot now.
 # Summaries come from team-rules.md (written from the master rules file); a summary written for an older revision is flagged.
@@ -858,7 +863,7 @@ RESULT = {
     'counts': {'facilities_in_scope': in_scope_count, 'main_tasks': len(MAIN), 'subtasks': len(SUBS), 'workflows': len(M),
                'q1': q_counts[1], 'q2': q_counts[2], 'q3': q_counts[3]},
     'top': TOP, 'types': TYPE_RESULTS, 'new_facilities': NEW, 'links': LINK_ROWS, 'subtasks': SUB_ROWS, 'changes': CHANGES,
-    'schedules': SCHEDULES, 'task_list': TASK_LIST, 'switched_off': SWITCHED_OFF, 'before_start': BEFORE_START, 'known_days': [{'date': d, 'type': t, 'known_issue': k, 'tasks': n} for (d, t, k), n in sorted(KNOWN_DAYS.items())],
+    'schedules': SCHEDULES, 'task_list': TASK_LIST, 'tier_columns': TIER_COLUMNS, 'switched_off': SWITCHED_OFF, 'before_start': BEFORE_START, 'known_days': [{'date': d, 'type': t, 'known_issue': k, 'tasks': n} for (d, t, k), n in sorted(KNOWN_DAYS.items())],
     'waiting_on': waiting, 'known_issues': known, 'expected_off': off_state, 'problems': PROBLEMS,
     'companies': {cid: cname(cid) for cid in {x for tr in TYPE_RESULTS + PRE_TYPES for x in tr['should'] + tr['got'] + list(tr['missing']) + list(tr['shouldnt'])} | {c for r in MAIN + PRE_MAIN for c in r['companies']} | LIVE_NOW},
     'tasks': [{'id': r['id'], 'title': r['title'], 'type': r['type'], 'workflow': wfname(r['flow']) if r['flow'] in M else r['source'],

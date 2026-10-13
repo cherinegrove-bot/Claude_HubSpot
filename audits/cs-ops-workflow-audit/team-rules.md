@@ -86,6 +86,7 @@ One task type can be made by several workflows, for example split by tier. Each 
 - **Tier 2 - L1 facilities with no OM in Update Customer Sentiment (Ent, Tier 1, Tier 2.1):** they get no task. Cherine confirmed on 2026-10-08 that this is fine, so it's reported as "excluded by rule", not as missing.
 - **Weekly KPI review** (1838568062) is switched off on purpose since 2026-10-08: it was the duplicate of the Weekly calls workflow (Cherine). Weekly Call tasks now come only from Weekly calls; if both workflows create one again, it's a broken rule 4.
 - **No SM or OM on the facility:** a facility that should get a task but has neither an SM nor an OM is shown as missing, with the reason "no SM or OM on the facility", labelled VERIFIED (records).
+- **BOG Weekly for Tier 1 goes to the site manager:** the "T1 OM" branch (Tier 1 facility with an OM) assigns the task to the facility's Site Manager, and the "T1 SM" branch has no task. That's fine (Cherine, 2026-10-13); not a problem.
 - **BOG Weekly before 6 October:** Tier 1 facilities that got no BOG Weekly task but did get BOG Oversight are "covered by BOG Oversight since late August (old settings)", not flagged (WLS, 2026-10-09). This covers only tasks made before 6 October; from 12 October, rule 6 applies.
 - **Wrong company** (Question 2):
   - A main task with **no company** is flagged, VERIFIED (records).

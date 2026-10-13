@@ -129,10 +129,23 @@ button.cal-day.s-ok:hover,button.cal-day.s-bad:hover,button.cal-day.s-known:hove
 .cal-day.s-ok .cal-num,.cal-day.s-bad .cal-num,.cal-day.s-known .cal-num,.cal-day.s-wait .cal-num{color:inherit}
 /* task list under the calendar (Overview) */
 .tlist{margin-top:36px}
-.tlist tr.tfirst td{border-top:2px solid var(--line)}
-.tlist td.tname{font-weight:600}
-.tlist .tnote{display:block;font-size:12px;color:var(--muted);margin-top:2px}
-.tlist tr.off td:not(.tname){color:var(--muted)}
+.tlist td.tname{font-weight:600;min-width:150px}
+.tlist .tnote{display:block;font-size:12px;color:var(--muted);margin-top:2px;font-weight:400}
+.tlist tr.tfirst td{border-top:1px solid var(--line)}
+.tlist tr:not(.tfirst):not(.tsec) td{border-top:1px dashed var(--line)}
+.tlist tr.tsec td{background:var(--soft);font-weight:700;font-family:Poppins,Inter,Arial,sans-serif;font-size:13px;text-transform:uppercase;letter-spacing:.04em;padding:8px 12px;border-top:2px solid var(--line)}
+.tlist tr.tsec .ok{text-transform:none;letter-spacing:0;font-weight:400}
+.tlist .tcell{text-align:center;white-space:nowrap}
+.tlist th.tcell{white-space:normal;min-width:64px}
+.tlist .tfreq{white-space:nowrap}
+.tlist .twf{font-size:13px;min-width:200px;max-width:320px}
+.tlist tr:nth-child(even):not(.tsec) td{background:color-mix(in srgb,var(--soft) 40%,transparent)}
+.who-chip{display:inline-block;padding:2px 8px;border-radius:20px;border:1px solid var(--line);background:var(--soft);font-size:12px;font-weight:600}
+.who-none{color:var(--muted)}
+@media (max-width:640px){.tlist td.tname,.tlist th:first-child{position:sticky;left:0;z-index:1;min-width:120px;max-width:140px;box-shadow:1px 0 0 var(--line)}
+ .tlist td.tname{background:var(--card)}.tlist th:first-child{background:var(--grey)}}
+.tlist tr.off .who-chip{font-weight:400;color:var(--muted);background:transparent}
+.tlist tr.off td{color:var(--muted)}
 .cal-tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
 .cal-day.s-ok .cal-tag,.cal-day.s-bad .cal-tag,.cal-day.s-known .cal-tag,.cal-day.s-wait .cal-tag{color:inherit}
 .cal-run{display:block;font-size:11px;line-height:1.3;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -321,15 +334,30 @@ drawCal();
 /* Every task type the team's workflows create, from the master rules file (same source as the calendar).
    One row per task type; a type made by several workflows or branches gets one line per workflow and tier group. */
 function taskListHTML(){const L=D.task_list||[];if(!L.length)return'';
- const body=L.map(e=>{const g=e.groups.length?e.groups:[{frequency:'',tiers:'No workflow in the master rules file',notes:[],who:'',workflow:'',workflow_name:''}];
-  return g.map((x,i)=>`<tr class="${i?'':'tfirst'}${x.off?' off':''}">${i?'':`<td class="tname" rowspan="${g.length}">${esc(e.type)}</td>`}
-   <td>${esc(x.frequency)}${x.trigger?`<span class="tnote">${esc(x.trigger)}</span>`:''}</td>
-   <td>${esc(x.tiers)}${x.notes.length?`<span class="tnote">${x.notes.map(esc).join('; ')}</span>`:''}</td>
-   <td>${esc(x.who)}</td>
-   <td>${x.workflow?wfLink(x.workflow,x.workflow_name):''}${x.off?' <span class="ok">(switched off)</span>':''}</td></tr>`).join('');}).join('');
+ const TC=D.tier_columns||[],onlyRe=/^(.*) only$/,notRe=/^not (.*)$/;
+ const extra=[...new Set(L.flatMap(e=>e.groups.flatMap(g=>g.notes.map(n=>(n.match(onlyRe)||[])[1]).filter(Boolean))))];
+ const cols=TC.length?[...TC,...extra]:['Who'];
+ /* one line per workflow: who gets it in each tier column, plus any other conditions */
+ const lines=[];L.forEach(e=>{const by={};e.groups.forEach(g=>{const k=g.workflow||'-';const ln=by[k]=by[k]||{type:e.type,wf:g.workflow,wfn:g.workflow_name,freq:g.frequency,kind:g.kind||'trigger',trig:g.trigger,off:g.off,cells:{},notes:new Set(),none:!g.who};
+   const only=g.notes.map(n=>(n.match(onlyRe)||[])[1]).find(x=>extra.includes(x));
+   const targets=only?[only]:(TC.length?g.tier_list:['Who']);targets.forEach(c=>{if(g.who)ln.cells[c]=ln.cells[c]?ln.cells[c]+' / '+g.who:g.who;});
+   g.notes.forEach(n=>{const x=(n.match(onlyRe)||n.match(notRe)||[])[1];if(!extra.includes(x))ln.notes.add(n);});});
+  Object.values(by).forEach(l=>lines.push(l));});
+ const SEC=[['weekly','Weekly'],['monthly','Monthly'],['daily','Daily'],['trigger','When triggered']];
+ const num=f=>+((f.match(/\d+/)||[99])[0]),DW=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],dw=f=>{const i=DW.findIndex(d=>f.includes(d));return i<0?9:i;};
+ const short=f=>f.replace(/^Weekly on /,'').replace(/^Monthly on the /,'').replace(/^Daily, /,'');
+ const chip=w=>w?`<span class="who-chip">${esc(w)}</span>`:'<span class="who-none">–</span>';
+ const body=SEC.map(([k,lab])=>{const ls=lines.filter(l=>l.kind===k);if(!ls.length)return'';
+  ls.sort((a,b)=>k==='weekly'?dw(a.freq)-dw(b.freq):k==='monthly'?num(a.freq)-num(b.freq):0);
+  const types=[...new Set(ls.map(l=>l.type))];
+  return `<tr class="tsec"><td colspan="${cols.length+3}">${lab} <span class="ok">· ${plural(types.length,'task')}</span></td></tr>`+types.map(t=>{const tl=ls.filter(l=>l.type===t);
+   return tl.map((l,i)=>`<tr class="${i?'':'tfirst'}${l.off?' off':''}">${i?'':`<td class="tname" rowspan="${tl.length}">${esc(t)}</td>`}
+    <td class="tfreq">${esc(k==='trigger'?'Any time':short(l.freq))}</td>
+    ${cols.map(c=>`<td class="tcell">${chip(l.cells[c])}</td>`).join('')}
+    <td class="twf">${l.wf?wfLink(l.wf,l.wfn):''}${l.off?' <span class="ok">(switched off)</span>':''}${l.notes.size?`<span class="tnote">${[...l.notes].map(esc).join('; ')}</span>`:''}${l.trig?`<span class="tnote">Trigger: ${esc(l.trig.replace(/^Filter-based: /,''))}</span>`:''}</td></tr>`).join('');}).join('');}).join('');
  return `<h2>Every task the workflows create</h2>
- <p class="lead">From the master rules file, so it matches the calendar. Times are in ${esc((D.time_zone||'').replace('US/','US '))} time. "A, else B" means the task goes to A, or to B if the facility has no A.</p>
- <div class="tw"><table><tr><th>Task</th><th>How often</th><th>Tiers</th><th>Assigned to</th><th>Workflow</th></tr>${body}</table></div>`;}
+ <p class="lead">From the master rules file, so it matches the calendar. Times are in ${esc((D.time_zone||'').replace('US/','US '))} time. Each tier column shows who the task is assigned to; "–" means that tier doesn't get it. "A, else B" means it goes to A, or to B if the facility has no A.</p>
+ <div class="tw"><table class="tgrid"><tr><th>Task</th><th>When</th>${cols.map(c=>`<th class="tcell">${esc(c)}</th>`).join('')}<th>Workflow</th></tr>${body}</table></div>`;}
 $('#t-overview').insertAdjacentHTML('beforeend',`<div class="tlist" id="tlist">${taskListHTML()}</div>`);
 
 /* ---------- tasks ---------- */
