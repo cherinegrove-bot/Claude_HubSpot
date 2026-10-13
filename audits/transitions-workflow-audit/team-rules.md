@@ -305,7 +305,8 @@ The scripts read this block. Keep it in step with the text above.
       "question": "The Closed Won workflow no longer copies the deal's companies onto the ticket (edited 8 Oct). Was that on purpose?",
       "workflows": [
         "1670039203"
-      ]
+      ],
+      "links_under_question": true
     }
   ],
   "changes_not_confirmed": [
