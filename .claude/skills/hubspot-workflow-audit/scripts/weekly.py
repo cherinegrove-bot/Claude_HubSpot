@@ -169,7 +169,7 @@ def _when_ok(conds, props):
             return False
         if c.get('is') == 'unknown' and has:
             return False
-        if 'starts_with' in c and not str(v or '').startswith(c['starts_with']):
+        if 'starts_with' in c and not str(v or '').strip().lower().startswith(c['starts_with'].strip().lower()):
             return False
     return True
 

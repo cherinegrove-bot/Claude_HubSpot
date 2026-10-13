@@ -87,20 +87,24 @@ def eval_filter(f, props, lists=None):
         if not have:
             return bool(op.get('includeObjectsWithNoValueSet', True))
         return not any(c in vals for c in cur)
-    txt = str(raw).lower() if have else ''
+    txt = str(raw).strip().lower() if have else ''
+    vals_t = [v.strip().lower() for v in vals]   # HubSpot ignores case and the value's outer spaces ("SOA - " matches "SOA -L002 ...")
     if o in ('CONTAINS', 'CONTAINS_EXACTLY'):
-        return have and any(v.lower() in txt for v in vals)
+        return have and any(v in txt for v in vals_t)
     if o in ('DOES_NOT_CONTAIN', 'DOES_NOT_CONTAIN_EXACTLY'):
-        return (not have) or not any(v.lower() in txt for v in vals)
+        return (not have) or not any(v in txt for v in vals_t)
     if o == 'STARTS_WITH':
-        return have and any(txt.startswith(v.lower()) for v in vals)
+        return have and any(txt.startswith(v) for v in vals_t)
     if o == 'ENDS_WITH':
-        return have and any(txt.endswith(v.lower()) for v in vals)
+        return have and any(txt.endswith(v) for v in vals_t)
     if o in ('IS_BETWEEN', 'IS_NOT_BETWEEN', 'IS_AFTER', 'IS_BEFORE') and op.get('operationType') in ('TIME_RANGED', 'TIME_POINT'):
         if not have:
             return False
-        val = _to_dt(raw)
-        lo, hi = _time_point(op.get('lowerBoundTimePoint') or op.get('timePoint')), _time_point(op.get('upperBoundTimePoint'))
+        tp0 = op.get('lowerBoundTimePoint') or op.get('timePoint') or {}
+        zone = tp0.get('zoneId') or 'UTC'
+        val = _to_dt(raw, zone)
+        asof = _to_dt(props.get('_as_of')) if props.get('_as_of') else None
+        lo, hi = _time_point(tp0, asof), _time_point(op.get('upperBoundTimePoint'), asof)
         if val is None or (o in ('IS_BETWEEN', 'IS_NOT_BETWEEN') and (lo is None or hi is None)):
             return None
         if o == 'IS_AFTER':
@@ -118,21 +122,36 @@ def eval_filter(f, props, lists=None):
     return None  # dates, rolling windows, associations, etc.
 
 
-def _to_dt(v):
+def _zone(name):
     try:
+        from zoneinfo import ZoneInfo
+        return ZoneInfo(name or 'UTC')
+    except Exception:
+        return dt.timezone.utc
+
+
+def _to_dt(v, zone=None):
+    """A date-only value ("2026-07-13") is that day at midnight in the filter's time zone, as HubSpot reads it."""
+    try:
+        if isinstance(v, dt.datetime):
+            return v if v.tzinfo else v.replace(tzinfo=dt.timezone.utc)
         if str(v).isdigit():
             return dt.datetime.fromtimestamp(int(v) / 1000, dt.timezone.utc)
-        d = dt.datetime.fromisoformat(str(v).replace('Z', '+00:00'))
+        s = str(v)
+        if len(s) == 10:
+            return dt.datetime.fromisoformat(s).replace(tzinfo=_zone(zone))
+        d = dt.datetime.fromisoformat(s.replace('Z', '+00:00'))
         return d if d.tzinfo else d.replace(tzinfo=dt.timezone.utc)
     except ValueError:
         return None
 
 
-def _time_point(tp):
-    """Resolve a HubSpot time point (INDEXED: TODAY/NOW + offset; DATE/STATIC: fixed). None if unsupported."""
+def _time_point(tp, asof=None):
+    """Resolve a HubSpot time point (INDEXED: TODAY/NOW + offset; DATE/STATIC: fixed). None if unsupported.
+    `asof` is when the workflow ran (default: now); TODAY is that day's midnight in the time point's zone."""
     if not tp:
         return None
-    now = dt.datetime.now(dt.timezone.utc)
+    now = (asof or dt.datetime.now(dt.timezone.utc)).astimezone(_zone(tp.get('zoneId')))
     if tp.get('timeType') == 'INDEXED':
         ref = tp.get('indexReference', {}).get('referenceType')
         base = now if ref == 'NOW' else (now.replace(hour=0, minute=0, second=0, microsecond=0) if ref == 'TODAY' else None)
@@ -386,6 +405,7 @@ def props_at(company, when):
     for k, hist in (company.get('propertiesWithHistory') or {}).items():
         if hist:
             p[k] = value_at(hist, when)
+    p['_as_of'] = when          # date filters like "today - 91 days" count from the run, not from now
     return p
 
 
