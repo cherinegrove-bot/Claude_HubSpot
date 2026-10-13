@@ -795,6 +795,9 @@ def headline(g, ps):
     if k == 'missing':
         r = p['reason']
         return f'{n} facilit{"y" if n == 1 else "ies"} did not get "{p["type"]}" — reason: {r}.'
+    if k == 'subtask_ticket':
+        src = collections.Counter(x.get('source') for x in ps)
+        return f'{n} subtask{"s" if n > 1 else ""} linked to a ticket, which the team rules forbid (' + '; '.join(f'{k_}: {v}' for k_, v in src.most_common()) + ').'
     if k == 'record_missing':
         return f'{n} record{"s" if n > 1 else ""} with no {p.get("creates_label") or "record"} ({p["type"]}): ' + ', '.join(f'{x["record"]["name"]} ({x["record"]["id"]})' for x in ps[:5]) + ('…' if n > 5 else '') + '.'
     if k == 'shouldnt':
