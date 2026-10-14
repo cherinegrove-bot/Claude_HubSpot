@@ -142,7 +142,7 @@ def parse_ts(value):
 # marketing / bookkeeping / setup words, so "Mgmt Fee (...net tenant protection)" stays
 # a management fee, but before Other Fee, which is for WLS revenue only.
 REIMBURSEMENT_RE = re.compile(r"""reimb|burkholder|sparefoot|storage\s*reach|ai\s*lean|auction|lockerfox
-    |davinci|\block(s|box)?\b|hasps|sign|flag\ order|tenant\ protection|\btp\b|insurance|\bbog\b|boots\ on
+    |davinci|\block(s|box)?\b|hasps|sign|flag\ order|\bbog\b|boots\ on
     |payroll|jordan|ring\s*central|aircall|phone|comcast|wix|godaddy|domain|siteground|hosting
     |google\ ads|workspace|business\ email|landscap|mowing|septic|dumpster|equipment\ rental|supplies
     |packaging|amazon|sherwin|storable|opentech|checkr|background\ check|spiderdoor|city\ of
@@ -153,7 +153,8 @@ REIMBURSEMENT_RE = re.compile(r"""reimb|burkholder|sparefoot|storage\s*reach|ai\
 def category(name):
     """Fee row for a line item name. Other Fee is WLS revenue that is not management,
     marketing, bookkeeping or setup (website fees, call center, Insight PG, referral fees,
-    late fees); costs passed through to the facility go to Reimbursements."""
+    late fees, Tenant Protection revenue share); costs passed through to the facility go to
+    Reimbursements."""
     n = (name or "").lower()
     if "reimb" in n or "burkholder" in n:
         return "Reimbursements"
