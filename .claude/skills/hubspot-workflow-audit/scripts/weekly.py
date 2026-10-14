@@ -705,6 +705,72 @@ for r in SUBS:
                 None, None, r['id'], r['flow'], group='subtask_ticket')
 
 # ------------------------------------------------------------------ Question 3
+def _short(seg):
+    """One setting part in a few words: arrows, no "(all)", links read "A → B, copied from C"."""
+    seg = re.sub(r'^links: ', '', seg.strip()).replace(' -> ', ' → ').replace(' (all)', '')
+    seg = seg.replace(": copied from the enrolled record's ", ', copied from ').replace(': the enrolled record', ' = the enrolled record')
+    return seg
+
+
+def _parts(line):
+    """(where, [parts]) for one action line: '(start): Create record - create a Ticket; set ...; links: ...'."""
+    line = re.sub(r'^\(start\):\s*', '', line.strip())
+    m = re.match(r'^(.*?"[^"]*")\s*\|\s*(.*)$', line)          # a task action: "Title" | type ... | owner ...
+    if m:
+        return m.group(1), [x for x in m.group(2).split(' | ') if x.strip()]
+    sep = ' | ' if ' | ' in line else '; '
+    ps = [x for x in line.split(sep) if x.strip()]
+    head = re.sub(r'^(.*?) - create a (\w+)$', r'\1 (\2)', ps[0]) if ps else line
+    rest = []
+    for x in ps[1:]:
+        rest += [y for y in (x[len('set '):].split('; ') if x.startswith('set ') else [x])]
+    return head, rest
+
+
+def change_rows(diffs):
+    """Each difference as short rows: {what, where, detail} (multi-line settings) or {what, was, now}."""
+    out = []
+    for d in diffs:
+        col = d['column']
+        if col == 'Revision':
+            continue
+        if col in master.MULTILINE:
+            old = [l for l in (d['was'] or '').split('\n') if l and l not in ('(nothing)', 'same lines, different order')]
+            new = [l for l in (d['now'] or '').split('\n') if l and l != '(removed)']
+            if d['was'] == 'same lines, different order':
+                out.append({'what': f'{col}: order changed', 'where': '', 'detail': ''})
+                continue
+            o = {h: r for h, r in map(_parts, old)}
+            n = {h: r for h, r in map(_parts, new)}
+            for h in o:
+                if h in n:
+                    link = lambda x: '→' in _short(x)
+                    key = lambda x: _short(x).split(' = ')[0] if ' = ' in x else _short(x).split(' ')[0]
+                    gone = [x for x in o[h] if x not in n[h]]
+                    came = [x for x in n[h] if x not in o[h]]
+                    for x in list(gone):              # same setting, new value: one "was -> now" row
+                        y = next((y for y in came if not link(x) and not link(y) and key(y) == key(x)), None)
+                        if y:
+                            val = lambda z: _short(z)[len(key(z)):].lstrip(' =') or _short(z)
+                            if key(x) == 'description':
+                                out.append({'what': 'Description text changed', 'where': h, 'detail': ''})
+                            else:
+                                out.append({'what': key(x).capitalize() + ' changed', 'where': h, 'was': val(x), 'now': val(y)})
+                            gone.remove(x); came.remove(y)
+                    for x in gone:
+                        out.append({'what': ('Link' if link(x) else 'Setting') + ' removed', 'where': h, 'detail': _short(x)})
+                    for x in came:
+                        out.append({'what': ('Link' if link(x) else 'Setting') + ' added', 'where': h, 'detail': _short(x)})
+                else:
+                    out.append({'what': 'Action removed', 'where': h, 'detail': ''})
+            for h in n:
+                if h not in o:
+                    out.append({'what': 'Action added', 'where': h, 'detail': ''})
+        else:
+            out.append({'what': f'{col} changed', 'was': d['was'], 'now': d['now']})
+    return out
+
+
 CHANGES = []
 excl = TEAM.get('exclusion') or {}
 excl_wfs = set(rules.load_team(A.team)[1]['rules'].get('exclusion_only_in_workflows') or [])
@@ -728,7 +794,7 @@ for wid, e in sorted(M.items(), key=lambda x: wfname(x[0]).lower()):
     CHANGES.append({'workflow': wid, 'name': wfname(wid), 'status': 'change, not yet confirmed' if diffs else 'same', 'diffs': diffs, 'label': 'VERIFIED (config)',
                     'pending': pend,
                     'revision': [e['row'].get('Revision'), str(live.get('revisionId'))], 'updated': (live.get('updatedAt') or '')[:16].replace('T', ' ') + ' UTC',
-                    'only_revision': bool(only_rev), 'rule2': rule2})
+                    'only_revision': bool(only_rev), 'rule2': rule2, 'rows': change_rows(diffs)})
     if diffs:
         what = 'only the revision number changed (no change found in the compared settings)' if only_rev else ', '.join(d['column'] for d in diffs) + ' changed'
         known = f' Change, not yet confirmed (first seen {pend["first_seen"]}; {pend["status"]}).' if pend else ' Change, not yet confirmed.'

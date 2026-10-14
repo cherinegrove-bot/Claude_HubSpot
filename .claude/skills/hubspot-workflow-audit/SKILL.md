@@ -156,7 +156,7 @@ For every subtask: a ticket link is flagged if the team forbids it (`links.subta
   - trigger, schedule, re-enrollment, suppression
   - branches, task actions (title, type, owner, due date, queue, associations, description fingerprint), other actions
   - queue, revision
-- **How it's shown:** both sides are described the same way, so each difference reads "was → now". A revision change with no difference in the compared settings is reported as such.
+- **How it's shown:** both sides are described the same way, so each difference reads "was → now". On the page, each change is one short row (what changed, where, detail), e.g. "Link removed | Create record (Ticket) | Ticket → Company, label …" or "Queue changed | <task> | no queue → Transitions"; revision, edit date and status are small labels, and the full before/after settings are folded away. A revision change with no difference in the compared settings is reported as such.
 - **Team exclusion rule:** if the team has one (`exclusion`), a workflow that gains or loses that list exclusion is flagged.
 - A change isn't automatically wrong. The user decides whether it was planned.
 
