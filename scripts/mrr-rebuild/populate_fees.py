@@ -51,9 +51,27 @@ FEE_ROWS = ["Management Fee", "Marketing Fee", "Bookkeeping Fee", "Other Fee", "
 BLOCK = len(FEE_ROWS) + 1  # facility header row + one row per fee type
 SKIP_STATUSES = {"voided", "draft"}
 EASTERN = ZoneInfo("America/New_York")
-# Billing companies that are not Live/Lost facilities but hold invoices for a group of
-# facilities (one invoice for all SOA sites). Each gets its own block at the bottom.
-EXTRA_COMPANIES = {"35011152532": "Storage of America Corporate"}
+# Companies billed by WLS that are not in the template's facility list. Each gets its own
+# block at the bottom, in this order. Storage of America Corporate holds the single
+# invoice for all 29 SOA sites; the rest were found missing in the Oct-2026 billing audit.
+EXTRA_COMPANIES = {
+    "35011152532": "Storage of America Corporate",
+    "37546862173": "Cedar Ridge Storage",
+    "51746202741": "Jeffersonville Self Storage",
+    "29898594177": "Owl - Columbia, I-70",
+    "26153654402": "Owl - Columbia, MO",
+    "26153654411": "Owl - Eldon, MO",
+    "26153654421": "Owl - Kankakee, IL",
+    "30378020928": "Owl - Kansas City - E210",
+    "26153654433": "Owl - Laurie, MO",
+    "26154927786": "Owl - Macomb, IL",
+    "30378020940": "Owl - Park City - Broadway",
+    "30378020946": "Owl - Rose Hill - Berry",
+    "30379620984": "Owl - Rose Hill - Rosewood",
+    "40708349233": "Pope Storage - Pangborn Blvd",
+    "55595327037": "River Town Storage",
+    "26154884974": "Sam's Storage",
+}
 
 MONTHS = {m: i for i, m in enumerate(
     ["january", "february", "march", "april", "may", "june", "july",
