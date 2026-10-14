@@ -86,6 +86,7 @@ One task type can be made by several workflows, for example split by tier. Each 
 - **Tier 2 - L1 facilities with no OM in Update Customer Sentiment (Ent, Tier 1, Tier 2.1):** they get no task. Cherine confirmed on 2026-10-08 that this is fine, so it's reported as "excluded by rule", not as missing.
 - **Weekly KPI review** (1838568062) is switched off on purpose since 2026-10-08: it was the duplicate of the Weekly calls workflow (Cherine). Weekly Call tasks now come only from Weekly calls; if both workflows create one again, it's a broken rule 4.
 - **No SM or OM on the facility:** a facility that should get a task but has neither an SM nor an OM is shown as missing, with the reason "no SM or OM on the facility", labelled VERIFIED (records).
+- **Missed because of the exclusion list before 6 October:** facilities on list 4291 "Exclude from Ops tasks" (Street Rate Management) that should have got a task by today's settings but didn't, because the list was still excluded until 6 October, are shown as **missed tasks** (Cherine, 2026-10-14), labelled INFERENCE. Rate Review still excludes the list on purpose (rule 2), so it isn't counted.
 - **Unsold Unit, Towing, SCRA before 6 October:** Tier 1 facilities got it on 1 August but none got it on 1 September or 1 October. The old settings didn't give it to Tier 1; today's settings do. Those misses are shown as "Tier 1 not given this task by the old settings (September to 5 October)", not flagged (Cherine, 2026-10-13). The 1 November run is the first to check Tier 1 under the new settings.
 - **BOG Weekly for Tier 1 goes to the site manager:** the "T1 OM" branch (Tier 1 facility with an OM) assigns the task to the facility's Site Manager, and the "T1 SM" branch has no task. That's fine (Cherine, 2026-10-13); not a problem.
 - **BOG Weekly before 6 October:** Tier 1 facilities that got no BOG Weekly task but did get BOG Oversight are "covered by BOG Oversight since late August (old settings)", not flagged (WLS, 2026-10-09). This covers only tasks made before 6 October; from 12 October, rule 6 applies.
@@ -640,7 +641,10 @@ The scripts read this block. Keep it in step with the text above.
         "evidence": "Tier 1 facilities got it on 1 August but none on 1 September or 1 October; today's settings give it to Tier 1 again (first run 1 November)",
         "decided": "2026-10-13"
       }
-    ]
+    ],
+    "flag_excluded": true,
+    "flagged_reason": "missed: the facility is on the Street Rate Management exclusion list (\"Exclude from Ops tasks\"), which this workflow still excluded until 6 October",
+    "flag_excluded_decided": "2026-10-14"
   }
 }
 ```

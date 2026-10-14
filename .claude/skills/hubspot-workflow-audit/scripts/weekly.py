@@ -316,9 +316,13 @@ def type_results(first, last, rows, pre=False):
             if gap:                              # the old settings didn't give this tier the task (decided by the user): shown, not flagged
                 missing[cid] = {'reason': gap['reason'], 'label': gap.get('label', 'VERIFIED (records)'), 'workflow': s['wf'], 'run': fmt_dt(s['run']), 'not_flagged': True}
                 continue
-            if cid in pre_lists:                 # the old settings may have excluded it: shown, not flagged
-                missing[cid] = {'reason': 'probably excluded at the time: ' + BEFORE.get('excluded_reason', 'on an excluded list'), 'label': 'INFERENCE',
-                                'workflow': s['wf'], 'run': fmt_dt(s['run']), 'not_flagged': True}
+            if cid in pre_lists:                 # the old settings excluded the list: a missed task (flag_excluded) or shown, not flagged
+                if BEFORE.get('flag_excluded'):
+                    missing[cid] = {'reason': BEFORE.get('flagged_reason', 'missed: excluded by the old list exclusion'), 'label': 'INFERENCE',
+                                    'workflow': s['wf'], 'run': fmt_dt(s['run'])}
+                else:
+                    missing[cid] = {'reason': 'probably excluded at the time: ' + BEFORE.get('excluded_reason', 'on an excluded list'), 'label': 'INFERENCE',
+                                    'workflow': s['wf'], 'run': fmt_dt(s['run']), 'not_flagged': True}
                 continue
             if e['state'] == 'missing_reason':
                 missing[cid] = {'reason': e['reason'], 'label': e['label'], 'waiting_on': e.get('waiting_on'), 'workflow': s['wf'], 'run': fmt_dt(s['run'])}
