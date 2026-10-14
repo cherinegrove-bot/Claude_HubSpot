@@ -37,11 +37,32 @@ def hs_line(**kw):
 
 class FeeAndMonthRules(unittest.TestCase):
     def test_category(self):
-        self.assertEqual(hs.category("Management Fee - October 2026"), "Management Fee")
-        self.assertEqual(hs.category("Marketing Fee"), "Marketing Fee")
-        self.assertEqual(hs.category("Bookkeeping"), "Bookkeeping Fee")
-        self.assertEqual(hs.category("StorageReach - May 2026"), "Other Fee")
-        self.assertEqual(hs.category("White Label Set Up Fee"), "Other Fee")
+        cases = {
+            "Management Fee - October 2026": "Management Fee",
+            "January Mgmt Fee": "Management Fee",
+            "Northwest Storage Mgmt Fee ($600 + net tenant protection from prior month)": "Management Fee",
+            "Marketing Fee": "Marketing Fee",
+            "Anytime Mkting Fee": "Marketing Fee",
+            "Bookkeeping": "Bookkeeping Fee",
+            "May Books": "Bookkeeping Fee",
+            "White Label Set Up Fee": "Setup Fee",
+            "White Label Set-up Fee (Half)": "Setup Fee",
+            "Website Fee": "Other Fee",
+            "Call Center Fee": "Other Fee",
+            "Insight PG": "Other Fee",
+            "Local Locker Referral Fee": "Other Fee",
+            "StorageReach - May 2026": "Reimbursements",
+            "AI Lean SaaS - March 2026": "Reimbursements",
+            "Sparefoot Reimbursement": "Reimbursements",
+            "Marketing Reimbursement- Signage": "Reimbursements",
+            "Burkholder Property Management $601.16 — Landscaping": "Reimbursements",
+            "Tenant Protection ($1216.43 x 75%)": "Reimbursements",
+            "BOG July (Shauna Crowell)": "Reimbursements",
+            "Wix Website Hosting": "Reimbursements",
+            "Chateau Locks": "Reimbursements",
+        }
+        for name, fee in cases.items():
+            self.assertEqual(hs.category(name), fee, name)
 
     def test_invoice_month_ignores_month_in_name(self):
         ym, src = hs.invoice_month({"hs_invoice_date": "2026-05-05T12:00:00Z"})
@@ -136,7 +157,20 @@ class MonthColumns(unittest.TestCase):
         hs.extend_months(ws)
         self.assertEqual(sorted(hs.month_columns(ws)), [(2022, 11), (2022, 12), (2023, 1), (2023, 2)])
         self.assertEqual([ws.cell(2, c).value for c in range(8, 12)],
-                         ["=SUM(H3:H6)", "=SUM(I3:I6)", "=SUM(J3:J6)", "=SUM(K3:K6)"])
+                         ["=SUM(H3:H8)", "=SUM(I3:I8)", "=SUM(J3:J8)", "=SUM(K3:K8)"])
+
+    def test_expand_blocks_adds_setup_and_reimbursement_rows(self):
+        import openpyxl
+        wb = openpyxl.Workbook(); ws = wb.active
+        ws.append(["Deal Name", "Hubspot ID", "", "", "", "", "", "Jan-23"])
+        for cid in (1, 2):
+            ws.append([f"Fac {cid}", cid])
+            for label in hs.FEE_ROWS[:4]:
+                ws.append([label])
+        hs.expand_blocks(ws)
+        self.assertEqual([ws.cell(r, 1).value for r in range(2, 16)],
+                         ["Fac 1", *hs.FEE_ROWS, "Fac 2", *hs.FEE_ROWS])
+        self.assertEqual(hs.read_facilities(ws)["2"]["rows"]["Reimbursements"], 15)
 
 
     def test_add_company_block_appends_once(self):
@@ -149,10 +183,10 @@ class MonthColumns(unittest.TestCase):
         hs.add_company_blocks(ws, {"99": "Corporate"})
         hs.add_company_blocks(ws, {"99": "Corporate"})
         hs.extend_months(ws, first=(2023, 1))
-        self.assertEqual(ws.max_row, 11)
-        self.assertEqual((ws.cell(7, 1).value, ws.cell(7, 2).value, ws.cell(7, 8).value),
-                         ("Corporate", 99, "=SUM(H8:H11)"))
-        self.assertEqual(hs.read_facilities(ws)["99"]["rows"]["Other Fee"], 11)
+        self.assertEqual(ws.max_row, 15)
+        self.assertEqual((ws.cell(9, 1).value, ws.cell(9, 2).value, ws.cell(9, 8).value),
+                         ("Corporate", 99, "=SUM(H10:H15)"))
+        self.assertEqual(hs.read_facilities(ws)["99"]["rows"]["Reimbursements"], 15)
 
 
 class StripeLines(unittest.TestCase):

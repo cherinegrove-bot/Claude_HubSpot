@@ -38,6 +38,8 @@ from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 import openpyxl
+import openpyxl.worksheet.cell_range
+from openpyxl.formatting.formatting import ConditionalFormattingList
 import requests
 from openpyxl.utils import get_column_letter
 
@@ -45,7 +47,8 @@ API = "https://api.hubapi.com"
 SHEET = "MRR Rebuild"
 FIRST_MONTH_COL = 8  # column H
 FIRST_MONTH = (2022, 11)  # earliest Stripe invoice
-FEE_ROWS = ["Management Fee", "Marketing Fee", "Bookkeeping Fee", "Other Fee"]
+FEE_ROWS = ["Management Fee", "Marketing Fee", "Bookkeeping Fee", "Other Fee", "Setup Fee", "Reimbursements"]
+BLOCK = len(FEE_ROWS) + 1  # facility header row + one row per fee type
 SKIP_STATUSES = {"voided", "draft"}
 EASTERN = ZoneInfo("America/New_York")
 # Billing companies that are not Live/Lost facilities but hold invoices for a group of
@@ -117,14 +120,35 @@ def parse_ts(value):
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 
+# Pass-through costs billed back to the facility. Checked after the management /
+# marketing / bookkeeping / setup words, so "Mgmt Fee (...net tenant protection)" stays
+# a management fee, but before Other Fee, which is for WLS revenue only.
+REIMBURSEMENT_RE = re.compile(r"""reimb|burkholder|sparefoot|storage\s*reach|ai\s*lean|auction|lockerfox
+    |davinci|\block(s|box)?\b|hasps|sign|flag\ order|tenant\ protection|\btp\b|insurance|\bbog\b|boots\ on
+    |payroll|jordan|ring\s*central|aircall|phone|comcast|wix|godaddy|domain|siteground|hosting
+    |google\ ads|workspace|business\ email|landscap|mowing|septic|dumpster|equipment\ rental|supplies
+    |packaging|amazon|sherwin|storable|opentech|checkr|background\ check|spiderdoor|city\ of
+    |citypay|fire\ marshall|door\ repair|site\ work|photos|air\ comfort|palmetto|ender\ services
+    |loomis|printing|on-?\s*site\ service|eddm|maintenance|micro\ deposit|payment\ (re)?capture""", re.I | re.X)
+
+
 def category(name):
+    """Fee row for a line item name. Other Fee is WLS revenue that is not management,
+    marketing, bookkeeping or setup (website fees, call center, Insight PG, referral fees,
+    late fees); costs passed through to the facility go to Reimbursements."""
     n = (name or "").lower()
-    if "management" in n:
+    if "reimb" in n or "burkholder" in n:
+        return "Reimbursements"
+    if re.search(r"set\s*-?\s*up", n):
+        return "Setup Fee"
+    if re.search(r"management|mgmt|mgmnt", n):
         return "Management Fee"
-    if "marketing" in n:
+    if re.search(r"marketing|mkting", n):
         return "Marketing Fee"
-    if "bookkeep" in n:
+    if re.search(r"bookkeep|\bbooks\b|\bbk fee|accounting", n):
         return "Bookkeeping Fee"
+    if REIMBURSEMENT_RE.search(n):
+        return "Reimbursements"
     return "Other Fee"
 
 
@@ -151,6 +175,38 @@ def invoice_month(invoice):
     return ((day.year, day.month) if day else None), label
 
 
+def expand_blocks(ws):
+    """Give every facility block one row per FEE_ROWS entry: rows missing from an older
+    template (Setup Fee, Reimbursements) are inserted under the block's last fee row,
+    styled like it. Header-row highlight rules and dropdowns are re-pointed at the new
+    block size."""
+    headers = [r for r in range(2, ws.max_row + 1) if ws.cell(r, 2).value is not None]
+    for top in reversed(headers):
+        labels = []
+        r = top + 1
+        while r <= ws.max_row and ws.cell(r, 2).value is None and ws.cell(r, 1).value in FEE_ROWS:
+            labels.append(ws.cell(r, 1).value)
+            r += 1
+        missing = [f for f in FEE_ROWS if f not in labels]
+        if not missing:
+            continue
+        last = top + len(labels)
+        ws.insert_rows(last + 1, len(missing))
+        for i, label in enumerate(missing, 1):
+            for col in range(1, ws.max_column + 1):
+                ws.cell(last + i, col)._style = ws.cell(last, col)._style
+            ws.cell(last + i, 1, label)
+    headers = [r for r in range(2, ws.max_row + 1) if ws.cell(r, 2).value is not None]
+    old_cf, ws.conditional_formatting = ws.conditional_formatting, ConditionalFormattingList()
+    for cf in old_cf:
+        for rule in cf.rules:
+            rule.formula = [re.sub(r"MOD\(ROW\(\)-2,\d+\)", f"MOD(ROW()-2,{BLOCK})", f) for f in rule.formula]
+            ws.conditional_formatting.add(re.sub(r"\d+$", str(ws.max_row), str(cf.sqref)), rule)
+    for dv in ws.data_validations.dataValidation:
+        col = str(dv.sqref).split()[0].rstrip("0123456789")
+        dv.sqref = openpyxl.worksheet.cell_range.MultiCellRange(" ".join(f"{col}{r}" for r in headers))
+
+
 def add_company_blocks(ws, companies=EXTRA_COMPANIES):
     """Append a facility block for each {company id: name} not already on the sheet,
     styled like the last block. Header-row SUM formulas come from extend_months."""
@@ -159,9 +215,9 @@ def add_company_blocks(ws, companies=EXTRA_COMPANIES):
         if cid in on_sheet:
             continue
         top = ws.max_row + 1
-        for off in range(5):
+        for off in range(BLOCK):
             for col in range(1, ws.max_column + 1):
-                ws.cell(top + off, col)._style = ws.cell(top - 5 + off, col)._style
+                ws.cell(top + off, col)._style = ws.cell(top - BLOCK + off, col)._style
         ws.cell(top, 1, name)
         ws.cell(top, 2, int(cid))
         for off, label in enumerate(FEE_ROWS, 1):
@@ -186,7 +242,7 @@ def extend_months(ws, first=FIRST_MONTH):
             continue
         for col in range(FIRST_MONTH_COL, ws.max_column + 1):
             letter = get_column_letter(col)
-            ws.cell(row, col).value = f"=SUM({letter}{row + 1}:{letter}{row + 4})"
+            ws.cell(row, col).value = f"=SUM({letter}{row + 1}:{letter}{row + len(FEE_ROWS)})"
             ws.cell(row, col)._style = ws.cell(row, FIRST_MONTH_COL + max(missing, 0))._style
 
 
@@ -225,7 +281,7 @@ def read_facilities(ws):
         if cid is None:
             continue
         rows = {}
-        for off in range(1, 5):
+        for off in range(1, len(FEE_ROWS) + 1):
             label = ws.cell(row + off, 1).value
             if label in FEE_ROWS:
                 rows[label] = row + off
@@ -294,8 +350,9 @@ def fetch_hubspot_lines(facilities):
 def invoice_adjustments(lines):
     """One extra line per facility for invoices whose billed total differs from the sum of
     their line items: order-level discounts (negative) and fees such as late fees (positive)
-    sit on the invoice, not on a line. Discounts go to the Management Fee row when the
-    invoice has one (else the row of its largest line); fees go to Other Fee."""
+    sit on the invoice, not on a line. A discount whose label names a fee type ("AI Lean
+    Refund") goes to that row; any other discount goes to the Management Fee row when the
+    invoice has one (else the row of its largest line). Fees go to Other Fee."""
     by_inv = defaultdict(list)
     for ln in lines:
         by_inv[ln["invoice_id"]].append(ln)
@@ -311,9 +368,13 @@ def invoice_adjustments(lines):
         ls = by_inv[inv_id]
         gap = _gap(ls)
         if gap < 0:
-            fees = {ln["fee"] for ln in ls}
-            fee = "Management Fee" if "Management Fee" in fees else max(ls, key=lambda x: x["full_amount"])["fee"]
             kind, objs = "Invoice discount", "discounts"
+            named = {category(lbl) for lbl in labels.get((inv_id, objs), [])} - {"Other Fee"}
+            fees = {ln["fee"] for ln in ls}
+            if len(named) == 1:  # e.g. "AI Lean Refund", "Marketing Fee Refund"
+                fee = named.pop()
+            else:
+                fee = "Management Fee" if "Management Fee" in fees else max(ls, key=lambda x: x["full_amount"])["fee"]
         else:
             fee, kind, objs = "Other Fee", "Invoice fee", "fees"
         name = f"{kind}: {', '.join(labels.get((inv_id, objs), [])) or 'not itemised'}"
@@ -382,6 +443,7 @@ def hs_detail_row(ln):
 def main(src, dst):
     wb = openpyxl.load_workbook(src)
     ws = wb[SHEET]
+    expand_blocks(ws)
     add_company_blocks(ws)
     extend_months(ws)
     month_cols = month_columns(ws)
