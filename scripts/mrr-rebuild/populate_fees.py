@@ -317,7 +317,7 @@ def fetch_hubspot_lines(facilities):
     print(f"{len(inv_ids)} invoices associated")
     invoices = batch_read("invoices", inv_ids, [
         "hs_number", "hs_title", "hs_invoice_date", "hs_createdate",
-        "hs_invoice_status", "hs_currency", "hs_amount_billed", "hs_invoice_source"])
+        "hs_invoice_status", "hs_currency", "hs_amount_billed", "hs_invoice_source", "hs_exchange_rate"])
     live_inv = {i for i in inv_ids
                 if (invoices.get(i, {}).get("hs_invoice_status") or "").lower() not in SKIP_STATUSES}
     print(f"{len(live_inv)} invoices after skipping voided/draft")
@@ -346,23 +346,33 @@ def fetch_hubspot_lines(facilities):
                     continue
                 seen.add((cid, li_id))
                 li = line_items.get(li_id, {})
-                full_amount = float(li.get("amount") or 0)
+                rate = usd_rate(inv)
+                full_amount = round(float(li.get("amount") or 0) * rate, 2)
                 ym, source = invoice_month(inv)
                 lines.append({
                     "cid": cid, "facility": facilities[cid]["name"],
                     "invoice_number": inv.get("hs_number"), "invoice_id": inv_id,
                     "invoice_status": inv.get("hs_invoice_status"),
                     "invoice_source": inv.get("hs_invoice_source"),
-                    "invoice_total": float(inv.get("hs_amount_billed") or 0),
+                    "invoice_total": round(float(inv.get("hs_amount_billed") or 0) * rate, 2),
                     "invoice_date": inv_day,
                     "line_id": li_id, "line_name": li.get("name"), "description": li.get("description"),
                     "amount": round(full_amount / share, 2), "full_amount": full_amount, "share": share,
-                    "currency": li.get("hs_line_item_currency_code"),
+                    "currency": "USD" if rate == 1 else f"USD (from {inv.get('hs_currency')} at {rate})",
                     "fee": category(li.get("name")), "ym": ym, "month_source": source,
                 })
     lines += invoice_adjustments(lines)
     no_inv = [f["name"] for c, f in facilities.items() if not comp_inv.get(c)]
     return lines, no_inv
+
+
+def usd_rate(invoice):
+    """Factor that turns an invoice's amounts into USD: 1 for USD invoices; for others
+    (Simple Storage Moncton and Bouctouche bill in CAD) HubSpot's own exchange rate on the
+    invoice, the same one it uses for 'amount billed in company currency'."""
+    if (invoice.get("hs_currency") or "USD").upper() == "USD":
+        return 1.0
+    return float(invoice["hs_exchange_rate"])
 
 
 def invoice_adjustments(lines):

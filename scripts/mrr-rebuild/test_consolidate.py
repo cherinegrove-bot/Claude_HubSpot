@@ -85,6 +85,12 @@ class FeeAndMonthRules(unittest.TestCase):
         self.assertEqual(ym, (2026, 4))
         self.assertEqual(hs.invoice_day({"hs_invoice_date": "2026-03-01T00:00:00Z"})[0], date(2026, 3, 1))
 
+    def test_cad_invoice_converted_with_hubspot_rate(self):
+        self.assertEqual(hs.usd_rate({"hs_currency": "USD"}), 1.0)
+        self.assertEqual(hs.usd_rate({}), 1.0)
+        rate = hs.usd_rate({"hs_currency": "CAD", "hs_exchange_rate": "0.701512"})
+        self.assertEqual(round(1425.49 * rate, 2), 1000.0)
+
     def test_create_date_fallback(self):
         ym, src = hs.invoice_month({"hs_createdate": "2026-04-15T14:00:00Z"})
         self.assertEqual((ym, src), ((2026, 4), "invoice create date"))
