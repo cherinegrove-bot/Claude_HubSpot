@@ -124,6 +124,21 @@ class DuplicateDetection(unittest.TestCase):
         self.assertEqual(m, {})
 
 
+class VoidedAfterExport(unittest.TestCase):
+    def test_stripe_invoice_voided_in_hubspot_is_skipped(self):
+        from unittest import mock
+        rows = [stripe_row(invoice_number="INV-1312", invoice_total="342.51", line_amount="342.51"),
+                stripe_row(invoice_number="INV-1379", invoice_id="in_2", line_item_id="il_2",
+                           invoice_total="123.41", line_amount="123.41")]
+        reply = {"results": [{"properties": {"hs_number": "INV-1312", "hs_amount_billed": "342.51"}}]}
+        with mock.patch.object(cs.hs, "call", return_value=reply):
+            gone = cs.voided_in_hubspot(rows)
+        self.assertEqual([r["invoice_number"] for r in gone], ["INV-1312"])
+        self.assertEqual([r["invoice_status"] for r in rows], ["void", "paid"])
+        lines, _, skipped = cs.stripe_lines(rows, {"in_1": ["3"], "in_2": ["3"]}, {}, FACILITIES)
+        self.assertEqual([ln["amount"] for ln in lines], [123.41])
+
+
 class CustomerMapping(unittest.TestCase):
     def test_narrow_by_name(self):
         got = cs.narrow_by_name("Emerald Road Self Storage (Lockwood-James Davidson)", ["1", "2"], FACILITIES)

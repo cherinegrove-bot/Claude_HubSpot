@@ -9,6 +9,7 @@ Starting from the MRR Rebuild template (facility blocks, no fees), writes a work
   Synced Duplicates  the HubSpot invoices dropped because they are copies of Stripe invoices
   Stripe Mapping   which facility each Stripe customer was put on, and how
   Stripe Not Placed  Stripe lines that could not be put on a facility
+  Stripe Voided Later  lines the export shows as live whose HubSpot copy is now voided (skipped)
   Checks           monthly reconciliation of the three grids
   HubSpot Detail / Stripe Detail  line-by-line audit lists
 
@@ -76,6 +77,37 @@ def read_stripe(path):
         r["invoice_total"] = float(r["invoice_total"] or 0)
         r["customer_email"] = (r["customer_email"] or "").strip().lower()
     return rows
+
+
+def voided_in_hubspot(stripe_rows):
+    """Stripe invoices the export still shows as open/paid but whose HubSpot copy (data_sync,
+    same number and total) has since been voided: the export predates the void. Marks their
+    lines "void" so they are skipped, and returns those lines."""
+    numbers = sorted({r["invoice_number"] for r in stripe_rows if r["invoice_status"] not in SKIP_STRIPE_STATUSES})
+    voided = set()
+    for batch in hs.chunks(numbers, 100):
+        after = None
+        while True:
+            body = {"filterGroups": [{"filters": [
+                {"propertyName": "hs_number", "operator": "IN", "values": batch},
+                {"propertyName": "hs_invoice_source", "operator": "EQ", "value": "data_sync"},
+                {"propertyName": "hs_invoice_status", "operator": "EQ", "value": "voided"}]}],
+                "properties": ["hs_number", "hs_amount_billed"], "limit": 200}
+            if after:
+                body["after"] = after
+            data = hs.call("POST", "/crm/v3/objects/invoices/search", json=body)
+            for x in data["results"]:
+                voided.add((x["properties"]["hs_number"], round(float(x["properties"]["hs_amount_billed"] or 0), 2)))
+            after = data.get("paging", {}).get("next", {}).get("after")
+            if not after:
+                break
+    out = []
+    for r in stripe_rows:
+        if r["invoice_status"] not in SKIP_STRIPE_STATUSES and (r["invoice_number"], round(r["invoice_total"], 2)) in voided:
+            r["export_status"] = r["invoice_status"]
+            r["invoice_status"] = "void"
+            out.append(r)
+    return out
 
 
 def lookup_email_companies(emails):
@@ -205,6 +237,9 @@ def main(template, stripe_csv, dst):
     hs_all, no_inv = hs.fetch_hubspot_lines(facilities)
     stripe_rows = read_stripe(stripe_csv)
     print(f"{len(stripe_rows)} Stripe lines on {len({r['invoice_id'] for r in stripe_rows})} invoices")
+    voided_later = voided_in_hubspot(stripe_rows)
+    print(f"voided_after_export: {len({r['invoice_id'] for r in voided_later})} invoices, "
+          f"{sum(r['net'] for r in voided_later):.2f}")
 
     synced = match_synced(hs_all, stripe_rows)
     unmatched_sync = {ln["invoice_id"] for ln in hs_all
@@ -255,6 +290,11 @@ def main(template, stripe_csv, dst):
                         r["invoice_date"], r["line_item"], r["net"], "no facility match"] for r in st_unmatched]
     not_placed_rows += [[ln["customer"], "", ln["invoice_number"], ln["invoice_status"], ln["invoice_date"],
                          ln["line_name"], ln["amount"], why] for ln, why in st_np]
+    hs.write_table(wb, "Stripe Voided Later",
+                   ["Stripe Customer", "Invoice #", "Status in Export", "Invoice Date", "Line Item", "Amount",
+                    "Line Item ID"],
+                   [[r["customer_name"], r["invoice_number"], r["export_status"], r["invoice_date"], r["line_item"],
+                     r["net"], r["line_item_id"]] for r in voided_later])
     hs.write_table(wb, "Stripe Not Placed",
                    ["Stripe Customer", "Email", "Invoice #", "Status", "Invoice Date", "Line Item",
                     "Amount", "Reason"], not_placed_rows)

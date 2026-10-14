@@ -53,7 +53,10 @@ def main(path, stripe_csv):
         check(f"{title} grid total = {title} detail total", abs(diff) < 1, f"diff {diff:.2f}")
 
     lines = cs.read_stripe(stripe_csv)
-    billable = [r for r in lines if r["invoice_status"] not in cs.SKIP_STRIPE_STATUSES]
+    voided_later = ({r["Line Item ID"] for r in table(wb["Stripe Voided Later"])}
+                    if "Stripe Voided Later" in wb.sheetnames else set())
+    billable = [r for r in lines if r["invoice_status"] not in cs.SKIP_STRIPE_STATUSES
+                and r["line_item_id"] not in voided_later]
     not_placed = table(wb["Stripe Not Placed"])
     placed_ids = Counter(r["Line Item ID"] for r in st_detail)
     np_total = sum(r["Amount"] for r in not_placed)
