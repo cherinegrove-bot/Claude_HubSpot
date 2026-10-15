@@ -79,6 +79,7 @@ All agreed with Cherine on 2026-10-13:
 - **Closed Won deals:** every deal that moved to Closed won (White Label Storage SALES) in the window must have an Onboarding Pipeline ticket (rule 5).
 - **Finish Line Self Storage, 3 Kickoff tasks with no company (12 Oct): not caused by W-4.** Corrected on 2026-10-15 (Cherine agreed); an earlier note in chat said it probably was. The deal has no company, so the old Closed Won setting would not have linked one either. The facility was created on 12 Oct at 14:07 (US Eastern) by the Create Facility workflow, from a new contact that isn't on the ticket, so it wasn't linked to the ticket; the ticket moved to Kickoff 28 minutes later and its tasks got no company. It stays this week's problem (question 2). Cherine linked the company to the 3 tasks by hand on 2026-10-15 (checked in HubSpot the same day), so the report shows them as "fixed by hand on 2026-10-15". The pattern is W-6.
 - **Excluded companies:** demo Facility (44541671248), the same as CS Ops.
+- **Marketing Proposal tasks stay in the Transitions queue** (Cherine, 2026-10-14; was W-1 / F-13): queues track tasks by process, not by team, and the proposal is part of the Transitions process. Not a problem.
 - **Page colours:** the WLS brand colours, the same as CS Ops.
 
 ## Waiting on Cherine
@@ -87,12 +88,17 @@ Report these once per run, in their own section, not as new problems every week.
 
 | Item | Question | Asked |
 |---|---|---|
-| W-1 (F-13) | The 4 "Marketing \| Create Marketing Proposal" actions put the task in the Transitions queue, although it's assigned to a marketing manager. Should it sit there? | 2026-10-06 |
 | W-2 (F-15) | "Transition \| 30 - DAY MONITORING \| Subtask - Automated" is an ordinary task for the ticket owner. Is it meant to be manual? | 2026-10-06 |
 | W-3 (F-11) | The proposal checks PPC on any linked company, but takes the portfolio manager from the earliest "Transitions" company (anything else goes to Brock Hegr). Should both come from the same company? | 2026-10-06 |
 | W-4 | The Closed Won workflow no longer copies the deal's companies onto the ticket (edited 8 Oct). Was that on purpose? Workflow: [Closed Won \| Create Ticket in INITIAL SETUP - UNASSIGNED](https://app.hubspot.com/workflows/45059701/platform/flow/1670039203/edit) (1670039203). It affects: tickets created since 8 Oct may have no company, so their tasks can't link to a facility, and the marketing proposal's PPC check may not work. | 2026-10-13 |
 | W-5 | Checklist subtasks always get the ticket link, because they copy the main task. Do we accept that, or look for another way to remove it? (Known issue SUB-1; rule 3.) | 2026-10-15 |
 | W-6 | A ticket can move to a stage before its facility is linked to it. That stage's tasks then get no company, and they don't update when the facility is linked later. Should the facility always be linked before a ticket moves to Kickoff, or should something link it automatically? Workflows: Transitions - Transition Kickoff Tasks (+SubTask) (1866384267), Create Facility (1852542804). Example: Finish Line Self Storage, 12 Oct. | 2026-10-15 |
+
+### Closed (answered by Cherine)
+
+| Item | Answer |
+|---|---|
+| W-1 (F-13). Should the Marketing Proposal tasks sit in the Transitions queue? | Yes: the Marketing Proposal tasks stay in the Transitions queue. Queues track tasks by process, not by team, and the proposal is part of the Transitions process (Cherine, 2026-10-14). Closed 2026-10-15. |
 
 ## Changes not yet confirmed
 
@@ -273,16 +279,6 @@ The scripts read this block. Keep it in step with the text above.
   "branch_reasons": [],
   "waiting_on": [
     {
-      "id": "W-1",
-      "title": "Marketing proposal tasks in the Transitions queue (F-13)",
-      "asked": "2026-10-06",
-      "detail": "The 4 \"Marketing | Create Marketing Proposal\" actions in Pre Launch Setup put the task in the Transitions queue, although it is assigned to Brock Hegr, Sarah Schlosberg or Mohammad Abudahab.",
-      "question": "Should marketing proposal tasks sit in the Transitions queue?",
-      "workflows": [
-        "1866658899"
-      ]
-    },
-    {
       "id": "W-2",
       "title": "\"Automated\" 30-Day Monitoring task (F-15)",
       "asked": "2026-10-06",
@@ -386,7 +382,14 @@ The scripts read this block. Keep it in step with the text above.
       "text": "The Transition Complete check is created after the ticket reaches Transition Completed (a closed stage), due the same day."
     }
   ],
-  "closed": [],
+  "closed": [
+    {
+      "id": "W-1",
+      "closed": "2026-10-15",
+      "answered": "2026-10-14",
+      "answer": "Yes: the Marketing Proposal tasks stay in the Transitions queue. Queues track tasks by process, not by team, and the proposal is part of the Transitions process (Cherine, 2026-10-14)."
+    }
+  ],
   "workflow_summaries": {},
   "old_workflow_names": {},
   "fixed_by_hand": [
