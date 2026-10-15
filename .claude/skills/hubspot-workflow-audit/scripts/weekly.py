@@ -98,7 +98,10 @@ GOLIVE = TEAM.get('went_live') or {}
 local = lambda x: x.astimezone(TZ)
 fmt_dt = lambda x: local(x).strftime('%Y-%m-%d %H:%M')
 cname = lambda cid: (COMP.get(cid, {}).get('properties', {}).get('name') or f'company {cid}')
-wfname = lambda w: (M.get(w, {}).get('row', {}).get('Workflow Name') or LIVE.get(w, {}).get('name') or str(w))
+ALL_FLOWS = {str(f['id']): f for f in W('all_flows.json', [])}       # every workflow the API lists (names for links outside the master file)
+wfname = lambda w: (M.get(w, {}).get('row', {}).get('Workflow Name') or LIVE.get(w, {}).get('name') or ALL_FLOWS.get(str(w), {}).get('name') or str(w))
+# tasks a person fixed by hand after the run (team-rules.md "fixed_by_hand"): still this week's problem, shown as fixed
+FIXED = {t: f for f in (TEAM.get('fixed_by_hand') or []) for t in f.get('task_ids', [])}
 PROBLEMS = []
 
 
@@ -305,6 +308,8 @@ def ticket_runs(wid, name, t0, t1):
         at = now[0]
         stage = (STAGES.get(rules.props_at(t, at).get('hs_pipeline_stage')) or {}).get('label', 'the trigger stage')
         e = {'ticket': tid, 'subject': t['properties'].get('subject') or f'ticket {tid}', 'facility': facility_of(tid), 'at': at, 'stage': stage}
+        nxt = next((ts for ts, _ in entries if ts > at), None)
+        e['left_after'] = (nxt - at).total_seconds() if nxt else None
         before = [ts for ts in hits if ts < at and (born is None or ts >= born)]
         if before and not reenroll:
             out.append({**e, 'state': 'not_expected', 'reason': f'already entered {stage} on {local(before[-1]).date()}; re-enrollment is off', 'label': 'VERIFIED (config)'})
@@ -382,6 +387,11 @@ def ticket_type_results(tt, first, last, rows):
             if have:
                 missing[fac] = {'reason': f'partial: ticket {tid} got {len(have)} of {len(e["titles"])} tasks; missing ' + ', '.join(f'"{x}"' for x in lack),
                                 'label': 'VERIFIED (records)', 'workflow': wid, 'run': fmt_dt(e['at']), 'ticket': tid}
+            elif e.get('left_after') is not None and e['left_after'] < 60:
+                nxt_stage = (STAGES.get(rules.value_at(TICKETS[tid]['propertiesWithHistory'].get('hs_pipeline_stage'), e['at'] + dt.timedelta(seconds=e['left_after']))) or {}).get('label', 'the next stage')
+                missing[fac] = {'reason': f'passed through: ticket {tid} entered {e["stage"]} on {fmt_dt(e["at"])} and moved to {nxt_stage} {e["left_after"]:.0f} seconds later, '
+                                          f'so the workflow probably never enrolled it (HubSpot checks the trigger a few seconds after a change); none of its {len(e["titles"])} tasks were created',
+                                'label': 'VERIFIED (records) + INFERENCE', 'workflow': wid, 'run': fmt_dt(e['at']), 'ticket': tid}
             elif off_now:
                 missing[fac] = {'reason': 'workflow off', 'label': 'VERIFIED (config)', 'workflow': wid, 'run': fmt_dt(e['at']), 'ticket': tid}
             else:
@@ -675,13 +685,19 @@ for r in MAIN:
                 st, label = "company doesn't qualify", 'INFERENCE'
     if st == 'ok' and links.get('main_task_ticket') and not r['tickets']:
         st = 'no ticket'
+    fx = FIXED.get(r['id'])
+    if fx and st == 'ok':                     # fine now, because a person fixed it after the workflow ran
+        st = f'{fx.get("problem", "problem")} when created; fixed by hand on {fx["fixed"]}'
+        label = 'VERIFIED (records)'
+        r['fixed'] = fx
     r['link'] = st
     if st != 'ok':
         note = ' (from known issue ' + next((n.get('known_issue', '') for n in TEAM.get('not_readable', []) if n['name'] == r['source']), '') + ')' if isinstance(r['flow'], str) and r['flow'].startswith('not_readable') else ''
         problem(2, 'link', f'Task "{r["title"]}" ({r["id"]}): {st}{note}.', label, 'Confirmed' if label.startswith('VERIFIED') else 'Potential Issue', r['type'],
                 (r['companies'] or [None])[0], r['id'], r['flow'] if r['flow'] in M else None, st, group=f'link:{st}:{r["source"]}',
                 source=(wfname(r['flow']) if r['flow'] in M else r['source']) + note,
-                extra={'nr_issue': r['flow'].split(':', 1)[1], 'known_issue': r['flow'].split(':', 1)[1]} if isinstance(r['flow'], str) and r['flow'].startswith('not_readable:') else None)
+                extra={**({'nr_issue': r['flow'].split(':', 1)[1], 'known_issue': r['flow'].split(':', 1)[1]} if isinstance(r['flow'], str) and r['flow'].startswith('not_readable:') else {}),
+                       **({'fixed': r['fixed']['fixed'], 'fixed_note': r['fixed'].get('note', ''), 'problem_was': r['fixed'].get('problem')} if r.get('fixed') else {})} or None)
     r['known'] = r['flow'].split(':', 1)[1] if isinstance(r['flow'], str) and r['flow'].startswith('not_readable:') and st != 'ok' else None
     LINK_ROWS.append({'task': r['id'], 'title': r['title'], 'type': r['type'], 'workflow': wfname(r['flow']) if r['flow'] in M else r['source'],
                       'workflow_id': r['flow'] if r['flow'] in M else None,
@@ -693,6 +709,11 @@ for e in TICKET_DAYS:
         continue
     bad = [r for r in MAIN if e['ticket'] in r['tickets'] and r['type'] == e['type'] and r.get('link') not in (None, 'ok')
            and not any(re.search(x, rules.norm(r['title']), re.I) for x in _known_titles)]
+    fixed = [r for r in bad if r.get('fixed')]
+    if fixed and len(fixed) == len(bad):
+        e['status'] = 'fixed'
+        e['detail'] += f'; {len(fixed)} task{"s" if len(fixed) > 1 else ""} had {fixed[0]["fixed"].get("problem", "a problem")} when created, fixed by hand on {fixed[0]["fixed"]["fixed"]}'
+        continue
     if bad:
         e['status'] = 'bad'
         e['detail'] += f'; {len(bad)} task{"s" if len(bad) > 1 else ""} with a link problem (' + ', '.join(sorted({r["link"] for r in bad})) + ')'
@@ -927,7 +948,7 @@ for wid_, w in WAIT.items():
     item = dict(w)
     # the workflows a question is about, by name, with whether each is switched on now (live, else master rules file)
     item['workflow_list'] = [{'id': x, 'name': wfname(x),
-                              'on': bool((LIVE.get(x) or (M.get(x) or {}).get('cfg') or {}).get('isEnabled'))} for x in w.get('workflows', [])]
+                              'on': bool((LIVE.get(x) or (M.get(x) or {}).get('cfg') or ALL_FLOWS.get(str(x)) or {}).get('isEnabled'))} for x in w.get('workflows', [])]
     if w.get('duplicate_task_type'):
         item['found'] = [d for d in DUPES if d.get('waiting_on') == wid_]
     elif w.get('task_types'):

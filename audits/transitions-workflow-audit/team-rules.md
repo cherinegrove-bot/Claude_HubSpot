@@ -77,6 +77,7 @@ All agreed with Cherine on 2026-10-13:
 - **Went live this week:** shown, using Status = Live and the go-live date, flagged when more than 7 days apart.
   - Checked on 2026-10-13: this is the same property as CS Ops. Company property `live` (label "Status"); Live is the internal value `Yes`. The go-live date is `go_live_date` (label "Actual Go-Live Date").
 - **Closed Won deals:** every deal that moved to Closed won (White Label Storage SALES) in the window must have an Onboarding Pipeline ticket (rule 5).
+- **Finish Line Self Storage, 3 Kickoff tasks with no company (12 Oct): not caused by W-4.** Corrected on 2026-10-15 (Cherine agreed); an earlier note in chat said it probably was. The deal has no company, so the old Closed Won setting would not have linked one either. The facility was created on 12 Oct at 14:07 (US Eastern) by the Create Facility workflow, from a new contact that isn't on the ticket, so it wasn't linked to the ticket; the ticket moved to Kickoff 28 minutes later and its tasks got no company. It stays this week's problem (question 2). Cherine linked the company to the 3 tasks by hand on 2026-10-15 (checked in HubSpot the same day), so the report shows them as "fixed by hand on 2026-10-15". The pattern is W-6.
 - **Excluded companies:** demo Facility (44541671248), the same as CS Ops.
 - **Page colours:** the WLS brand colours, the same as CS Ops.
 
@@ -91,6 +92,7 @@ Report these once per run, in their own section, not as new problems every week.
 | W-3 (F-11) | The proposal checks PPC on any linked company, but takes the portfolio manager from the earliest "Transitions" company (anything else goes to Brock Hegr). Should both come from the same company? | 2026-10-06 |
 | W-4 | The Closed Won workflow no longer copies the deal's companies onto the ticket (edited 8 Oct). Was that on purpose? Workflow: [Closed Won \| Create Ticket in INITIAL SETUP - UNASSIGNED](https://app.hubspot.com/workflows/45059701/platform/flow/1670039203/edit) (1670039203). It affects: tickets created since 8 Oct may have no company, so their tasks can't link to a facility, and the marketing proposal's PPC check may not work. | 2026-10-13 |
 | W-5 | Checklist subtasks always get the ticket link, because they copy the main task. Do we accept that, or look for another way to remove it? (Known issue SUB-1; rule 3.) | 2026-10-15 |
+| W-6 | A ticket can move to a stage before its facility is linked to it. That stage's tasks then get no company, and they don't update when the facility is linked later. Should the facility always be linked before a ticket moves to Kickoff, or should something link it automatically? Workflows: Transitions - Transition Kickoff Tasks (+SubTask) (1866384267), Create Facility (1852542804). Example: Finish Line Self Storage, 12 Oct. | 2026-10-15 |
 
 ## Changes not yet confirmed
 
@@ -326,6 +328,18 @@ The scripts read this block. Keep it in step with the text above.
         "1866659765",
         "1867929348"
       ]
+    },
+    {
+      "id": "W-6",
+      "title": "A ticket can reach a stage before its facility is linked",
+      "asked": "2026-10-15",
+      "detail": "Each stage's tasks copy the companies the ticket has at the moment they're created. If the facility isn't linked to the ticket yet, the tasks get no company, and linking it later doesn't update them. Example: Finish Line Self Storage (12 Oct): Create Facility made the company 28 minutes before Kickoff but didn't link it to the ticket (it links the company to the tickets of the contact who filled in the form, and that contact isn't on the ticket).",
+      "question": "A ticket can move to a stage before its facility is linked to it. That stage's tasks then get no company, and they don't update when the facility is linked later. Should the facility always be linked before a ticket moves to Kickoff, or should something link it automatically?",
+      "workflows": [
+        "1866384267",
+        "1852542804"
+      ],
+      "links_under_question": true
     }
   ],
   "changes_not_confirmed": [
@@ -374,6 +388,20 @@ The scripts read this block. Keep it in step with the text above.
   ],
   "closed": [],
   "workflow_summaries": {},
-  "old_workflow_names": {}
+  "old_workflow_names": {},
+  "fixed_by_hand": [
+    {
+      "task_ids": [
+        "118385086549",
+        "118386967348",
+        "118384322086"
+      ],
+      "problem": "no company",
+      "fixed": "2026-10-15",
+      "note": "Finish Line Self Storage linked to the 3 Kickoff tasks by Cherine; checked in HubSpot on 2026-10-15 (VERIFIED (records)).",
+      "ticket": "49234797065",
+      "company": "59101446751"
+    }
+  ]
 }
 ```
