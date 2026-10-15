@@ -79,6 +79,7 @@ All agreed with Cherine on 2026-10-13:
 - **Closed Won deals:** every deal that moved to Closed won (White Label Storage SALES) in the window must have an Onboarding Pipeline ticket (rule 5).
 - **Finish Line Self Storage, 3 Kickoff tasks with no company (12 Oct): not caused by W-4.** Corrected on 2026-10-15 (Cherine agreed); an earlier note in chat said it probably was. The deal has no company, so the old Closed Won setting would not have linked one either. The facility was created on 12 Oct at 14:07 (US Eastern) by the Create Facility workflow, from a new contact that isn't on the ticket, so it wasn't linked to the ticket; the ticket moved to Kickoff 28 minutes later and its tasks got no company. It stays this week's problem (question 2). Cherine linked the company to the 3 tasks by hand on 2026-10-15 (checked in HubSpot the same day), so the report shows them as "fixed by hand on 2026-10-15". The pattern is W-6.
 - **Excluded companies:** demo Facility (44541671248), the same as CS Ops.
+- **"Subtask - Automated" (30-Day Monitoring) is by design** (Cherine, 2026-10-15; was W-2 / F-15): the CSAT survey goes out automatically when the ticket enters Post 30-Day Monitoring, and this task tells the ticket owner it was sent. "Automated" refers to the survey, not the task. Not a problem. Survey name to be confirmed.
 - **Marketing Proposal tasks stay in the Transitions queue** (Cherine, 2026-10-14; was W-1 / F-13): queues track tasks by process, not by team, and the proposal is part of the Transitions process. Not a problem.
 - **Page colours:** the WLS brand colours, the same as CS Ops.
 
@@ -88,7 +89,6 @@ Report these once per run, in their own section, not as new problems every week.
 
 | Item | Question | Asked |
 |---|---|---|
-| W-2 (F-15) | "Transition \| 30 - DAY MONITORING \| Subtask - Automated" is an ordinary task for the ticket owner. Is it meant to be manual? | 2026-10-06 |
 | W-3 (F-11) | The proposal checks PPC on any linked company, but takes the portfolio manager from the earliest "Transitions" company (anything else goes to Brock Hegr). Should both come from the same company? | 2026-10-06 |
 | W-4 | The Closed Won workflow no longer copies the deal's companies onto the ticket (edited 8 Oct). Was that on purpose? Workflow: [Closed Won \| Create Ticket in INITIAL SETUP - UNASSIGNED](https://app.hubspot.com/workflows/45059701/platform/flow/1670039203/edit) (1670039203). It affects: tickets created since 8 Oct may have no company, so their tasks can't link to a facility, and the marketing proposal's PPC check may not work. | 2026-10-13 |
 | W-5 | Checklist subtasks always get the ticket link, because they copy the main task. Do we accept that, or look for another way to remove it? (Known issue SUB-1; rule 3.) | 2026-10-15 |
@@ -99,6 +99,7 @@ Report these once per run, in their own section, not as new problems every week.
 | Item | Answer |
 |---|---|
 | W-1 (F-13). Should the Marketing Proposal tasks sit in the Transitions queue? | Yes: the Marketing Proposal tasks stay in the Transitions queue. Queues track tasks by process, not by team, and the proposal is part of the Transitions process (Cherine, 2026-10-14). Closed 2026-10-15. |
+| W-2 (F-15). Is "Transition \| 30 - DAY MONITORING \| Subtask - Automated" meant to be done by hand by the PM? | By design (Cherine, 2026-10-15). The CSAT survey is sent automatically by a feedback survey when the ticket enters Post 30-Day Monitoring (survey name to be confirmed). The "Subtask - Automated" task is created at the same time so the ticket owner can see it was sent: "Automated" refers to the survey, not the task. In HubSpot: the workflow "Send Transitions CSAT" (1700009377, ON) adds the contacts of a ticket in Post 30-Day Monitoring to the list "Send Transitions Survey" (1889) (VERIFIED (config)); that the survey sends to this list is INFERENCE. Closed 2026-10-15. |
 
 ## Changes not yet confirmed
 
@@ -279,16 +280,6 @@ The scripts read this block. Keep it in step with the text above.
   "branch_reasons": [],
   "waiting_on": [
     {
-      "id": "W-2",
-      "title": "\"Automated\" 30-Day Monitoring task (F-15)",
-      "asked": "2026-10-06",
-      "detail": "\"Transition | 30 - DAY MONITORING | Subtask - Automated\" is an ordinary to-do for the ticket owner; nothing in the workflow automates it.",
-      "question": "Is this task meant to be done by hand by the PM?",
-      "workflows": [
-        "1866659765"
-      ]
-    },
-    {
       "id": "W-3",
       "title": "Which company the proposal's portfolio manager comes from (F-11)",
       "asked": "2026-10-06",
@@ -383,6 +374,13 @@ The scripts read this block. Keep it in step with the text above.
     }
   ],
   "closed": [
+    {
+      "id": "W-2",
+      "closed": "2026-10-15",
+      "answered": "2026-10-15",
+      "answer": "By design (Cherine, 2026-10-15). The CSAT survey is sent automatically by a feedback survey when the ticket enters Post 30-Day Monitoring (survey name to be confirmed). The \"Subtask - Automated\" task is created at the same time so the ticket owner can see it was sent: \"Automated\" refers to the survey, not the task. In HubSpot: the workflow \"Send Transitions CSAT\" (1700009377, ON) adds the contacts of a ticket in Post 30-Day Monitoring to the list \"Send Transitions Survey\" (1889) (VERIFIED (config)); that the survey sends to this list is INFERENCE.",
+      "to_confirm": "the feedback survey's name"
+    },
     {
       "id": "W-1",
       "closed": "2026-10-15",
