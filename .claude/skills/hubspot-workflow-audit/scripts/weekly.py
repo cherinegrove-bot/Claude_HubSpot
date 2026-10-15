@@ -818,6 +818,9 @@ def known_move(p):
     if m.get('created_on_or_before') and (not r or local(r['created']).date().isoformat() > m['created_on_or_before']):
         return None
     return m
+SUB_KNOWN = next((k['id'] for k in TEAM.get('known_issues', []) if k.get('subtask_ticket')), None)    # known issue covering subtasks linked to the ticket
+
+
 def link_known(p):
     """The team's known issue that covers a link problem by task title (known_issues[].link_titles), if any."""
     t = rules.norm((ROW_BY_ID.get(p.get('task_id')) or {}).get('title'))
@@ -834,6 +837,8 @@ for p in PROBLEMS:
         FOLDED[('known', p['nr_issue'])].append(p)
     elif p['kind'] == 'link' and link_known(p):
         FOLDED[('known', link_known(p))].append(p)
+    elif p['kind'] == 'subtask_ticket' and SUB_KNOWN:
+        FOLDED[('known', SUB_KNOWN)].append(p)
     elif p.get('company_id') in wait_cos:
         FOLDED[('wait', wait_cos[p['company_id']])].append(p)
     else:
@@ -858,7 +863,10 @@ for (kind, kid), ps in FOLDED.items():
 def folded_text(ps):
     by = collections.Counter(re.sub(r' \(from known issue [^)]*\)', '', p.get('source') or wfname(p.get('workflow'))) for p in ps)
     kinds = {p['kind'] for p in ps}
-    what = 'moved out of the ' + TEAM.get('queue_name', 'team') + ' queue' if kinds == {'not_in_queue'} else 'not linked to any company' if kinds == {'link'} else 'affected'
+    what = 'moved out of the ' + TEAM.get('queue_name', 'team') + ' queue' if kinds == {'not_in_queue'} else 'not linked to any company' if kinds == {'link'} else \
+        'subtasks linked to the ticket' if kinds == {'subtask_ticket'} else 'affected'
+    if kinds == {'subtask_ticket'}:
+        return f'{len(ps)} {what} (' + '; '.join(f'{k}: {v}' for k, v in by.most_common()) + ').'
     return f'{len(ps)} task(s) {what} (' + '; '.join(f'{k}: {v}' for k, v in by.most_common()) + ').'
 
 
@@ -927,6 +935,9 @@ for wid_, w in WAIT.items():
     else:
         item['found'] = [{'type': tr['name'], 'company_id': cid, 'company': cname(cid), 'reason': m['reason']} for tr in TYPE_RESULTS for cid, m in tr['missing'].items()
                          if m.get('waiting_on') == wid_ and cid not in wait_cos]
+    kw = [k for k in TEAM.get('known_issues', []) if k.get('waiting_on') == wid_ and FOLDED.get(('known', k['id']))]
+    if kw:                                   # a known issue tied to this question: show its weekly count on the card
+        item['affected_text'] = '; '.join(folded_text(FOLDED[('known', k['id'])]).split(' (')[0] + ' this week' for k in kw)
     fp = FOLDED.get(('wait', wid_), [])
     if w.get('queue_move') and fp:
         qn = ((TEAM.get('queue_names') or {}).get(w['queue_move']) or {}).get('name')

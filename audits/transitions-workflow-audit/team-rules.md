@@ -45,6 +45,7 @@ Transitions workflows don't run on a schedule. Each one starts when a **ticket**
 3. **Main tasks and subtasks** (Cherine, 2026-10-13):
    - **Main tasks** are the tasks the workflows create, including every task named "... | Subtask - [person]" (e.g. "Transition | TRANSITION KICK-OFF | Subtask - Bryn"). Despite the word "Subtask" in the name, these are main tasks. Each must be linked to the **ticket** and to exactly **one company**.
    - **Subtasks** are only the real checklist items inside a task (HubSpot's "Is subtask" = true, with a parent task). They must **not** be linked to the ticket.
+     - **Waiting on Cherine (W-5).** The rule stays, but every subtask breaks it today: subtasks copy the main task's links (known issue SUB-1). Until Cherine decides, it is reported once per run as known issue SUB-1 with the week's count, not as one problem per subtask.
 4. Tasks that shouldn't exist (a ticket that didn't enter the stage, or a second set for the same ticket) are reported.
 5. **Every Closed Won deal gets an onboarding ticket** (Cherine, 2026-10-13). Every deal in the White Label Storage SALES pipeline that moved to Closed won in the window must have a ticket in the Onboarding Pipeline. Any deal without one is reported under question 1, with a link to the deal. VERIFIED (records): the deal's "Date entered Closed won" and its ticket links.
 
@@ -89,6 +90,7 @@ Report these once per run, in their own section, not as new problems every week.
 | W-2 (F-15) | "Transition \| 30 - DAY MONITORING \| Subtask - Automated" is an ordinary task for the ticket owner. Is it meant to be manual? | 2026-10-06 |
 | W-3 (F-11) | The proposal checks PPC on any linked company, but takes the portfolio manager from the earliest "Transitions" company (anything else goes to Brock Hegr). Should both come from the same company? | 2026-10-06 |
 | W-4 | The Closed Won workflow no longer copies the deal's companies onto the ticket (edited 8 Oct). Was that on purpose? Workflow: [Closed Won \| Create Ticket in INITIAL SETUP - UNASSIGNED](https://app.hubspot.com/workflows/45059701/platform/flow/1670039203/edit) (1670039203). It affects: tickets created since 8 Oct may have no company, so their tasks can't link to a facility, and the marketing proposal's PPC check may not work. | 2026-10-13 |
+| W-5 | Checklist subtasks always get the ticket link, because they copy the main task. Do we accept that, or look for another way to remove it? (Known issue SUB-1; rule 3.) | 2026-10-15 |
 
 ## Changes not yet confirmed
 
@@ -98,6 +100,7 @@ Report these once per run, in their own section, not as new problems every week.
 
 Report each once, as a known issue, with this week's count where it applies.
 
+- **SUB-1:** Checklist subtasks copy the main task's links, including the ticket. The workflow has no setting to stop it. INFERENCE, based on the workflow settings and the records: each Create task action has one association setting (the enrolled ticket plus all its companies) and no separate setting for subtasks (checked in the Kickoff workflow by Cherine, 2026-10-15), and every checklist subtask since 2026-10-06 is linked to its ticket. Reported once per run with the week's count. Rule 3 for subtasks is waiting on Cherine (W-5).
 - **F-05:** "Transition | FINAL SIGN-OFF | Subtask - Mike" (Final Sign Off, action 20) is set up without a company link, so it is always flagged under question 2. Reported here once a week instead.
 - **F-09:** new tickets are created owned by Elizabeth Airey (owner 81929768), a deactivated user. Every "Ticket Owner/PM" task follows the ticket owner.
 - **F-10:** tasks copy only contacts with the "Transition" label, but the Closed Won workflow links contacts without a label, so tasks probably get no contact.
@@ -307,6 +310,22 @@ The scripts read this block. Keep it in step with the text above.
         "1670039203"
       ],
       "links_under_question": true
+    },
+    {
+      "id": "W-5",
+      "title": "Checklist subtasks always get the ticket link",
+      "asked": "2026-10-15",
+      "detail": "Each Create task action has one association setting: the enrolled ticket plus all its companies. There is no separate setting for subtasks, so checklist subtasks copy the main task's links, including the ticket (known issue SUB-1). Rule 3 says subtasks must not be linked to the ticket; it stays in the rules but is on hold until this is decided.",
+      "question": "Checklist subtasks always get the ticket link, because they copy the main task. Do we accept that, or look for another way to remove it?",
+      "workflows": [
+        "1866384267",
+        "1866658899",
+        "1866664080",
+        "1866664222",
+        "1866664327",
+        "1866659765",
+        "1867929348"
+      ]
     }
   ],
   "changes_not_confirmed": [
@@ -326,6 +345,13 @@ The scripts read this block. Keep it in step with the text above.
   },
   "known_queue_moves": [],
   "known_issues": [
+    {
+      "id": "SUB-1",
+      "text": "Checklist subtasks copy the main task's links, including the ticket. The workflow has no setting to stop it.",
+      "label": "INFERENCE (workflow settings + records)",
+      "subtask_ticket": true,
+      "waiting_on": "W-5"
+    },
     {
       "id": "F-05",
       "text": "\"Transition | FINAL SIGN-OFF | Subtask - Mike\" (Final Sign Off, action 20) is set up without a company link, so it never has a company.",
