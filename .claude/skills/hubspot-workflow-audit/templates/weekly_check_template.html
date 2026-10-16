@@ -224,6 +224,7 @@ function describe(key,ps){
   text:isKnown?`All from “${(p.source||'').replace(/\s*\(from known issue [^)]*\)/,'')}”. This is known issue ${p.known_issue}.`:`From “${p.source||''}”.`,who:isKnown?'Known issue':'You',label:p.label,ps};}
  if(p.kind==='missing'){return{q:1,kind:p.waiting_on?'wait':'bad',title:`${plural(n,'facility','facilities')} didn't get “${p.type}”`,
   text:`Reason: ${p.reason}.`,who:p.waiting_on?D.decision_owner:'You',label:p.label,ps};}
+ if(p.kind==='subtask_links'){return{q:2,kind:'bad',title:`${plural(n,'subtask')} ${n===1?'has':'have'} different links from ${n===1?'its':'their'} main task`,text:'Checklist subtasks should share their main task\'s company and ticket links.',who:'You',label:p.label,ps};}
  if(p.kind==='subtask_ticket'){return{q:2,kind:'bad',title:`${plural(n,'subtask')} ${n===1?'is':'are'} linked to a ticket`,text:`Checklist subtasks must not be linked to the ticket (team rule). ${n===1?'It comes':'They come'} from ${[...new Set(ps.map(x=>x.source).filter(Boolean))].join(', ')||'the team workflows'}.`,who:'You',label:p.label,ps};}
  if(p.kind==='record_missing'){return{q:1,kind:'bad',title:`${plural(n,p.object_label||'record')} got no ${p.creates_label||'record'}`,text:`${p.check_name||p.type}: each moved to the stage this week, but nothing was created for it.`,who:'You',label:p.label,ps,records:true};}
  if(p.kind==='shouldnt'){return{q:1,kind:'bad',title:`${plural(n,'facility','facilities')} got “${p.type}” but shouldn't have`,text:`Reason: ${p.reason||'not in scope'}.`,who:'You',label:p.label,ps};}

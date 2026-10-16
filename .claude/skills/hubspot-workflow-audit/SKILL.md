@@ -148,7 +148,7 @@ For every main task created in the window:
 - **A company that doesn't qualify for that task type:** INFERENCE.
 - **A ticket link,** only if the team's settings require one.
 
-For every subtask: a ticket link is flagged if the team forbids it (`links.subtask_ticket_forbidden`).
+For every subtask: a ticket link is flagged if the team forbids it (`links.subtask_ticket_forbidden`). If the team sets `links.subtask_links_match_parent`, subtasks share their main task's links instead, and only a subtask whose companies or ticket differ from its main task's is flagged (VERIFIED (records)).
 
 **Question 3: Did anyone change the workflows?**
 - **What's compared:** each live workflow against its row in the master rules file, using the master file's stored settings:
@@ -230,7 +230,7 @@ A new team only needs its two files. Do this with the user, one checkpoint at a 
    | `old_workflow_names` | `{"<old name>": [workflow IDs]}`: names the team's workflows had before a rename. Tasks keep the name from the day they were made, so the fetch also searches these. A name shared by several workflows is matched by task title, then by which workflow's trigger fits the facility |
    | `before_start` | `{"title", "note", "excluded_lists", "excluded_reason", optional "covered_by": [{"type", "covered_by_type", "reason"}], optional "old_settings_gaps": [{"type", "tiers": [tier values], "reason", "label"}]}` (a facility in one of `tiers` at the run that missed `type` before the start date is shown with `reason`, not flagged; only add one when the user decides it) (a facility that missed `type` but got `covered_by_type` in the window is shown with `reason`, not flagged): how a test run that looks back past the start date (`--ignore-start-date`) shows the older runs. They go in their own section, with no queue check and only real problems flagged (a facility that got no task at all). Facilities on `excluded_lists` that got no task are shown as "probably excluded at the time", not flagged |
    | `went_live` | `status_property`, `live_value`, `go_live_date_property`, `max_days_apart` |
-   | `links` | `main_task_company`, `main_task_ticket`, `subtask_ticket_forbidden` |
+   | `links` | `main_task_company`, `main_task_ticket`, `subtask_ticket_forbidden`, `subtask_links_match_parent` (subtasks must have the same companies and ticket as their main task) |
    | `exclusion` | Optional: `list_id` and `only_in_task_types` (the only task types whose workflows may exclude that list) |
    | `task_types` | `[{"name", "workflows": [ids], "title": regex on the lower-cased task title}]` |
    | `no_task_workflows`, `expected_off`, `not_readable` | Workflows that create nothing / are off on purpose / can't be read (with their known issue ID) |

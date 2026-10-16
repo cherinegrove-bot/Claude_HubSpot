@@ -718,12 +718,30 @@ for e in TICKET_DAYS:
         e['status'] = 'bad'
         e['detail'] += f'; {len(bad)} task{"s" if len(bad) > 1 else ""} with a link problem (' + ', '.join(sorted({r["link"] for r in bad})) + ')'
 SUB_ROWS = []
+PARENTS = {t['id']: task_row(t) for t in TASKS}              # main tasks of the window's subtasks (fetched with them)
 for r in SUBS:
     bad = links.get('subtask_ticket_forbidden') and r['tickets']
-    SUB_ROWS.append({'task': r['id'], 'title': r['title'], 'parent': r['parent'], 'tickets': r['tickets'], 'status': 'linked to a ticket' if bad else 'ok'})
+    diff = None
+    if links.get('subtask_links_match_parent'):              # subtasks share their main task's links; flag only a difference
+        par = PARENTS.get(r['parent'])
+        if par is None:
+            diff = 'main task not found'
+        else:
+            parts = []
+            for what, a_, b_ in (('companies', r['companies'], par['companies']), ('ticket', r['tickets'], par['tickets'])):
+                if set(a_) != set(b_):
+                    parts.append(f'{what}: subtask {", ".join(sorted(a_)) or "none"} vs main task {", ".join(sorted(b_)) or "none"}')
+            diff = '; '.join(parts) or None
+    st = 'linked to a ticket' if bad else (f'links differ from its main task ({diff})' if diff else 'ok')
+    SUB_ROWS.append({'task': r['id'], 'title': r['title'], 'parent': r['parent'], 'tickets': r['tickets'], 'status': st})
     if bad:
         problem(2, 'subtask_ticket', f'Subtask "{r["title"]}" ({r["id"]}) is associated with ticket {", ".join(r["tickets"])}.', 'VERIFIED (records)', 'Confirmed',
                 None, None, r['id'], r['flow'], group='subtask_ticket')
+    elif diff:
+        par = PARENTS.get(r['parent']) or {}
+        problem(2, 'subtask_links', f'Subtask "{r["title"]}" ({r["id"]}) has different links from its main task "{par.get("title", r["parent"])}" ({diff}).',
+                'VERIFIED (records)', 'Confirmed', par.get('type'), (r['companies'] or par.get('companies') or [None])[0], r['id'], r['flow'] or par.get('flow'),
+                'links differ from main task', group=f'subtask_links:{par.get("flow") or r["flow"]}')
 
 # ------------------------------------------------------------------ Question 3
 def _short(seg):
@@ -896,7 +914,7 @@ q_counts = {q: len([p for p in PROBLEMS if p['q'] == q]) for q in (1, 2, 3)}
 groups = collections.OrderedDict()
 for p in PROBLEMS:
     groups.setdefault(p['group'], []).append(p)
-WEIGHT = {'record_missing': 5, 'missing': 4, 'link': 5, 'subtask_ticket': 5, 'rule2': 5, 'off_task': 5, 'changed': 4, 'not_in_queue': 5, 'shouldnt': 3, 'duplicate': 3,
+WEIGHT = {'subtask_links': 4, 'record_missing': 5, 'missing': 4, 'link': 5, 'subtask_ticket': 5, 'rule2': 5, 'off_task': 5, 'changed': 4, 'not_in_queue': 5, 'shouldnt': 3, 'duplicate': 3,
           'not_returned': 3, 'unknown_source': 2, 'unknown_type': 2, 'not_live_90': 2, 'golive_gap': 1}
 
 
@@ -907,6 +925,8 @@ def headline(g, ps):
     if k == 'missing':
         r = p['reason']
         return f'{n} facilit{"y" if n == 1 else "ies"} did not get "{p["type"]}" — reason: {r}.'
+    if k == 'subtask_links':
+        return f'{n} subtask{"s" if n > 1 else ""} with different links from {"their" if n > 1 else "its"} main task ({p["source"]}).'
     if k == 'subtask_ticket':
         src = collections.Counter(x.get('source') for x in ps)
         return f'{n} subtask{"s" if n > 1 else ""} linked to a ticket, which the team rules forbid (' + '; '.join(f'{k_}: {v}' for k_, v in src.most_common()) + ').'
