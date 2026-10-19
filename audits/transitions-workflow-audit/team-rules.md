@@ -92,6 +92,7 @@ Report these once per run, in their own section, not as new problems every week.
 |---|---|---|
 | W-4 | The Closed Won workflow no longer copies the deal's companies onto the ticket (edited 8 Oct). Was that on purpose? Workflow: [Closed Won \| Create Ticket in INITIAL SETUP - UNASSIGNED](https://app.hubspot.com/workflows/45059701/platform/flow/1670039203/edit) (1670039203). It affects: tickets created since 8 Oct may have no company, so their tasks can't link to a facility, and the marketing proposal's PPC check may not work. | 2026-10-13 |
 | W-6 | A ticket can move to a stage before its facility is linked to it. That stage's tasks then get no company, and they don't update when the facility is linked later. Should the facility always be linked before a ticket moves to Kickoff, or should something link it automatically? Workflows: Transitions - Transition Kickoff Tasks (+SubTask) (1866384267), Create Facility (1852542804). Example: Finish Line Self Storage, 12 Oct. | 2026-10-15 |
+| W-7 | When a company is added by hand to a main task, HubSpot updates its checklist subtasks but doesn't add the company to them. Why does this happen, and how should subtasks get the company when a main task is fixed by hand? Example: Finish Line Self Storage, 17 checklist subtasks without a company after the 15 Oct hand fix. What we know: HubSpot's automatic "parent-task-associated-object-writer" ran on the subtasks in the same second the main tasks were fixed, but didn't add the company. Why is NEEDS VERIFICATION. Test: add a company by hand to one main task with subtasks, then check a subtask a minute later. Workflow: Transitions - Transition Kickoff Tasks (+SubTask) (1866384267). | 2026-10-19 |
 
 ### Closed (answered by Cherine)
 
@@ -300,6 +301,18 @@ The scripts read this block. Keep it in step with the text above.
       "workflows": [
         "1866384267",
         "1852542804"
+      ],
+      "links_under_question": true
+    },
+    {
+      "id": "W-7",
+      "title": "Fixing a main task by hand doesn't fix its subtasks",
+      "asked": "2026-10-19",
+      "detail": "Finish Line Self Storage: on 12 Oct the Kickoff workflow created 3 main tasks and their 17 checklist subtasks while the ticket had no company, so all of them got the ticket only. On 15 Oct the company was added by hand to the 3 main tasks (10:38-10:39 UTC). In the same second, HubSpot's automatic process \"parent-task-associated-object-writer\" updated every subtask under them (VERIFIED (records): the subtasks' change history), but the subtasks still have no company (VERIFIED (records), checked 19 Oct). Why the sync didn't add the company is NEEDS VERIFICATION: it may only copy links in some cases (e.g. set by the workflow, not added by hand) or only some kinds of link. The same sync is probably why the first Pre-Launch checklist item (\"1. Provide guidance to onsite point of contact...\") has no company: it is created about 0.4 seconds after its main task (INFERENCE). Test to settle it: add a company by hand to one main task that has subtasks and no company, then open a subtask a minute later.",
+      "question": "When a company is added by hand to a main task, HubSpot updates its checklist subtasks but doesn't add the company to them. Why does this happen, and how should subtasks get the company when a main task is fixed by hand?",
+      "workflows": [
+        "1866384267",
+        "1866658899"
       ],
       "links_under_question": true
     }
