@@ -409,7 +409,13 @@ def ticket_type_results(tt, first, last, rows):
             if prior and (r['created'] - prior[-1]).total_seconds() < 86400:
                 continue                                # entered the stage just before the period; created by that run
         fac = facility_of(tid) or (r['companies'] or [None])[0]
-        reason = 'its ticket did not enter the stage before this task was created' if t else f'its ticket {tid} is not in the team pipeline'
+        tp = (t or {}).get('properties', {})
+        if t and TF.get('pipelines') and tp.get('hs_pipeline') not in TF['pipelines']:
+            made = P(tp.get('createdate'))
+            reason = (f'the task is linked to a ticket in another pipeline' + (f', created {fmt_dt(made)}' + (', after the task' if made and made > r['created'] else '') if made else '')
+                      + '; it was probably linked by hand later')
+        else:
+            reason = 'its ticket did not enter the stage before this task was created' if t else f'its ticket {tid} is not in the team pipeline'
         shouldnt[fac or tid] = {'reason': reason + f' (ticket {tid})', 'label': 'INFERENCE', 'task': r['id'], 'workflow': r['flow'], 'created': fmt_dt(r['created'])}
     for cid, m in missing.items():
         problem(1, 'missing', f'{cname(cid)} did not get "{name}" ({m["reason"]}).', m['label'], 'Potential Issue' if m['reason'].startswith('unknown') else 'Confirmed',
@@ -436,8 +442,7 @@ def type_results(first, last, rows, pre=False):
     for tt in TYPES:
         name = tt['name']
         if tt['workflows'] and all(is_ticket_wf(w) for w in tt['workflows']):
-            if not pre:
-                out.append(ticket_type_results(tt, first, last, rows))
+            out.append(ticket_type_results(tt, first, last, rows))     # before the start date too (its own section, no queue check)
             continue
         runs, notes = [], []
         should, missing, shouldnt, not_exp = {}, {}, {}, collections.Counter()
@@ -544,6 +549,7 @@ for r in MAIN + PRE_MAIN:
 MAIN_FIRST = CUTOFF or FIRST
 TYPE_RESULTS = type_results(MAIN_FIRST, LAST, MAIN)
 PRE_TYPES = []
+PRE_KNOWN_LINKS = collections.Counter()
 if CUTOFF:
     SECTION = 'before_start'
     PRE_TYPES = type_results(FIRST, CUTOFF - dt.timedelta(days=1), PRE_MAIN, pre=True)
@@ -553,6 +559,14 @@ if CUTOFF:
         if not r['companies']:
             problem(2, 'link', f'Task "{r["title"]}" ({r["id"]}): no company.', 'VERIFIED (records)', 'Confirmed', r['type'], None, r['id'], r['flow'] if r['flow'] in M else None,
                     'no company', group=f'link:no company:{r["source"]}', source=wfname(r['flow']) if r['flow'] in M else r['source'])
+    _kt = {x: k['id'] for k in TEAM.get('known_issues', []) for x in k.get('link_titles', [])}
+    PRE_KNOWN_LINKS = collections.Counter()
+    for p_ in list(PRE_PROBLEMS):              # a known issue before the start date too: one line, not one problem per task
+        r_ = next((r for r in PRE_MAIN if r['id'] == p_.get('task_id')), None)
+        k_ = next((kid for x, kid in _kt.items() if r_ and re.search(x, rules.norm(r_['title']), re.I)), None) if p_['kind'] == 'link' else None
+        if k_:
+            PRE_KNOWN_LINKS[k_] += 1
+            PRE_PROBLEMS.remove(p_)
     SECTION = 'main'
 
 # other task-level checks (Question 1)
@@ -1180,7 +1194,8 @@ if CUTOFF:
         'window': [FIRST.isoformat(), (CUTOFF - dt.timedelta(days=1)).isoformat()], 'cutoff': CUTOFF.isoformat(),
         'main_tasks': len(PRE_MAIN), 'types': PRE_TYPES, 'problems': PRE_PROBLEMS,
         'not_flagged': sum(len(t['shouldnt']) for t in PRE_TYPES),
-        'known': [f'{n} task(s) from "{src}" (known issue {next((x.get("known_issue", "") for x in TEAM.get("not_readable", []) if x["name"] == src), "")})' for src, n in PRE_KNOWN.items()],
+        'known': [f'{n} task(s) from "{src}" (known issue {next((x.get("known_issue", "") for x in TEAM.get("not_readable", []) if x["name"] == src), "")})' for src, n in PRE_KNOWN.items()]
+                 + [f'{n} task(s) with no company (known issue {k})' for k, n in PRE_KNOWN_LINKS.items()],
         'tasks_by_workflow': dict(collections.Counter(wfname(r['flow']) if r['flow'] in M else r['source'] for r in PRE_MAIN)),
         'old_names': dict(collections.Counter(r['old_name'] for r in PRE_MAIN + MAIN if r.get('old_name'))),
     }
@@ -1189,7 +1204,7 @@ if TF:
     rc_wf = next((c.get('workflow') for c in TEAM.get('record_checks') or []), None)
     for tid, t in TICKETS.items():
         cd = P(t['properties'].get('createdate'))
-        if not cd or local(cd).date() > LAST or (TEAM.get('start_date') and local(cd).date().isoformat() < TEAM['start_date']):
+        if not cd or local(cd).date() > LAST or local(cd).date() < FIRST or (not CUTOFF and TEAM.get('start_date') and local(cd).date().isoformat() < TEAM['start_date']):
             continue
         fac = facility_of(tid)
         TICKET_DAYS.append({'date': local(cd).date().isoformat(), 'time': local(cd).strftime('%H:%M'), 'kind': 'created', 'type': 'New onboarding ticket',

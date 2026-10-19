@@ -224,7 +224,7 @@ function describe(key,ps){
   text:isKnown?`All from “${(p.source||'').replace(/\s*\(from known issue [^)]*\)/,'')}”. This is known issue ${p.known_issue}.`:`From “${p.source||''}”.`,who:isKnown?'Known issue':'You',label:p.label,ps};}
  if(p.kind==='missing'){return{q:1,kind:p.waiting_on?'wait':'bad',title:`${plural(n,'facility','facilities')} didn't get “${p.type}”`,
   text:`Reason: ${p.reason}.`,who:p.waiting_on?D.decision_owner:'You',label:p.label,ps};}
- if(p.kind==='subtask_links'){return{q:2,kind:'bad',title:`${plural(n,'subtask')} ${n===1?'has':'have'} different links from ${n===1?'its':'their'} main task`,text:'Checklist subtasks should share their main task\'s company and ticket links.',who:'You',label:p.label,ps};}
+ if(p.kind==='subtask_links'){return{q:2,kind:'bad',title:`${plural(n,'subtask')} ${n===1?'has':'have'} different links from ${n===1?'its':'their'} main task`,text:`From “${p.source||'a team workflow'}”. Checklist subtasks should share their main task's company and ticket links.`,who:'You',label:p.label,ps};}
  if(p.kind==='subtask_ticket'){return{q:2,kind:'bad',title:`${plural(n,'subtask')} ${n===1?'is':'are'} linked to a ticket`,text:`Checklist subtasks must not be linked to the ticket (team rule). ${n===1?'It comes':'They come'} from ${[...new Set(ps.map(x=>x.source).filter(Boolean))].join(', ')||'the team workflows'}.`,who:'You',label:p.label,ps};}
  if(p.kind==='record_missing'){return{q:1,kind:'bad',title:`${plural(n,p.object_label||'record')} got no ${p.creates_label||'record'}`,text:`${p.check_name||p.type}: each moved to the stage this week, but nothing was created for it.`,who:'You',label:p.label,ps,records:true};}
  if(p.kind==='shouldnt'){return{q:1,kind:'bad',title:`${plural(n,'facility','facilities')} got “${p.type}” but shouldn't have`,text:`Reason: ${p.reason||'not in scope'}.`,who:'You',label:p.label,ps};}
@@ -306,7 +306,7 @@ function runsOn(y,m,d){const dow=DOWS[(new Date(Date.UTC(y,m,d)).getUTCDay()+6)%
  const date=ymd(y,m,d);(D.ticket_days||[]).filter(e=>e.date===date).forEach(e=>{const k='~'+e.kind+'|'+e.type,r=by[k]=by[k]||{type:e.type,time:'',wfs:e.workflow?[{id:e.workflow,name:e.workflow_name,off:false}]:[],off:false,ev:[],kind:e.kind};r.ev.push(e);});
  return Object.values(by).sort((a,b)=>a.time.localeCompare(b.time)||a.type.localeCompare(b.type));}
 function evResult(r,date){
- if(date<(D.start_date||''))return{st:'grey',txt:'Before the audit start date, not checked'};
+ if(date<(D.start_date||'')&&!(D.before_start&&date>=w0))return{st:'grey',txt:'Before the audit start date, not checked'};
  if(date<w0)return{st:'grey',txt:'Outside this week\'s window (checked in an earlier week)'};
  if(date>w1||date>today)return{st:'grey',txt:'Hasn\'t happened yet'};
  const bad=r.ev.filter(e=>e.status==='bad').length,fx=r.ev.filter(e=>e.status==='fixed').length;
