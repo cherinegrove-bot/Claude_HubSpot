@@ -88,7 +88,7 @@ All agreed with Cherine on 2026-10-13:
 - **Went live this week:** shown, using Status = Live and the go-live date, flagged when more than 7 days apart.
   - Checked on 2026-10-13: this is the same property as CS Ops. Company property `live` (label "Status"); Live is the internal value `Yes`. The go-live date is `go_live_date` (label "Actual Go-Live Date").
 - **Closed Won deals:** every deal that moved to Closed won (White Label Storage SALES) in the window must have an Onboarding Pipeline ticket (rule 5).
-- **Finish Line Self Storage, 3 Kickoff tasks with no company (12 Oct): by design, not a problem** (corrected 2026-10-20, Cherine; replaces the earlier notes). Ilse Modene moved the ticket to Transition Kickoff at 2:35 PM (US Eastern) on 12 Oct; the Kickoff workflow created its tasks seconds later, while the ticket had no company; she linked Finish Line Self Storage to the ticket 24 seconds after the move (VERIFIED (records): ticket status history and "Number of Associated Companies" history; Cherine said about a minute). That's before Pre-Launch Setup, so the process was followed, and Kickoff tasks without a company are by design (rule 7). Not caused by W-4. Cherine linked the company to the 3 main tasks by hand on 2026-10-15; their 17 checklist subtasks still have no company, which is also fine at Kickoff. W-7 (why the hand fix didn't reach the subtasks) stays open as a question.
+- **Finish Line Self Storage, 3 Kickoff tasks with no company (12 Oct): by design, not a problem** (corrected 2026-10-20, Cherine; replaces the earlier notes). Ilse Modene moved the ticket to Transition Kickoff at 2:35 PM (US Eastern) on 12 Oct; the Kickoff workflow created its tasks seconds later, while the ticket had no company; she linked Finish Line Self Storage to the ticket 24 seconds after the move (VERIFIED (records): ticket status history and "Number of Associated Companies" history; Cherine said about a minute). That's before Pre-Launch Setup, so the process was followed, and Kickoff tasks without a company are by design (rule 7). Not caused by W-4. Cherine linked the company to the 3 main tasks by hand on 2026-10-15; their 17 checklist subtasks still have no company, which is also fine at Kickoff. W-7 (why the hand fix didn't reach the subtasks) was closed as done and resolved on 2026-10-20.
 - **Excluded companies:** demo Facility (44541671248), the same as CS Ops.
 - **Closed Won adds no company, by design** (Cherine, 2026-10-20; was W-4): the facility doesn't exist yet when the deal closes. The 8 Oct edit was planned.
 - **The onboarding team links the company before the ticket moves to Pre-Launch Setup** (Cherine, 2026-10-20; was W-6): "By design. The company must be linked by the onboarding team before the ticket moves on. Cherine is raising it with Ilsa." The deadline is Pre-Launch Setup: a Kickoff ticket may not have its company yet (rule 7). A ticket that reaches Pre-Launch Setup or later without it is a process issue (rule 6), not a workflow problem.
@@ -102,9 +102,7 @@ All agreed with Cherine on 2026-10-13:
 
 Report these once per run, in their own section, not as new problems every week.
 
-| Item | Question | Asked |
-|---|---|---|
-| W-7 | When a company is added by hand to a main task, HubSpot updates its checklist subtasks but doesn't add the company to them. Why does this happen, and how should subtasks get the company when a main task is fixed by hand? Example: Finish Line Self Storage, 17 checklist subtasks without a company after the 15 Oct hand fix. What we know: HubSpot's automatic "parent-task-associated-object-writer" ran on the subtasks in the same second the main tasks were fixed, but didn't add the company. Why is NEEDS VERIFICATION. Test: add a company by hand to one main task with subtasks, then check a subtask a minute later. Workflow: Transitions - Transition Kickoff Tasks (+SubTask) (1866384267). | 2026-10-19 |
+None right now.
 
 ### Closed (answered by Cherine)
 
@@ -116,6 +114,7 @@ Report these once per run, in their own section, not as new problems every week.
 | W-5 and known issue SUB-1. Checklist subtasks always get the ticket link, because they copy the main task. Accept it, or look for another way? | Accepted, by design (2026-10-16). Checklist subtasks belong to their main task, so they share the main task's links, including the ticket. HubSpot does this automatically. Cherine has been told and can ask to look for another way (the client didn't like seeing subtasks on the ticket before). Closed 2026-10-16. |
 | W-4. The Closed Won workflow no longer copies the deal's companies onto the ticket (edited 8 Oct). Was that on purpose? | By design. The Closed Won workflow doesn't add a company on purpose: when the deal closes, the facility doesn't exist yet. It is created later by Create Facility from the intake form, and the onboarding team links it to the ticket by hand (Cherine, 2026-10-20). The 8 Oct edit (revision 13 -> 14) was planned; the master rules file now holds revision 14. Closed 2026-10-20. |
 | W-6. Should the facility always be linked before a ticket moves to Kickoff, or should something link it automatically? | By design. The company must be linked by the onboarding team before the ticket moves on. Cherine is raising it with Ilsa. (Cherine, 2026-10-20). Clarified 2026-10-20: the deadline is Pre-Launch Setup; Kickoff tasks without a company are by design. Closed 2026-10-20. |
+| W-7. When a company is added by hand to a main task, HubSpot updates its checklist subtasks but doesn't add the company to them. Why, and how should subtasks get the company? | Done and resolved (closed by WLS on 2026-10-20). No further action. Note: Finish Line's Kickoff checklist subtasks without a company are by design anyway (rule 7). Closed 2026-10-20. |
 
 ## Changes not yet confirmed
 
@@ -294,20 +293,7 @@ The scripts read this block. Keep it in step with the text above.
   "expected_off": [],
   "not_readable": [],
   "branch_reasons": [],
-  "waiting_on": [
-    {
-      "id": "W-7",
-      "title": "Fixing a main task by hand doesn't fix its subtasks",
-      "asked": "2026-10-19",
-      "detail": "Finish Line Self Storage: on 12 Oct the Kickoff workflow created 3 main tasks and their 17 checklist subtasks while the ticket had no company, so all of them got the ticket only. On 15 Oct the company was added by hand to the 3 main tasks (10:38-10:39 UTC). In the same second, HubSpot's automatic process \"parent-task-associated-object-writer\" updated every subtask under them (VERIFIED (records): the subtasks' change history), but the subtasks still have no company (VERIFIED (records), checked 19 Oct). Why the sync didn't add the company is NEEDS VERIFICATION: it may only copy links in some cases (e.g. set by the workflow, not added by hand) or only some kinds of link. The same sync is probably why the first Pre-Launch checklist item (\"1. Provide guidance to onsite point of contact...\") has no company: it is created about 0.4 seconds after its main task (INFERENCE). Test to settle it: add a company by hand to one main task that has subtasks and no company, then open a subtask a minute later.",
-      "question": "When a company is added by hand to a main task, HubSpot updates its checklist subtasks but doesn't add the company to them. Why does this happen, and how should subtasks get the company when a main task is fixed by hand?",
-      "workflows": [
-        "1866384267",
-        "1866658899"
-      ],
-      "links_under_question": true
-    }
-  ],
+  "waiting_on": [],
   "changes_not_confirmed": [],
   "queue_names": {
     "13519270": {
@@ -339,6 +325,12 @@ The scripts read this block. Keep it in step with the text above.
     }
   ],
   "closed": [
+    {
+      "id": "W-7",
+      "closed": "2026-10-20",
+      "answered": "2026-10-20",
+      "answer": "Done and resolved (closed by WLS on 2026-10-20). No further action. Note: Finish Line's Kickoff checklist subtasks without a company are by design anyway (rule 7)."
+    },
     {
       "id": "W-4",
       "closed": "2026-10-20",
