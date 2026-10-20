@@ -1301,6 +1301,8 @@ if CUTOFF:
 if TF:
     rc_wf = next((c.get('workflow') for c in TEAM.get('record_checks') or []), None)
     for tid, t in TICKETS.items():
+        if TF.get('pipelines') and t['properties'].get('hs_pipeline') not in TF['pipelines']:
+            continue                          # e.g. a ticket in another pipeline that a task was linked to by hand
         cd = P(t['properties'].get('createdate'))
         if not cd or local(cd).date() > LAST or local(cd).date() < FIRST or (not CUTOFF and TEAM.get('start_date') and local(cd).date().isoformat() < TEAM['start_date']):
             continue
