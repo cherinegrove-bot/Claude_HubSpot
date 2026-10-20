@@ -35,8 +35,8 @@ This is how onboarding really works. Use it in every run.
 
 1. **Sales moves the deal to Closed won.** The Closed Won workflow (1670039203) creates the onboarding ticket in UNASSIGNED. It doesn't add a company **on purpose**: the facility doesn't exist yet.
 2. **The onboarding team sends the intake form.** When it's completed, the Create Facility workflow (1852542804) creates the company (the facility).
-3. **Ilsa (Ilse Modene in HubSpot) links that company to the ticket by hand**, before moving the ticket to the next stage.
-4. **If a ticket moves to a stage before its company is linked**, that stage's tasks get no company. That's a **team process issue, not a workflow fault**. It is reported under its own heading, "Process issues for the Transitions team", with the ticket, the stage, when it moved (and who moved it), and when the company was linked. Those tasks are not reported again under question 2.
+3. **Ilsa (Ilse Modene in HubSpot) links that company to the ticket by hand, before the ticket moves to Pre-Launch Setup** (Cherine, 2026-10-20). The ticket is created without a company and can still be without one during Transition Kickoff; that's by design. From Pre-Launch Setup on, it must have its company.
+4. **If a ticket moves to Pre-Launch Setup or a later stage before its company is linked**, that stage's tasks get no company. That's a **team process issue, not a workflow fault**. It is reported under its own heading, "Process issues for the Transitions team", with the ticket, the stage, when it moved (and who moved it), and when the company was linked. Those tasks are not reported again under question 2.
    - How the audit knows when the company was linked: the ticket's "Number of Associated Companies" (`hs_num_associated_companies`) history, the first time it goes above 0 (VERIFIED (records)). Who moved the ticket comes from the ticket status history.
 
 ## How "who should get a task" works for Transitions
@@ -57,7 +57,8 @@ Transitions workflows don't run on a schedule. Each one starts when a **ticket**
    - **Checklist subtasks** are only the real checklist items inside a task (HubSpot's "Is subtask" = true, with a parent task). They **share their main task's links**, including the ticket: HubSpot copies them automatically. This is accepted, by design (2026-10-16, closes W-5 and SUB-1). The audit flags a subtask only if its links (companies or ticket) **differ** from its main task's.
 4. Tasks that shouldn't exist (a ticket that didn't enter the stage, or a second set for the same ticket) are reported.
 5. **Every Closed Won deal gets an onboarding ticket** (Cherine, 2026-10-13). Every deal in the White Label Storage SALES pipeline that moved to Closed won in the window must have a ticket in the Onboarding Pipeline. Any deal without one is reported under question 1, with a link to the deal. VERIFIED (records): the deal's "Date entered Closed won" and its ticket links.
-6. **The company is linked before the ticket moves on** (Cherine, 2026-10-20). A ticket that moves to a stage before its company is linked is a process issue for the Transitions team (see "The Transitions process", step 4), not a workflow fault.
+6. **The company is linked before the ticket moves to Pre-Launch Setup** (Cherine, 2026-10-20). A ticket that reaches Pre-Launch Setup or a later stage before its company is linked is a process issue for the Transitions team (see "The Transitions process", step 4), not a workflow fault.
+7. **Kickoff tasks without a company are fine, by design** (Cherine, 2026-10-20). Transition Kickoff tasks, and their checklist subtasks, can be created before the company is linked, so they may have none. They are not reported as problems; each run lists them under "By design, not problems" with this reason.
 
 ## Task types
 
@@ -87,10 +88,10 @@ All agreed with Cherine on 2026-10-13:
 - **Went live this week:** shown, using Status = Live and the go-live date, flagged when more than 7 days apart.
   - Checked on 2026-10-13: this is the same property as CS Ops. Company property `live` (label "Status"); Live is the internal value `Yes`. The go-live date is `go_live_date` (label "Actual Go-Live Date").
 - **Closed Won deals:** every deal that moved to Closed won (White Label Storage SALES) in the window must have an Onboarding Pipeline ticket (rule 5).
-- **Finish Line Self Storage, 3 Kickoff tasks with no company (12 Oct): a process issue** (corrected 2026-10-20, Cherine; replaces the notes of 2026-10-15). Ilse Modene moved the ticket to Transition Kickoff at 2:35 PM (US Eastern) on 12 Oct; the Kickoff workflow created its tasks seconds later, while the ticket had no company; she linked Finish Line Self Storage to the ticket 24 seconds after the move (VERIFIED (records): ticket status history and "Number of Associated Companies" history; Cherine said about a minute). The company had been created by Create Facility at 2:07 PM, which is the normal process: Create Facility isn't meant to link the ticket. Not caused by W-4 (the Closed Won workflow doesn't add companies by design). Cherine linked the company to the 3 main tasks by hand on 2026-10-15; their 17 checklist subtasks still have no company (W-7). Reported under "Process issues for the Transitions team".
+- **Finish Line Self Storage, 3 Kickoff tasks with no company (12 Oct): by design, not a problem** (corrected 2026-10-20, Cherine; replaces the earlier notes). Ilse Modene moved the ticket to Transition Kickoff at 2:35 PM (US Eastern) on 12 Oct; the Kickoff workflow created its tasks seconds later, while the ticket had no company; she linked Finish Line Self Storage to the ticket 24 seconds after the move (VERIFIED (records): ticket status history and "Number of Associated Companies" history; Cherine said about a minute). That's before Pre-Launch Setup, so the process was followed, and Kickoff tasks without a company are by design (rule 7). Not caused by W-4. Cherine linked the company to the 3 main tasks by hand on 2026-10-15; their 17 checklist subtasks still have no company, which is also fine at Kickoff. W-7 (why the hand fix didn't reach the subtasks) stays open as a question.
 - **Excluded companies:** demo Facility (44541671248), the same as CS Ops.
 - **Closed Won adds no company, by design** (Cherine, 2026-10-20; was W-4): the facility doesn't exist yet when the deal closes. The 8 Oct edit was planned.
-- **The onboarding team links the company before the ticket moves on** (Cherine, 2026-10-20; was W-6): "By design. The company must be linked by the onboarding team before the ticket moves on. Cherine is raising it with Ilsa." A ticket moved too early is a process issue (rule 6), not a workflow problem.
+- **The onboarding team links the company before the ticket moves to Pre-Launch Setup** (Cherine, 2026-10-20; was W-6): "By design. The company must be linked by the onboarding team before the ticket moves on. Cherine is raising it with Ilsa." The deadline is Pre-Launch Setup: a Kickoff ticket may not have its company yet (rule 7). A ticket that reaches Pre-Launch Setup or later without it is a process issue (rule 6), not a workflow problem.
 - **Checklist subtasks share their main task's links** (2026-10-16; was W-5 / SUB-1): accepted, by design. Subtasks linked to the ticket are not a problem. Only a subtask whose links differ from its main task's is flagged (question 2). Cherine has been told and may ask to revisit it.
 - **Marketing Proposal routing is by design** (Cherine, 2026-10-15; was W-3 / F-11): the PPC check looks at any company linked to the ticket; the proposal goes to the Marketing Portfolio Manager of the first-created "Transitions" company; Brock Hegr is the correct default when that manager is empty or someone else. Keep the workflow as it is. **Never flag this** in a weekly run: the check only looks at whether the proposal was created when PPC Enrolled = Yes, not who it went to.
 - **"Subtask - Automated" (30-Day Monitoring) is by design** (Cherine, 2026-10-15; was W-2 / F-15): the CSAT survey goes out automatically when the ticket enters Post 30-Day Monitoring, and this task tells the ticket owner it was sent. "Automated" refers to the survey, not the task. Not a problem. Survey name to be confirmed.
@@ -114,7 +115,7 @@ Report these once per run, in their own section, not as new problems every week.
 | W-3 (F-11). Should the proposal's PPC check and portfolio manager come from the same company, and is Brock Hegr the right default? | By design, keep the workflow as it is (Cherine, 2026-10-15). The PPC check looks at any company linked to the ticket, and the proposal goes to the Marketing Portfolio Manager of the first-created "Transitions" company. That's how WLS wants it. Brock Hegr is the correct default when the portfolio manager is empty or someone else. Not flagged in future runs. Closed 2026-10-15. |
 | W-5 and known issue SUB-1. Checklist subtasks always get the ticket link, because they copy the main task. Accept it, or look for another way? | Accepted, by design (2026-10-16). Checklist subtasks belong to their main task, so they share the main task's links, including the ticket. HubSpot does this automatically. Cherine has been told and can ask to look for another way (the client didn't like seeing subtasks on the ticket before). Closed 2026-10-16. |
 | W-4. The Closed Won workflow no longer copies the deal's companies onto the ticket (edited 8 Oct). Was that on purpose? | By design. The Closed Won workflow doesn't add a company on purpose: when the deal closes, the facility doesn't exist yet. It is created later by Create Facility from the intake form, and the onboarding team links it to the ticket by hand (Cherine, 2026-10-20). The 8 Oct edit (revision 13 -> 14) was planned; the master rules file now holds revision 14. Closed 2026-10-20. |
-| W-6. Should the facility always be linked before a ticket moves to Kickoff, or should something link it automatically? | By design. The company must be linked by the onboarding team before the ticket moves on. Cherine is raising it with Ilsa. (Cherine, 2026-10-20). Closed 2026-10-20. |
+| W-6. Should the facility always be linked before a ticket moves to Kickoff, or should something link it automatically? | By design. The company must be linked by the onboarding team before the ticket moves on. Cherine is raising it with Ilsa. (Cherine, 2026-10-20). Clarified 2026-10-20: the deadline is Pre-Launch Setup; Kickoff tasks without a company are by design. Closed 2026-10-20. |
 
 ## Changes not yet confirmed
 
@@ -348,7 +349,8 @@ The scripts read this block. Keep it in step with the text above.
       "id": "W-6",
       "closed": "2026-10-20",
       "answered": "2026-10-20",
-      "answer": "By design. The company must be linked by the onboarding team before the ticket moves on. Cherine is raising it with Ilsa."
+      "answer": "By design. The company must be linked by the onboarding team before the ticket moves on. Cherine is raising it with Ilsa.",
+      "clarified": "2026-10-20: the deadline is Pre-Launch Setup; Kickoff tasks without a company are by design."
     },
     {
       "id": "W-5",
@@ -397,7 +399,26 @@ The scripts read this block. Keep it in step with the text above.
   "process_issues": {
     "company_before_stage": true,
     "heading": "Process issues for the Transitions team",
-    "note": "A ticket moved to a stage before its first company link (hs_num_associated_companies > 0): that stage's tasks got no company. Team process issue, not a workflow fault (Cherine, 2026-10-20)."
-  }
+    "note": "A ticket moved to a stage before its first company link (hs_num_associated_companies > 0): that stage's tasks got no company. Team process issue, not a workflow fault (Cherine, 2026-10-20).",
+    "stages": [
+      "1094530722",
+      "1094530723",
+      "1094493506",
+      "1094493507",
+      "1102485356",
+      "1094530724"
+    ],
+    "stages_note": "Pre-Launch Setup and every later stage of the Onboarding Pipeline (the company must be linked before Pre-Launch Setup)."
+  },
+  "by_design_no_company": [
+    {
+      "task_types": [
+        "Transition Kickoff"
+      ],
+      "reason": "The ticket gets its company by hand before Pre-Launch Setup, so Kickoff tasks (and their checklist subtasks) can be created before it's linked.",
+      "decided": "2026-10-20",
+      "by": "Cherine"
+    }
+  ]
 }
 ```

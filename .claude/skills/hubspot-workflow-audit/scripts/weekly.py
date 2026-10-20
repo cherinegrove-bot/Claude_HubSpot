@@ -550,6 +550,23 @@ for r in MAIN + PRE_MAIN:
 # ------------------------------------------------------------------ process issues (ticket teams)
 # A ticket moved to a stage before its first company was linked, so that stage's tasks got no company. The team's
 # process says the company is linked first (team-rules.md), so this is reported as a team process issue, not a workflow fault.
+PROC_STAGES = {(STAGES.get(x) or {}).get('label') for x in ((TEAM.get('process_issues') or {}).get('stages') or [])} - {None}
+# task types whose tasks may have no company by design (team-rules.md "by_design_no_company"): not problems, listed with the reason
+BYD = {t: b for b in (TEAM.get('by_design_no_company') or []) for t in b.get('task_types', [])}
+BY_DESIGN = collections.OrderedDict()
+
+
+def by_design_note(r, sub=False):
+    tid = (r['tickets'] or [None])[0]
+    k = (tid, r['type'])
+    e = BY_DESIGN.setdefault(k, {'type': r['type'], 'ticket': tid, 'ticket_name': (TICKETS.get(tid) or {}).get('properties', {}).get('subject') or (f'ticket {tid}' if tid else ''),
+                                 'company_id': facility_of(tid) if tid else None, 'tasks': 0, 'subtasks': 0, 'reason': BYD[r['type']]['reason'],
+                                 'fixed_by_hand': None})
+    e['subtasks' if sub else 'tasks'] += 1
+    if not sub and r['id'] in FIXED:
+        e['fixed_by_hand'] = FIXED[r['id']].get('fixed')
+
+
 USERS = {str(o.get('userId')): (o.get('firstName', '') + ' ' + o.get('lastName', '')).strip() for o in W('owners.json', []) if o.get('userId')}
 PROC, PROC_TASKS = [], set()
 
@@ -579,7 +596,7 @@ def build_process_issues():
         return
     done = {x['key'] for x in PROC}
     for e in TICKET_DAYS:
-        if e['kind'] != 'stage' or not e.get('at_iso'):
+        if e['kind'] != 'stage' or not e.get('at_iso') or (PROC_STAGES and e.get('stage') not in PROC_STAGES):
             continue
         key = (e['ticket'], e['type'], e['at_iso'])
         t = TICKETS.get(e['ticket'])
@@ -617,6 +634,9 @@ if CUTOFF:
     for r in PRE_MAIN:                       # a real problem even under the old settings: a task with no company
         if isinstance(r['flow'], str) and r['flow'].startswith('not_readable') or r['id'] in PROC_TASKS:
             continue                         # counted under its known issue / the process issues instead
+        if r['type'] in BYD and not r['companies']:
+            by_design_note(r)
+            continue
         if not r['companies']:
             problem(2, 'link', f'Task "{r["title"]}" ({r["id"]}): no company.', 'VERIFIED (records)', 'Confirmed', r['type'], None, r['id'], r['flow'] if r['flow'] in M else None,
                     'no company', group=f'link:no company:{r["source"]}', source=wfname(r['flow']) if r['flow'] in M else r['source'])
@@ -762,6 +782,9 @@ for r in MAIN:
     if st == 'ok' and links.get('main_task_ticket') and not r['tickets']:
         st = 'no ticket'
     fx = FIXED.get(r['id'])
+    if r['type'] in BYD and (st == 'no company' or (fx and st == 'ok')):
+        by_design_note(r)                     # e.g. Kickoff tasks before the company is linked: by design
+        st, fx = 'ok', None
     if fx and st == 'ok':                     # fine now, because a person fixed it after the workflow ran
         st = f'{fx.get("problem", "problem")} when created; fixed by hand on {fx["fixed"]}'
         label = 'VERIFIED (records)'
@@ -795,6 +818,10 @@ for e in TICKET_DAYS:
     if bad:
         e['status'] = 'bad'
         e['detail'] += f'; {len(bad)} task{"s" if len(bad) > 1 else ""} with a link problem (' + ', '.join(sorted({r["link"] for r in bad})) + ')'
+for e in TICKET_DAYS:                       # by-design gaps are noted on the day, without making it a problem day
+    b_ = BY_DESIGN.get((e['ticket'], e['type'])) if e['kind'] == 'stage' else None
+    if b_ and e.get('status') == 'ok':
+        e['detail'] += f'; {b_["tasks"]} created without a company, by design'
 SUB_ROWS = []
 PARENTS = {t['id']: task_row(t) for t in TASKS}              # main tasks of the window's subtasks (fetched with them)
 for r in SUBS:
@@ -810,6 +837,10 @@ for r in SUBS:
                 if set(a_) != set(b_):
                     parts.append(f'{what}: subtask {", ".join(sorted(a_)) or "none"} vs main task {", ".join(sorted(b_)) or "none"}')
             diff = '; '.join(parts) or None
+    par_ = PARENTS.get(r['parent']) or {}
+    if diff and par_.get('type') in BYD and not r['companies'] and set(r['tickets']) == set(par_.get('tickets') or []):
+        by_design_note({**r, 'type': par_['type'], 'tickets': r['tickets'] or par_.get('tickets') or []}, sub=True)
+        diff = None                            # only the company is missing, at a stage where that's by design
     st = 'linked to a ticket' if bad else (f'links differ from its main task ({diff})' if diff else 'ok')
     if r['id'] in PROC_TASKS and st != 'ok':
         SUB_ROWS.append({'task': r['id'], 'title': r['title'], 'parent': r['parent'], 'tickets': r['tickets'], 'status': 'process issue: ' + st})
@@ -1289,7 +1320,7 @@ RESULT = {
     'counts': {'facilities_in_scope': in_scope_count, 'main_tasks': len(MAIN), 'subtasks': len(SUBS), 'workflows': len(M),
                'q1': q_counts[1], 'q2': q_counts[2], 'q3': q_counts[3]},
     'top': TOP, 'types': TYPE_RESULTS, 'record_checks': RECORD_CHECKS, 'ticket_days': TICKET_DAYS,
-    'process_issues': [{k: v for k, v in x.items() if k != 'key'} for x in PROC], 'process_heading': f'Process issues for the {TEAM_NAME} team', 'new_facilities': NEW, 'links': LINK_ROWS, 'subtasks': SUB_ROWS, 'changes': CHANGES,
+    'process_issues': [{k: v for k, v in x.items() if k != 'key'} for x in PROC], 'by_design': list(BY_DESIGN.values()), 'process_heading': f'Process issues for the {TEAM_NAME} team', 'process_stages_note': (TEAM.get('process_issues') or {}).get('stages_note'), 'new_facilities': NEW, 'links': LINK_ROWS, 'subtasks': SUB_ROWS, 'changes': CHANGES,
     'schedules': SCHEDULES, 'task_list': TASK_LIST, 'tier_columns': TIER_COLUMNS, 'switched_off': SWITCHED_OFF, 'before_start': BEFORE_START, 'known_days': [{'date': d, 'type': t, 'known_issue': k, 'tasks': n} for (d, t, k), n in sorted(KNOWN_DAYS.items())],
     'waiting_on': waiting, 'known_issues': known, 'expected_off': off_state, 'problems': PROBLEMS,
     'companies': {cid: cname(cid) for cid in {x for tr in TYPE_RESULTS + PRE_TYPES for x in tr['should'] + tr['got'] + list(tr['missing']) + list(tr['shouldnt'])} | {c for r in MAIN + PRE_MAIN for c in r['companies']} | LIVE_NOW | {e['company_id'] for e in TICKET_DAYS if e['company_id']}},
@@ -1324,6 +1355,11 @@ if TF and (TEAM.get('process_issues') or {}).get('company_before_stage'):
               + (f'; company linked {x["linked"]} ({x["seconds_after"]} s later)' if x['linked'] else '; no company linked yet')
               + f'. {x["tasks_without_company"]} of {x["tasks"]} tasks and {x["subtasks_without_company"]} of {x["subtasks"]} subtasks have no company'
               + (f'; main tasks fixed by hand on {x["fixed_by_hand"]}' if x['fixed_by_hand'] else '') + (' (before the start date)' if x['section'] == 'before_start' else '') + '. [VERIFIED (records)]')
+if BY_DESIGN:
+    print('\n**By design, not problems**')
+    for x in BY_DESIGN.values():
+        print(f'- {x["type"]}: {x["ticket_name"]} (ticket {x["ticket"]}): {x["tasks"]} task(s) and {x["subtasks"]} subtask(s) created without a company. Why: {x["reason"]}'
+              + (f' (main tasks were also given the company by hand on {x["fixed_by_hand"]})' if x['fixed_by_hand'] else ''))
 print('\n**Known issues** (reported once)')
 for k in known:
     print(f'- {k["id"]}: {k["text"]}' + (f' This week: {k["this_week"]}' if k.get('this_week') else ''))
