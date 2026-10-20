@@ -131,11 +131,12 @@ button.cal-day{cursor:pointer}button.cal-day:hover{border-color:var(--grey)}
 .cal-day.s-ok{background:var(--c-ok);border-color:var(--c-ok);color:#FFFFFF}
 .cal-day.s-bad{background:var(--c-bad);border-color:var(--c-bad);color:#FFFFFF}
 .cal-day.s-known{background:var(--c-known);border-color:var(--c-known);color:#FFFFFF}
-.cal-day.s-wait,.cal-day.s-proc{background:var(--c-wait);border-color:var(--c-wait);color:#00173C}
-.cal-sw.s-proc{background:var(--c-wait)}
-button.cal-day.s-ok:hover,button.cal-day.s-bad:hover,button.cal-day.s-known:hover,button.cal-day.s-wait:hover{filter:brightness(1.08);border-color:transparent}
+.cal-day.s-wait{background:var(--c-wait);border-color:var(--c-wait);color:#00173C}
+.cal-day.s-proc{background:var(--c-proc,#6B3FA0);border-color:var(--c-proc,#6B3FA0);color:#FFFFFF}
+.cal-sw.s-proc{background:var(--c-proc,#6B3FA0)}
+button.cal-day.s-ok:hover,button.cal-day.s-bad:hover,button.cal-day.s-known:hover,button.cal-day.s-wait:hover,button.cal-day.s-proc:hover{filter:brightness(1.08);border-color:transparent}
 .cal-num{font-size:13px;font-weight:600;color:var(--muted);display:flex;justify-content:space-between;align-items:center;gap:4px}
-.cal-day.s-ok .cal-num,.cal-day.s-bad .cal-num,.cal-day.s-known .cal-num,.cal-day.s-wait .cal-num{color:inherit}
+.cal-day.s-ok .cal-num,.cal-day.s-bad .cal-num,.cal-day.s-known .cal-num,.cal-day.s-wait .cal-num,.cal-day.s-proc .cal-num{color:inherit}
 /* task list under the calendar (Overview) */
 .tlist{margin-top:36px}
 .tlist td.tname{font-weight:600;min-width:150px}
@@ -156,9 +157,9 @@ button.cal-day.s-ok:hover,button.cal-day.s-bad:hover,button.cal-day.s-known:hove
 .tlist tr.off .who-chip{font-weight:400;color:var(--muted);background:transparent}
 .tlist tr.off td{color:var(--muted)}
 .cal-tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
-.cal-day.s-ok .cal-tag,.cal-day.s-bad .cal-tag,.cal-day.s-known .cal-tag,.cal-day.s-wait .cal-tag{color:inherit}
+.cal-day.s-ok .cal-tag,.cal-day.s-bad .cal-tag,.cal-day.s-known .cal-tag,.cal-day.s-wait .cal-tag,.cal-day.s-proc .cal-tag{color:inherit}
 .cal-run{display:block;font-size:11px;line-height:1.3;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cal-day.s-ok .cal-run,.cal-day.s-bad .cal-run,.cal-day.s-known .cal-run,.cal-day.s-wait .cal-run{color:inherit;font-weight:500}
+.cal-day.s-ok .cal-run,.cal-day.s-bad .cal-run,.cal-day.s-known .cal-run,.cal-day.s-wait .cal-run,.cal-day.s-proc .cal-run{color:inherit;font-weight:500}
 .cal-run.off{text-decoration:line-through;opacity:.75}
 .cal-day.s-grey .cal-run{color:var(--muted)}
 .cal-list{display:none;margin-top:12px}

@@ -1308,7 +1308,9 @@ if TF:
         TICKET_DAYS.append({'date': local(cd).date().isoformat(), 'time': local(cd).strftime('%H:%M'), 'kind': 'created', 'type': 'New onboarding ticket',
                             'workflow': rc_wf, 'workflow_name': wfname(rc_wf) if rc_wf else '', 'ticket': tid,
                             'ticket_name': t['properties'].get('subject') or f'ticket {tid}', 'company_id': fac,
-                            'status': 'ok' if fac else 'bad', 'detail': 'ticket created' if fac else 'ticket created, no company linked now'})
+                            'status': 'ok' if fac or (TEAM.get('process_issues') or {}).get('company_before_stage') else 'bad',
+                            'detail': 'ticket created' if fac else ('ticket created; no company yet, which is expected until it moves to the stage where the company is required'
+                                                                    if (TEAM.get('process_issues') or {}).get('company_before_stage') else 'ticket created, no company linked now')})
     TICKET_DAYS.sort(key=lambda x: (x['date'], x['time']))
 
 RESULT = {
