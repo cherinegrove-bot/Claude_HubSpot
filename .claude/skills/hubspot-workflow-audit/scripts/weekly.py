@@ -378,6 +378,7 @@ def ticket_type_results(tt, first, last, rows):
             lack = [x for x in e['titles'] if x not in have]
             should.setdefault(fac, {'wf': wid, 'run': e['at'], 'ticket': tid})
             TICKET_DAYS.append({'date': local(e['at']).date().isoformat(), 'time': local(e['at']).strftime('%H:%M'), 'kind': 'stage', 'type': name,
+                                'at_iso': e['at'].isoformat(), 'stage': e['stage'],
                                 'workflow': wid, 'workflow_name': wfname(wid), 'ticket': tid, 'ticket_name': e['subject'], 'company_id': fac,
                                 'status': 'ok' if not lack else 'bad', 'detail': 'all tasks created' if not lack else
                                 (f'got {len(have)} of {len(e["titles"])} tasks' if have else 'no tasks created')})
@@ -546,6 +547,65 @@ COVERED = collections.defaultdict(set)     # task type -> facilities that got it
 for r in MAIN + PRE_MAIN:
     if r['type']:
         COVERED[r['type']] |= set(r['companies'])
+# ------------------------------------------------------------------ process issues (ticket teams)
+# A ticket moved to a stage before its first company was linked, so that stage's tasks got no company. The team's
+# process says the company is linked first (team-rules.md), so this is reported as a team process issue, not a workflow fault.
+USERS = {str(o.get('userId')): (o.get('firstName', '') + ' ' + o.get('lastName', '')).strip() for o in W('owners.json', []) if o.get('userId')}
+PROC, PROC_TASKS = [], set()
+
+
+def first_link(t):
+    for h in sorted((t.get('propertiesWithHistory') or {}).get('hs_num_associated_companies') or [], key=lambda h: h['timestamp']):
+        try:
+            if float(h.get('value') or 0) > 0:
+                return P(h['timestamp'])
+        except ValueError:
+            pass
+    return None
+
+
+def moved_by_whom(t, at):
+    for h in (t.get('propertiesWithHistory') or {}).get('hs_pipeline_stage') or []:
+        if P(h['timestamp']) == at:
+            m = re.match(r'userId:(\d+)', h.get('sourceId') or '')
+            if m:
+                return USERS.get(m.group(1), f'user {m.group(1)}')
+            return 'a workflow' if h.get('sourceType') == 'AUTOMATION_PLATFORM' else (h.get('sourceType') or '').lower().replace('_', ' ') or None
+    return None
+
+
+def build_process_issues():
+    if not TF or not (TEAM.get('process_issues') or {}).get('company_before_stage'):
+        return
+    done = {x['key'] for x in PROC}
+    for e in TICKET_DAYS:
+        if e['kind'] != 'stage' or not e.get('at_iso'):
+            continue
+        key = (e['ticket'], e['type'], e['at_iso'])
+        t = TICKETS.get(e['ticket'])
+        if key in done or not t:
+            continue
+        at = P(e['at_iso'])
+        linked = first_link(t)
+        if linked is not None and linked <= at:
+            continue
+        run = [r for r in ROWS if not r['sub'] and e['ticket'] in r['tickets'] and r['type'] == e['type'] and 0 <= (r['created'] - at).total_seconds() < 600]
+        if not run:
+            continue
+        subs = [r for r in ROWS if r['sub'] and r['parent'] in {x['id'] for x in run}]
+        PROC_TASKS.update(x['id'] for x in run + subs)
+        fixed = [x for x in run if x['id'] in FIXED]
+        PROC.append({'key': key, 'ticket': e['ticket'], 'ticket_name': e['ticket_name'], 'company_id': e['company_id'] or facility_of(e['ticket']),
+                     'stage': e.get('stage'), 'type': e['type'], 'moved': fmt_dt(at), 'moved_by': moved_by_whom(t, at),
+                     'linked': fmt_dt(linked) if linked else None, 'seconds_after': round((linked - at).total_seconds()) if linked else None,
+                     'tasks': len(run), 'tasks_without_company': sum(1 for x in run if not x['companies']),
+                     'subtasks': len(subs), 'subtasks_without_company': sum(1 for x in subs if not x['companies']),
+                     'fixed_by_hand': fixed[0]['id'] in FIXED and FIXED[fixed[0]['id']].get('fixed') if fixed else None,
+                     'section': 'before_start' if CUTOFF and local(at).date() < CUTOFF else 'main', 'label': 'VERIFIED (records)'})
+        e['status'] = 'process'
+        e['detail'] = f'moved before the company was linked ({"linked " + fmt_dt(linked) if linked else "no company linked yet"}): its tasks got no company'
+
+
 MAIN_FIRST = CUTOFF or FIRST
 TYPE_RESULTS = type_results(MAIN_FIRST, LAST, MAIN)
 PRE_TYPES = []
@@ -553,9 +613,10 @@ PRE_KNOWN_LINKS = collections.Counter()
 if CUTOFF:
     SECTION = 'before_start'
     PRE_TYPES = type_results(FIRST, CUTOFF - dt.timedelta(days=1), PRE_MAIN, pre=True)
+    build_process_issues()
     for r in PRE_MAIN:                       # a real problem even under the old settings: a task with no company
-        if isinstance(r['flow'], str) and r['flow'].startswith('not_readable'):
-            continue                         # counted under its known issue instead
+        if isinstance(r['flow'], str) and r['flow'].startswith('not_readable') or r['id'] in PROC_TASKS:
+            continue                         # counted under its known issue / the process issues instead
         if not r['companies']:
             problem(2, 'link', f'Task "{r["title"]}" ({r["id"]}): no company.', 'VERIFIED (records)', 'Confirmed', r['type'], None, r['id'], r['flow'] if r['flow'] in M else None,
                     'no company', group=f'link:no company:{r["source"]}', source=wfname(r['flow']) if r['flow'] in M else r['source'])
@@ -683,6 +744,7 @@ for cid, c in COMP.items():
 NEW.sort(key=lambda x: x['company'])
 
 # ------------------------------------------------------------------ Question 2
+build_process_issues()
 links = TEAM.get('links') or {}
 LINK_ROWS = []
 for r in MAIN:
@@ -705,7 +767,9 @@ for r in MAIN:
         label = 'VERIFIED (records)'
         r['fixed'] = fx
     r['link'] = st
-    if st != 'ok':
+    if st != 'ok' and r['id'] in PROC_TASKS:
+        r['link'] = st = 'process issue: ' + st          # reported under the team's process issues, not as a link problem
+    elif st != 'ok':
         note = ' (from known issue ' + next((n.get('known_issue', '') for n in TEAM.get('not_readable', []) if n['name'] == r['source']), '') + ')' if isinstance(r['flow'], str) and r['flow'].startswith('not_readable') else ''
         problem(2, 'link', f'Task "{r["title"]}" ({r["id"]}): {st}{note}.', label, 'Confirmed' if label.startswith('VERIFIED') else 'Potential Issue', r['type'],
                 (r['companies'] or [None])[0], r['id'], r['flow'] if r['flow'] in M else None, st, group=f'link:{st}:{r["source"]}',
@@ -719,7 +783,7 @@ for r in MAIN:
 # calendar (ticket teams): a stage entry whose tasks have a link problem (not a known issue) is a problem day too
 _known_titles = [x for k in TEAM.get('known_issues', []) for x in k.get('link_titles', [])]
 for e in TICKET_DAYS:
-    if e['kind'] != 'stage':
+    if e['kind'] != 'stage' or e.get('status') == 'process':
         continue
     bad = [r for r in MAIN if e['ticket'] in r['tickets'] and r['type'] == e['type'] and r.get('link') not in (None, 'ok')
            and not any(re.search(x, rules.norm(r['title']), re.I) for x in _known_titles)]
@@ -747,6 +811,9 @@ for r in SUBS:
                     parts.append(f'{what}: subtask {", ".join(sorted(a_)) or "none"} vs main task {", ".join(sorted(b_)) or "none"}')
             diff = '; '.join(parts) or None
     st = 'linked to a ticket' if bad else (f'links differ from its main task ({diff})' if diff else 'ok')
+    if r['id'] in PROC_TASKS and st != 'ok':
+        SUB_ROWS.append({'task': r['id'], 'title': r['title'], 'parent': r['parent'], 'tickets': r['tickets'], 'status': 'process issue: ' + st})
+        continue
     SUB_ROWS.append({'task': r['id'], 'title': r['title'], 'parent': r['parent'], 'tickets': r['tickets'], 'status': st})
     if bad:
         problem(2, 'subtask_ticket', f'Subtask "{r["title"]}" ({r["id"]}) is associated with ticket {", ".join(r["tickets"])}.', 'VERIFIED (records)', 'Confirmed',
@@ -1221,7 +1288,8 @@ RESULT = {
     'excluded_tasks': EXCLUDED_TASKS,
     'counts': {'facilities_in_scope': in_scope_count, 'main_tasks': len(MAIN), 'subtasks': len(SUBS), 'workflows': len(M),
                'q1': q_counts[1], 'q2': q_counts[2], 'q3': q_counts[3]},
-    'top': TOP, 'types': TYPE_RESULTS, 'record_checks': RECORD_CHECKS, 'ticket_days': TICKET_DAYS, 'new_facilities': NEW, 'links': LINK_ROWS, 'subtasks': SUB_ROWS, 'changes': CHANGES,
+    'top': TOP, 'types': TYPE_RESULTS, 'record_checks': RECORD_CHECKS, 'ticket_days': TICKET_DAYS,
+    'process_issues': [{k: v for k, v in x.items() if k != 'key'} for x in PROC], 'process_heading': f'Process issues for the {TEAM_NAME} team', 'new_facilities': NEW, 'links': LINK_ROWS, 'subtasks': SUB_ROWS, 'changes': CHANGES,
     'schedules': SCHEDULES, 'task_list': TASK_LIST, 'tier_columns': TIER_COLUMNS, 'switched_off': SWITCHED_OFF, 'before_start': BEFORE_START, 'known_days': [{'date': d, 'type': t, 'known_issue': k, 'tasks': n} for (d, t, k), n in sorted(KNOWN_DAYS.items())],
     'waiting_on': waiting, 'known_issues': known, 'expected_off': off_state, 'problems': PROBLEMS,
     'companies': {cid: cname(cid) for cid in {x for tr in TYPE_RESULTS + PRE_TYPES for x in tr['should'] + tr['got'] + list(tr['missing']) + list(tr['shouldnt'])} | {c for r in MAIN + PRE_MAIN for c in r['companies']} | LIVE_NOW | {e['company_id'] for e in TICKET_DAYS if e['company_id']}},
@@ -1247,6 +1315,15 @@ if TOP:
     print('\n**Top problems**')
     for i, t in enumerate(TOP, 1):
         print(f'{i}. {t["text"]} [{t["label"]}]')
+if TF and (TEAM.get('process_issues') or {}).get('company_before_stage'):
+    print(f'\n**Process issues for the {TEAM_NAME} team** (a ticket moved to a stage before its company was linked)')
+    if not PROC:
+        print('- None')
+    for x in PROC:
+        print(f'- {x["ticket_name"]} (ticket {x["ticket"]}): moved to {x["stage"]} on {x["moved"]}' + (f' by {x["moved_by"]}' if x['moved_by'] else '')
+              + (f'; company linked {x["linked"]} ({x["seconds_after"]} s later)' if x['linked'] else '; no company linked yet')
+              + f'. {x["tasks_without_company"]} of {x["tasks"]} tasks and {x["subtasks_without_company"]} of {x["subtasks"]} subtasks have no company'
+              + (f'; main tasks fixed by hand on {x["fixed_by_hand"]}' if x['fixed_by_hand'] else '') + (' (before the start date)' if x['section'] == 'before_start' else '') + '. [VERIFIED (records)]')
 print('\n**Known issues** (reported once)')
 for k in known:
     print(f'- {k["id"]}: {k["text"]}' + (f' This week: {k["this_week"]}' if k.get('this_week') else ''))

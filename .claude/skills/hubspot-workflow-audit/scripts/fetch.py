@@ -442,7 +442,8 @@ def fetch_weekly(a, flows):
     ticket_wfs = [i for i, e in M.items() if (e.get('cfg') or {}).get('objectTypeId') == '0-5']
     wtickets, tco = [], {}
     if ticket_wfs and tf.get('pipelines'):
-        thist = sorted({p for i in ticket_wfs for p in rules.referenced_props(M[i]['cfg'])} | {'hs_pipeline', 'hs_pipeline_stage'})
+        # hs_num_associated_companies: its history says when a company was first linked to the ticket (process issues)
+        thist = sorted({p for i in ticket_wfs for p in rules.referenced_props(M[i]['cfg'])} | {'hs_pipeline', 'hs_pipeline_stage', 'hs_num_associated_companies'})
         tids = set()
         for p in tf['pipelines']:
             tids |= {t['id'] for t in search_all('tickets', [{'propertyName': 'hs_pipeline', 'operator': 'EQ', 'value': p}], ['subject'])}

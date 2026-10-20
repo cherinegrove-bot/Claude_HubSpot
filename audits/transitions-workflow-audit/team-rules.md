@@ -29,6 +29,16 @@ This file and `Transitions_Master_Rules.xlsx` hold everything specific to Transi
 
 The 5 stage-move workflows ("... (task complete)") and "Transitions | PM = Ticket Owner" are not part of this audit (Cherine, 2026-10-13).
 
+## The Transitions process (Cherine, 2026-10-20)
+
+This is how onboarding really works. Use it in every run.
+
+1. **Sales moves the deal to Closed won.** The Closed Won workflow (1670039203) creates the onboarding ticket in UNASSIGNED. It doesn't add a company **on purpose**: the facility doesn't exist yet.
+2. **The onboarding team sends the intake form.** When it's completed, the Create Facility workflow (1852542804) creates the company (the facility).
+3. **Ilsa (Ilse Modene in HubSpot) links that company to the ticket by hand**, before moving the ticket to the next stage.
+4. **If a ticket moves to a stage before its company is linked**, that stage's tasks get no company. That's a **team process issue, not a workflow fault**. It is reported under its own heading, "Process issues for the Transitions team", with the ticket, the stage, when it moved (and who moved it), and when the company was linked. Those tasks are not reported again under question 2.
+   - How the audit knows when the company was linked: the ticket's "Number of Associated Companies" (`hs_num_associated_companies`) history, the first time it goes above 0 (VERIFIED (records)). Who moved the ticket comes from the ticket status history.
+
 ## How "who should get a task" works for Transitions
 
 Transitions workflows don't run on a schedule. Each one starts when a **ticket** in the Onboarding Pipeline enters its stage. So, for each week:
@@ -47,6 +57,7 @@ Transitions workflows don't run on a schedule. Each one starts when a **ticket**
    - **Checklist subtasks** are only the real checklist items inside a task (HubSpot's "Is subtask" = true, with a parent task). They **share their main task's links**, including the ticket: HubSpot copies them automatically. This is accepted, by design (2026-10-16, closes W-5 and SUB-1). The audit flags a subtask only if its links (companies or ticket) **differ** from its main task's.
 4. Tasks that shouldn't exist (a ticket that didn't enter the stage, or a second set for the same ticket) are reported.
 5. **Every Closed Won deal gets an onboarding ticket** (Cherine, 2026-10-13). Every deal in the White Label Storage SALES pipeline that moved to Closed won in the window must have a ticket in the Onboarding Pipeline. Any deal without one is reported under question 1, with a link to the deal. VERIFIED (records): the deal's "Date entered Closed won" and its ticket links.
+6. **The company is linked before the ticket moves on** (Cherine, 2026-10-20). A ticket that moves to a stage before its company is linked is a process issue for the Transitions team (see "The Transitions process", step 4), not a workflow fault.
 
 ## Task types
 
@@ -76,8 +87,10 @@ All agreed with Cherine on 2026-10-13:
 - **Went live this week:** shown, using Status = Live and the go-live date, flagged when more than 7 days apart.
   - Checked on 2026-10-13: this is the same property as CS Ops. Company property `live` (label "Status"); Live is the internal value `Yes`. The go-live date is `go_live_date` (label "Actual Go-Live Date").
 - **Closed Won deals:** every deal that moved to Closed won (White Label Storage SALES) in the window must have an Onboarding Pipeline ticket (rule 5).
-- **Finish Line Self Storage, 3 Kickoff tasks with no company (12 Oct): not caused by W-4.** Corrected on 2026-10-15 (Cherine agreed); an earlier note in chat said it probably was. The deal has no company, so the old Closed Won setting would not have linked one either. The facility was created on 12 Oct at 14:07 (US Eastern) by the Create Facility workflow, from a new contact that isn't on the ticket, so it wasn't linked to the ticket; the ticket moved to Kickoff 28 minutes later and its tasks got no company. It stays this week's problem (question 2). Cherine linked the company to the 3 tasks by hand on 2026-10-15 (checked in HubSpot the same day), so the report shows them as "fixed by hand on 2026-10-15". The pattern is W-6.
+- **Finish Line Self Storage, 3 Kickoff tasks with no company (12 Oct): a process issue** (corrected 2026-10-20, Cherine; replaces the notes of 2026-10-15). Ilse Modene moved the ticket to Transition Kickoff at 2:35 PM (US Eastern) on 12 Oct; the Kickoff workflow created its tasks seconds later, while the ticket had no company; she linked Finish Line Self Storage to the ticket 24 seconds after the move (VERIFIED (records): ticket status history and "Number of Associated Companies" history; Cherine said about a minute). The company had been created by Create Facility at 2:07 PM, which is the normal process: Create Facility isn't meant to link the ticket. Not caused by W-4 (the Closed Won workflow doesn't add companies by design). Cherine linked the company to the 3 main tasks by hand on 2026-10-15; their 17 checklist subtasks still have no company (W-7). Reported under "Process issues for the Transitions team".
 - **Excluded companies:** demo Facility (44541671248), the same as CS Ops.
+- **Closed Won adds no company, by design** (Cherine, 2026-10-20; was W-4): the facility doesn't exist yet when the deal closes. The 8 Oct edit was planned.
+- **The onboarding team links the company before the ticket moves on** (Cherine, 2026-10-20; was W-6): "By design. The company must be linked by the onboarding team before the ticket moves on. Cherine is raising it with Ilsa." A ticket moved too early is a process issue (rule 6), not a workflow problem.
 - **Checklist subtasks share their main task's links** (2026-10-16; was W-5 / SUB-1): accepted, by design. Subtasks linked to the ticket are not a problem. Only a subtask whose links differ from its main task's is flagged (question 2). Cherine has been told and may ask to revisit it.
 - **Marketing Proposal routing is by design** (Cherine, 2026-10-15; was W-3 / F-11): the PPC check looks at any company linked to the ticket; the proposal goes to the Marketing Portfolio Manager of the first-created "Transitions" company; Brock Hegr is the correct default when that manager is empty or someone else. Keep the workflow as it is. **Never flag this** in a weekly run: the check only looks at whether the proposal was created when PPC Enrolled = Yes, not who it went to.
 - **"Subtask - Automated" (30-Day Monitoring) is by design** (Cherine, 2026-10-15; was W-2 / F-15): the CSAT survey goes out automatically when the ticket enters Post 30-Day Monitoring, and this task tells the ticket owner it was sent. "Automated" refers to the survey, not the task. Not a problem. Survey name to be confirmed.
@@ -90,8 +103,6 @@ Report these once per run, in their own section, not as new problems every week.
 
 | Item | Question | Asked |
 |---|---|---|
-| W-4 | The Closed Won workflow no longer copies the deal's companies onto the ticket (edited 8 Oct). Was that on purpose? Workflow: [Closed Won \| Create Ticket in INITIAL SETUP - UNASSIGNED](https://app.hubspot.com/workflows/45059701/platform/flow/1670039203/edit) (1670039203). It affects: tickets created since 8 Oct may have no company, so their tasks can't link to a facility, and the marketing proposal's PPC check may not work. | 2026-10-13 |
-| W-6 | A ticket can move to a stage before its facility is linked to it. That stage's tasks then get no company, and they don't update when the facility is linked later. Should the facility always be linked before a ticket moves to Kickoff, or should something link it automatically? Workflows: Transitions - Transition Kickoff Tasks (+SubTask) (1866384267), Create Facility (1852542804). Example: Finish Line Self Storage, 12 Oct. | 2026-10-15 |
 | W-7 | When a company is added by hand to a main task, HubSpot updates its checklist subtasks but doesn't add the company to them. Why does this happen, and how should subtasks get the company when a main task is fixed by hand? Example: Finish Line Self Storage, 17 checklist subtasks without a company after the 15 Oct hand fix. What we know: HubSpot's automatic "parent-task-associated-object-writer" ran on the subtasks in the same second the main tasks were fixed, but didn't add the company. Why is NEEDS VERIFICATION. Test: add a company by hand to one main task with subtasks, then check a subtask a minute later. Workflow: Transitions - Transition Kickoff Tasks (+SubTask) (1866384267). | 2026-10-19 |
 
 ### Closed (answered by Cherine)
@@ -102,10 +113,12 @@ Report these once per run, in their own section, not as new problems every week.
 | W-2 (F-15). Is "Transition \| 30 - DAY MONITORING \| Subtask - Automated" meant to be done by hand by the PM? | By design (Cherine, 2026-10-15). The CSAT survey is sent automatically by a feedback survey when the ticket enters Post 30-Day Monitoring (survey name to be confirmed). The "Subtask - Automated" task is created at the same time so the ticket owner can see it was sent: "Automated" refers to the survey, not the task. In HubSpot: the workflow "Send Transitions CSAT" (1700009377, ON) adds the contacts of a ticket in Post 30-Day Monitoring to the list "Send Transitions Survey" (1889) (VERIFIED (config)); that the survey sends to this list is INFERENCE. Closed 2026-10-15. |
 | W-3 (F-11). Should the proposal's PPC check and portfolio manager come from the same company, and is Brock Hegr the right default? | By design, keep the workflow as it is (Cherine, 2026-10-15). The PPC check looks at any company linked to the ticket, and the proposal goes to the Marketing Portfolio Manager of the first-created "Transitions" company. That's how WLS wants it. Brock Hegr is the correct default when the portfolio manager is empty or someone else. Not flagged in future runs. Closed 2026-10-15. |
 | W-5 and known issue SUB-1. Checklist subtasks always get the ticket link, because they copy the main task. Accept it, or look for another way? | Accepted, by design (2026-10-16). Checklist subtasks belong to their main task, so they share the main task's links, including the ticket. HubSpot does this automatically. Cherine has been told and can ask to look for another way (the client didn't like seeing subtasks on the ticket before). Closed 2026-10-16. |
+| W-4. The Closed Won workflow no longer copies the deal's companies onto the ticket (edited 8 Oct). Was that on purpose? | By design. The Closed Won workflow doesn't add a company on purpose: when the deal closes, the facility doesn't exist yet. It is created later by Create Facility from the intake form, and the onboarding team links it to the ticket by hand (Cherine, 2026-10-20). The 8 Oct edit (revision 13 -> 14) was planned; the master rules file now holds revision 14. Closed 2026-10-20. |
+| W-6. Should the facility always be linked before a ticket moves to Kickoff, or should something link it automatically? | By design. The company must be linked by the onboarding team before the ticket moves on. Cherine is raising it with Ilsa. (Cherine, 2026-10-20). Closed 2026-10-20. |
 
 ## Changes not yet confirmed
 
-- **Closed Won | Create Ticket in INITIAL SETUP - UNASSIGNED (1670039203), edited 2026-10-08 (revision 13 -> 14):** the Create record action no longer links the new ticket to the deal's companies with the label "Transitions". Not confirmed (Cherine, 2026-10-13), so it is **not** part of the baseline: the master rules file keeps revision 13, and the weekly audit reports this as "change, not yet confirmed" until Cherine answers W-4.
+None. The Closed Won edit of 2026-10-08 (revision 13 -> 14, it no longer copies the deal's companies onto the ticket) was planned (Cherine, 2026-10-20, W-4); the master rules file was updated the same day.
 
 ## Known issues
 
@@ -282,29 +295,6 @@ The scripts read this block. Keep it in step with the text above.
   "branch_reasons": [],
   "waiting_on": [
     {
-      "id": "W-4",
-      "title": "Closed Won no longer links the deal's companies to the ticket",
-      "asked": "2026-10-13",
-      "detail": "The Closed Won workflow was edited on 8 Oct (revision 13 -> 14): its Create record action no longer links the new ticket to the deal's companies (it used to copy them with the label \"Transitions\"). What it affects: tickets created since 8 Oct may have no company, so their tasks can't link to a facility, and the marketing proposal's PPC check in Pre Launch Setup (which reads the ticket's companies) may not work.",
-      "question": "The Closed Won workflow no longer copies the deal's companies onto the ticket (edited 8 Oct). Was that on purpose?",
-      "workflows": [
-        "1670039203"
-      ],
-      "links_under_question": true
-    },
-    {
-      "id": "W-6",
-      "title": "A ticket can reach a stage before its facility is linked",
-      "asked": "2026-10-15",
-      "detail": "Each stage's tasks copy the companies the ticket has at the moment they're created. If the facility isn't linked to the ticket yet, the tasks get no company, and linking it later doesn't update them. Example: Finish Line Self Storage (12 Oct): Create Facility made the company 28 minutes before Kickoff but didn't link it to the ticket (it links the company to the tickets of the contact who filled in the form, and that contact isn't on the ticket).",
-      "question": "A ticket can move to a stage before its facility is linked to it. That stage's tasks then get no company, and they don't update when the facility is linked later. Should the facility always be linked before a ticket moves to Kickoff, or should something link it automatically?",
-      "workflows": [
-        "1866384267",
-        "1852542804"
-      ],
-      "links_under_question": true
-    },
-    {
       "id": "W-7",
       "title": "Fixing a main task by hand doesn't fix its subtasks",
       "asked": "2026-10-19",
@@ -317,14 +307,7 @@ The scripts read this block. Keep it in step with the text above.
       "links_under_question": true
     }
   ],
-  "changes_not_confirmed": [
-    {
-      "workflow": "1670039203",
-      "first_seen": "2026-10-13",
-      "status": "Waiting on Cherine (W-4)",
-      "change": "Revision 13 -> 14 (edited 2026-10-08): the Create record action no longer links the new ticket to the deal's companies (label \"Transitions\")."
-    }
-  ],
+  "changes_not_confirmed": [],
   "queue_names": {
     "13519270": {
       "name": "Transitions",
@@ -355,6 +338,18 @@ The scripts read this block. Keep it in step with the text above.
     }
   ],
   "closed": [
+    {
+      "id": "W-4",
+      "closed": "2026-10-20",
+      "answered": "2026-10-20",
+      "answer": "By design. The Closed Won workflow doesn't add a company on purpose: when the deal closes, the facility doesn't exist yet. It is created later by Create Facility from the intake form, and the onboarding team links it to the ticket by hand (Cherine, 2026-10-20). The 8 Oct edit (revision 13 -> 14) was planned; the master rules file now holds revision 14."
+    },
+    {
+      "id": "W-6",
+      "closed": "2026-10-20",
+      "answered": "2026-10-20",
+      "answer": "By design. The company must be linked by the onboarding team before the ticket moves on. Cherine is raising it with Ilsa."
+    },
     {
       "id": "W-5",
       "closed": "2026-10-16",
@@ -398,6 +393,11 @@ The scripts read this block. Keep it in step with the text above.
       "ticket": "49234797065",
       "company": "59101446751"
     }
-  ]
+  ],
+  "process_issues": {
+    "company_before_stage": true,
+    "heading": "Process issues for the Transitions team",
+    "note": "A ticket moved to a stage before its first company link (hs_num_associated_companies > 0): that stage's tasks got no company. Team process issue, not a workflow fault (Cherine, 2026-10-20)."
+  }
 }
 ```

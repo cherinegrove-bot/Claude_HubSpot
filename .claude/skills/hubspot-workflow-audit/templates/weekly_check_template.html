@@ -131,7 +131,8 @@ button.cal-day{cursor:pointer}button.cal-day:hover{border-color:var(--grey)}
 .cal-day.s-ok{background:var(--c-ok);border-color:var(--c-ok);color:#FFFFFF}
 .cal-day.s-bad{background:var(--c-bad);border-color:var(--c-bad);color:#FFFFFF}
 .cal-day.s-known{background:var(--c-known);border-color:var(--c-known);color:#FFFFFF}
-.cal-day.s-wait{background:var(--c-wait);border-color:var(--c-wait);color:#00173C}
+.cal-day.s-wait,.cal-day.s-proc{background:var(--c-wait);border-color:var(--c-wait);color:#00173C}
+.cal-sw.s-proc{background:var(--c-wait)}
 button.cal-day.s-ok:hover,button.cal-day.s-bad:hover,button.cal-day.s-known:hover,button.cal-day.s-wait:hover{filter:brightness(1.08);border-color:transparent}
 .cal-num{font-size:13px;font-weight:600;color:var(--muted);display:flex;justify-content:space-between;align-items:center;gap:4px}
 .cal-day.s-ok .cal-num,.cal-day.s-bad .cal-num,.cal-day.s-known .cal-num,.cal-day.s-wait .cal-num{color:inherit}
@@ -284,6 +285,8 @@ $('#t-overview').innerHTML=`<h2>This week at a glance</h2>
 <div class="stats"><span><b>${D.counts.facilities_in_scope}</b> facilities checked</span><span><b>${D.counts.main_tasks}</b> tasks created</span><span><b>${D.counts.subtasks}</b> subtasks</span><span><b>${D.counts.workflows}</b> workflows compared</span></div>
 <h2>What needs attention</h2><p class="lead">Grouped so each problem shows once. Click one to see the facilities.</p>
 <div class="list">${items.length?items.map(i=>itemHTML(i,false)).join(''):'<div class="empty">Nothing needs attention this week.</div>'}</div>
+${D.process_heading?`<h2 style="margin-top:22px">${esc(D.process_heading)}</h2><p class="lead">A ticket moved to a stage before its company was linked, so that stage's tasks got no company. A team process issue, not a workflow fault.</p>
+${(D.process_issues||[]).length?`<div class="tw"><table><tr><th>Ticket</th><th>Stage</th><th>Moved</th><th>Company linked</th><th>Tasks without a company</th></tr>${D.process_issues.map(x=>`<tr><td>${ext(recUrl('0-5',x.ticket),esc(x.ticket_name))}${x.company_id?`<br><small class="ok">${coLink(x.company_id)}</small>`:''}</td><td>${esc(x.stage||x.type)}${x.section==='before_start'?'<br><small class="ok">before the start date</small>':''}</td><td>${esc(when(x.moved))}${x.moved_by?`<br><small class="ok">by ${esc(x.moved_by)}</small>`:''}</td><td>${x.linked?`${esc(when(x.linked))}<br><small class="ok">${x.seconds_after<120?x.seconds_after+' seconds':Math.round(x.seconds_after/60)+' minutes'} later</small>`:'<span class="badtxt">Not linked yet</span>'}</td><td>${x.tasks_without_company} of ${x.tasks} tasks, ${x.subtasks_without_company} of ${x.subtasks} subtasks${x.fixed_by_hand?`<br><small class="ok">main tasks fixed by hand on ${esc(day(x.fixed_by_hand))}</small>`:''}</td></tr>`).join('')}</table></div>`:'<div class="empty">No ticket moved to a stage before its company was linked.</div>'}`:''}
 <details class="item known"><summary><div class="cnt">${D.known_issues.length}<small>known</small></div><div class="itxt"><h3>Known issues</h3><p>Already reported. They're listed once here, not as new problems every week.</p></div>${chev}</summary>
 <div class="body"><div class="list" style="margin:0">${D.known_issues.map(k=>`<div class="panel" style="margin:0"><b>${esc(k.id)}</b>  ${esc(k.text)}${k.this_week?` <span class="ok">${esc(k.this_week)}</span>`:''}</div>`).join('')}</div></div></details>`;
 $('#t-overview').onclick=e=>{const b=e.target.closest('[data-go]');if(b)show(b.dataset.go);};
@@ -298,7 +301,7 @@ const DOWS=['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY','SUNDA
 const ymd=(y,m,d)=>`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 const today=(D.fetched_at||'').slice(0,10);
 let calY=+w1.slice(0,4),calM=+w1.slice(5,7)-1,calSel=null;
-const RANK={grey:0,ok:1,known:2,wait:3,bad:4};
+const RANK={grey:0,ok:1,known:2,wait:3,proc:3.5,bad:4};
 function runsOn(y,m,d){const dow=DOWS[(new Date(Date.UTC(y,m,d)).getUTCDay()+6)%7],by={};
  (D.schedules||[]).forEach(s=>{const hit=s.kind==='daily'||(s.kind==='monthly'&&s.days.includes(d))||(s.kind==='weekly'&&s.days.includes(dow));if(!hit)return;
   const k=s.type+'|'+s.time,r=by[k]=by[k]||{type:s.type,time:s.time,wfs:[],off:true};r.wfs.push({id:s.workflow,name:s.workflow_name,off:s.off_now});r.off=r.off&&s.off_now;});
@@ -309,8 +312,8 @@ function evResult(r,date){
  if(date<(D.start_date||'')&&!(D.before_start&&date>=w0))return{st:'grey',txt:'Before the audit start date, not checked'};
  if(date<w0)return{st:'grey',txt:'Outside this week\'s window (checked in an earlier week)'};
  if(date>w1||date>today)return{st:'grey',txt:'Hasn\'t happened yet'};
- const bad=r.ev.filter(e=>e.status==='bad').length,fx=r.ev.filter(e=>e.status==='fixed').length;
- return{st:bad?'bad':fx?'known':'ok',txt:(r.kind==='created'?plural(r.ev.length,'ticket')+' created':plural(r.ev.length,'ticket')+' entered the stage')+(bad?`, ${bad} with problems`:fx?`, ${fx} fixed by hand`:', all as expected')};}
+ const bad=r.ev.filter(e=>e.status==='bad').length,fx=r.ev.filter(e=>e.status==='fixed').length,pr=r.ev.filter(e=>e.status==='process').length;
+ return{st:bad?'bad':pr?'proc':fx?'known':'ok',txt:(r.kind==='created'?plural(r.ev.length,'ticket')+' created':plural(r.ev.length,'ticket')+' entered the stage')+(bad?`, ${bad} with problems`:pr?`, ${pr} moved before the company was linked (process issue)`:fx?`, ${fx} fixed by hand`:', all as expected')};}
 function evLabel(r){return r.kind==='created'?`New ticket: ${r.ev.map(e=>e.ticket_name).join(', ')}`:`${r.type}: ${r.ev.map(e=>D.companies[e.company_id]||e.ticket_name).join(', ')}`;}
 function runResult(r,date){if(r.ev)return evResult(r,date);const pre=D.before_start&&date>=w0&&date<D.before_start.cutoff;const t=(pre?D.before_start.types:D.types).find(x=>x.name===r.type);
  if(date<(D.start_date||'')&&!pre)return{st:'grey',txt:'Before the audit start date, not checked'};
@@ -327,7 +330,7 @@ function runResult(r,date){if(r.ev)return evResult(r,date);const pre=D.before_st
  return{st:'ok',txt:base+', created correctly',t};}
 function dayState(y,m,d){const date=ymd(y,m,d),runs=runsOn(y,m,d).map(r=>({...r,res:runResult(r,date)}));
  return{date,runs,st:runs.reduce((a,r)=>RANK[r.res.st]>RANK[a]?r.res.st:a,'grey')};}
-const STLAB={ok:'All created',bad:'Problems',known:'Known issue',wait:'Waiting',grey:''};
+const STLAB={ok:'All created',bad:'Problems',known:'Known issue',wait:'Waiting',proc:'Process issue',grey:''};
 function dayCell(y,m,d,list){const S=dayState(y,m,d),cls=['cal-day','s-'+S.st];if(S.date===calSel)cls.push('sel');
  const head=`<div class="cal-num"><span>${list?esc(day(S.date)):d}</span><span class="cal-tag st">${S.runs.length?(S.st==='known'&&S.runs.some(r=>r.ev&&r.ev.some(e=>e.status==='fixed'))?'Fixed by hand':STLAB[S.st]):''}${S.date===today?(S.runs.length&&STLAB[S.st]?' · ':'')+'Today':''}</span></div>`;
  const body=S.runs.map(r=>r.ev?`<span class="cal-run" title="${esc(evLabel(r))}">${esc(evLabel(r))}</span>`:`<span class="cal-run${r.off?' off':''}" title="${esc(r.type)}">${r.time?esc(r.time)+' ':''}${esc(r.type)}</span>`).join('');
@@ -349,7 +352,7 @@ function calHTML(){const first=(new Date(Date.UTC(calY,calM,1)).getUTCDay()+6)%7
  return `<div class="cal-top"><div><h2>${MONL[calM]} ${calY}</h2></div><div class="cal-nav"><button data-cal="-1" aria-label="Previous month">‹</button><b>${MONL[calM].slice(0,3)} ${calY}</b><button data-cal="1" aria-label="Next month">›</button></div></div>
  <p class="lead" style="margin-bottom:0">${(D.ticket_days||[]).length?'Each day shows the onboarding tickets created that day, and the tickets that entered a stage (and so got its tasks). Click a day for the tickets and their result.':'Every task type on the day its workflows are set to create it, from the master rules file. Click a day to see which task types ran and their result.'}</p>
  <div class="cal-grid">${g}</div><div class="cal-list">${list||'<div class="empty">No scheduled runs this month.</div>'}</div>
- <div class="cal-key"><span><span class="cal-sw s-ok"></span>Created correctly</span><span><span class="cal-sw s-bad"></span>Problems</span><span><span class="cal-sw s-known"></span>Known issue only</span><span><span class="cal-sw s-wait"></span>Waiting on ${esc(D.decision_owner)}</span><span><span class="cal-sw s-grey"></span>Not happened yet, or outside this week's window</span></div>
+ <div class="cal-key"><span><span class="cal-sw s-ok"></span>Created correctly</span><span><span class="cal-sw s-bad"></span>Problems</span><span><span class="cal-sw s-known"></span>Known issue only</span><span><span class="cal-sw s-wait"></span>Waiting on ${esc(D.decision_owner)}</span>${(D.process_issues||[]).length?'<span><span class="cal-sw s-proc"></span>Process issue (team)</span>':''}<span><span class="cal-sw s-grey"></span>Not happened yet, or outside this week's window</span></div>
  ${trig.length||off.length?`<div class="cal-key">${trig.length?`<span>${trig.map(esc).join(', ')}: no schedule, created when ${(D.ticket_days||[]).length?'a ticket enters its stage':'a facility meets the trigger'}.</span>`:''}${off.length?`<span>Switched off now: ${off.map(esc).join(', ')}.</span>`:''}</div>`:''}
  <div id="calday">${selIn?dayDetail(calSel):''}</div>`;}
 $('#t-overview').insertAdjacentHTML('beforeend','<div class="cal" id="cal"></div>');
