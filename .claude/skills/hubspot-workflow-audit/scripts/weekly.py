@@ -75,7 +75,9 @@ GOLIVE = TEAM.get('went_live') or {}
 local = lambda x: x.astimezone(TZ)
 fmt_dt = lambda x: local(x).strftime('%Y-%m-%d %H:%M')
 cname = lambda cid: (COMP.get(cid, {}).get('properties', {}).get('name') or f'company {cid}')
-wfname = lambda w: (M.get(w, {}).get('row', {}).get('Workflow Name') or LIVE.get(w, {}).get('name') or str(w))
+_af = os.path.join(A.work, 'all_flows.json')
+ALLF = {str(f['id']): f for f in (json.load(open(_af)) if os.path.exists(_af) else [])}     # every workflow in the portal (id, name, on/off)
+wfname = lambda w: (M.get(w, {}).get('row', {}).get('Workflow Name') or LIVE.get(w, {}).get('name') or ALLF.get(str(w), {}).get('name') or str(w))
 PROBLEMS = []
 
 
@@ -431,7 +433,7 @@ for r in MAIN:
                 None, (r['companies'] or [None])[0], r['id'], r['flow'], group=f'off_task:{r["flow"]}')
     elif r['flow'] is None:
         problem(1, 'unknown_source', f'Task "{r["title"]}" in the queue comes from "{r["source"]}", which is not in the master rules file.', 'NEEDS VERIFICATION', 'Needs Verification',
-                None, (r['companies'] or [None])[0], r['id'], None, group=f'unknown_source:{r["source"]}')
+                None, (r['companies'] or [None])[0], r['id'], None, group=f'unknown_source:{r["source"]}', source=r['source'])
     elif r['flow'] in M and QIDS and not r['in_queue']:
         cq = sorted({str(a.get('fields', {}).get('queue_id')) for a in M[r['flow']]['cfg'].get('actions', []) if describe.akind(a) == '0-3'})
         mv = moved_by(r)
@@ -568,6 +570,8 @@ def known_move(p):
         return None
     return m
 wait_cos = {cid: wid for wid, w in WAIT.items() for cid in w.get('company_ids', [])}
+# tasks from a workflow outside the master rules file that an open question is about: listed with the question, not as new problems
+wait_src = {ALLF[str(x)]['name']: wid for wid, w in WAIT.items() for x in w.get('workflows', []) if str(x) in ALLF and str(x) not in M}
 keep = []
 for p in PROBLEMS:
     km = known_move(p) if p['kind'] == 'not_in_queue' else None
@@ -577,6 +581,8 @@ for p in PROBLEMS:
             FOLDED[('wait', km['waiting_on'])].append(p)
     elif p['kind'] == 'link' and p.get('nr_issue'):
         FOLDED[('known', p['nr_issue'])].append(p)
+    elif p['kind'] == 'unknown_source' and p.get('source') in wait_src:
+        FOLDED[('wait', wait_src[p['source']])].append(p)
     elif p.get('company_id') in wait_cos:
         FOLDED[('wait', wait_cos[p['company_id']])].append(p)
     else:
@@ -657,7 +663,7 @@ for wid_, w in WAIT.items():
     item = dict(w)
     # the workflows a question is about, by name, with whether each is switched on now (live, else master rules file)
     item['workflow_list'] = [{'id': x, 'name': wfname(x),
-                              'on': bool((LIVE.get(x) or (M.get(x) or {}).get('cfg') or {}).get('isEnabled'))} for x in w.get('workflows', [])]
+                              'on': bool((LIVE.get(x) or (M.get(x) or {}).get('cfg') or ALLF.get(str(x)) or {}).get('isEnabled'))} for x in w.get('workflows', [])]
     if w.get('duplicate_task_type'):
         item['found'] = [d for d in DUPES if d.get('waiting_on') == wid_]
     elif w.get('task_types'):
@@ -673,6 +679,10 @@ for wid_, w in WAIT.items():
                                                  for p in fp]
         item['summary'] = '; '.join(f'{n} task(s) from {src} moved to queue {w["queue_move"]}' + (f' "{qn}"' if qn else '')
                                     for src, n in collections.Counter(p.get('source') for p in fp).most_common())
+    elif fp and all(p['kind'] == 'unknown_source' for p in fp):
+        item['found'] = item.get('found', []) + [{'type': (ROW_BY_ID.get(p.get('task_id')) or {}).get('title') or p.get('type'), 'company_id': p.get('company_id'), 'company': p.get('company'),
+                                                  'task': p.get('task_id'), 'reason': f'made by {p.get("source")}'} for p in fp]
+        item['summary'] = '; '.join(f'{n} task(s) from {src}' for src, n in collections.Counter(p.get('source') for p in fp).most_common())
     elif fp:
         item['found'] = item.get('found', []) + [{'type': p.get('type'), 'company_id': p.get('company_id'), 'company': p.get('company'), 'reason': p['text']} for p in fp]
     waiting.append(item)

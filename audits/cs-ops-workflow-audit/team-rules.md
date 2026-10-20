@@ -99,7 +99,10 @@ One task type can be made by several workflows, for example split by tier. Each 
 
 Report these once per run, in their own section, not as new problems every week.
 
-None right now.
+9. **Two new (Fix) workflows made up the 1 October tasks** (asked 2026-10-20)
+   - Workflows: R+S - Facility Performance Monitoring and Escalation (Fix) (1903582998), Create Tasks | Review Tow and Unsold Auctions report, action as needed (Fix)) (1903583033).
+   - On 16 October they created 75 and 57 tasks for exactly the facilities that missed these tasks on 1 October because of the exclusion list. Both are enrolled by hand only; the Performance Monitoring one is still switched on. They aren't in the master rules file.
+   - **Were they a planned one-off make-up, so their tasks count as making up the 1 October misses?**
 
 ### Closed (answered by Cherine)
 
@@ -486,7 +489,19 @@ The scripts read this block. Keep it in step with the text above.
       "label": "VERIFIED (records)"
     }
   ],
-  "waiting_on": [],
+  "waiting_on": [
+    {
+      "id": "W-9",
+      "title": "Two new (Fix) workflows made up the 1 October tasks",
+      "asked": "2026-10-20",
+      "workflows": [
+        "1903582998",
+        "1903583033"
+      ],
+      "detail": "On 16 October, \"R+S - Facility Performance Monitoring and Escalation (Fix)\" created 75 tasks and \"Create Tasks | Review Tow and Unsold Auctions report, action as needed (Fix))\" created 57. They went to exactly the facilities that missed these tasks on 1 October because of the exclusion list, assigned to the expected person, in Ops Tasks, due 30 October. Both are enrolled by hand only; the Performance Monitoring one is still switched on. They are not in the master rules file. Until this is answered, their tasks are listed here instead of as problems, and the 1 October misses still show as missed.",
+      "question": "Were the two (Fix) workflows a planned one-off make-up, so their tasks count as making up the 1 October misses?"
+    }
+  ],
   "changes_not_confirmed": [],
   "queue_names": {
     "13519269": {
