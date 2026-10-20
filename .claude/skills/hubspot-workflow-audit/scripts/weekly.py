@@ -340,7 +340,15 @@ def type_results(first, last, rows, pre=False):
                 if e['state'] in ('expected', 'missing_reason'):
                     gl = went_live(COMP[cid])
                     first_run = next((P(x['at']) for x in runs if x.get('at')), NOW)
-                    missing[cid] = {'reason': 'went live this week' if gl else f'outside the team scope at the run ({scope_reason(rules.props_at(COMP[cid], first_run))})', 'label': 'VERIFIED (records)',
+                    then = rules.props_at(COMP[cid], first_run)
+                    if not gl and rules.in_scope(then, TEAM) is not False:
+                        # in scope at the run but didn't meet the workflow's own conditions then; it does now: due at the next run
+                        cfg = M[wid]['cfg']
+                        changed = [describe.plabel(k) for k in sorted(rules.referenced_props_all(cfg)) if str(then.get(k) or '') != str((COMP[cid].get('properties') or {}).get(k) or '')]
+                        missing[cid] = {'reason': 'met the workflow conditions only after the run' + (f' ({", ".join(changed)} changed)' if changed else '') + '; due at the next run',
+                                        'label': 'VERIFIED (records)', 'workflow': wid, 'run': 'after the run', 'not_flagged': True}
+                        continue
+                    missing[cid] = {'reason': 'went live this week' if gl else f'outside the team scope at the run ({scope_reason(then)})', 'label': 'VERIFIED (records)',
                                     'workflow': wid, 'run': 'after the run' + (f' (live since {fmt_dt(gl)})' if gl else '')}
         for cid in got:
             for r in by_co[(name, cid)]:
