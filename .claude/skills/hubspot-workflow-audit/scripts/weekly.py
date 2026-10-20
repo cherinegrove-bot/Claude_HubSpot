@@ -398,22 +398,25 @@ def ticket_type_results(tt, first, last, rows):
             else:
                 missing[fac] = {'reason': f'unknown: ticket {tid} entered {e["stage"]} on {fmt_dt(e["at"])} and got none of its {len(e["titles"])} tasks',
                                 'label': 'INFERENCE', 'workflow': wid, 'run': fmt_dt(e['at']), 'ticket': tid}
-    # tasks of this type on tickets that did not enter the stage this period
-    for tid, rs in by_ticket.items():
-        if tid in seen_tickets:
+    # tasks of this type that no ticket explains: judged per task, using ALL its tickets (a task can also carry an extra
+    # ticket, e.g. a support ticket linked later, which is not a reason to flag it)
+    pipes = set(TF.get('pipelines') or [])
+    for r in mine:
+        tix = r['tickets']
+        if not tix or any(x in seen_tickets for x in tix):
             continue
+        team_tix = [x for x in tix if (TICKETS.get(x) or {}).get('properties', {}).get('hs_pipeline') in pipes] if pipes else tix
+        trig = (M.get(r['flow'], {}).get('cfg') or {}).get('enrollmentCriteria', {}).get('listFilterBranch')
+        if any([ts for ts, _ in rules.stage_entries(TICKETS[x]) if ts <= r['created'] and (r['created'] - ts).total_seconds() < 86400
+                and rules.eval_branch(trig, rules.props_at(TICKETS[x], ts), LISTS)] for x in team_tix if x in TICKETS):
+            continue                                # its ticket entered the stage just before the period; created by that run
+        tid = (team_tix or tix)[0]
         t = TICKETS.get(tid)
-        r = rs[0]
-        if t:
-            trig = (M.get(r['flow'], {}).get('cfg') or {}).get('enrollmentCriteria', {}).get('listFilterBranch')
-            prior = [ts for ts, _ in rules.stage_entries(t) if ts <= r['created'] and rules.eval_branch(trig, rules.props_at(t, ts), LISTS)]
-            if prior and (r['created'] - prior[-1]).total_seconds() < 86400:
-                continue                                # entered the stage just before the period; created by that run
         fac = facility_of(tid) or (r['companies'] or [None])[0]
         tp = (t or {}).get('properties', {})
-        if t and TF.get('pipelines') and tp.get('hs_pipeline') not in TF['pipelines']:
+        if not team_tix and t:
             made = P(tp.get('createdate'))
-            reason = (f'the task is linked to a ticket in another pipeline' + (f', created {fmt_dt(made)}' + (', after the task' if made and made > r['created'] else '') if made else '')
+            reason = (f'the task is linked only to a ticket in another pipeline' + (f', created {fmt_dt(made)}' + (', after the task' if made and made > r['created'] else '') if made else '')
                       + '; it was probably linked by hand later')
         else:
             reason = 'its ticket did not enter the stage before this task was created' if t else f'its ticket {tid} is not in the team pipeline'
