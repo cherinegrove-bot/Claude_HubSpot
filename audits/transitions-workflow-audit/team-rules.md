@@ -35,9 +35,9 @@ This is how onboarding really works. Use it in every run.
 
 1. **Sales moves the deal to Closed won.** The Closed Won workflow (1670039203) creates the onboarding ticket in UNASSIGNED. It doesn't add a company **on purpose**: the facility doesn't exist yet.
 2. **The onboarding team sends the intake form.** When it's completed, the Create Facility workflow (1852542804) creates the company (the facility).
-3. **Ilsa (Ilse Modene in HubSpot) links that company to the ticket by hand, before the ticket moves to Pre-Launch Setup** (Cherine, 2026-10-20). The ticket is created without a company and can still be without one during Transition Kickoff; that's by design. From Pre-Launch Setup on, it must have its company.
-4. **If a ticket moves to Pre-Launch Setup or a later stage before its company is linked**, that stage's tasks get no company. That's a **team process issue, not a workflow fault**. It is reported under its own heading, "Process issues for the Transitions team", with the ticket, the stage, when it moved (and who moved it), and when the company was linked. Those tasks are not reported again under question 2.
-   - How the audit knows when the company was linked: the ticket's "Number of Associated Companies" (`hs_num_associated_companies`) history, the first time it goes above 0 (VERIFIED (records)). Who moved the ticket comes from the ticket status history.
+3. **Ilsa (Ilse Modene in HubSpot) associates that company with the ticket by hand, before the ticket moves to Pre-Launch Setup** (Cherine, 2026-10-20). The ticket is created without a company and can still be without one during Transition Kickoff; that's by design. From Pre-Launch Setup on, it must have its company.
+4. **If a ticket moves to Pre-Launch Setup or a later stage before its company is associated**, that stage's tasks get no company. That's a **team process issue, not a workflow fault**. It is reported under its own heading, "Process issues for the Transitions team", with the ticket, the stage, when it moved (and who moved it), and when the company was linked. Those tasks are not reported again under question 2.
+   - How the audit knows when the company was associated: the ticket's "Number of Associated Companies" (`hs_num_associated_companies`) history, the first time it goes above 0 (VERIFIED (records)). Who moved the ticket comes from the ticket status history.
 
 ## How "who should get a task" works for Transitions
 
@@ -57,8 +57,8 @@ Transitions workflows don't run on a schedule. Each one starts when a **ticket**
    - **Checklist subtasks** are only the real checklist items inside a task (HubSpot's "Is subtask" = true, with a parent task). They **share their main task's links**, including the ticket: HubSpot copies them automatically. This is accepted, by design (2026-10-16, closes W-5 and SUB-1). The audit flags a subtask only if its links (companies or ticket) **differ** from its main task's.
 4. Tasks that shouldn't exist (a ticket that didn't enter the stage, or a second set for the same ticket) are reported.
 5. **Every Closed Won deal gets an onboarding ticket** (Cherine, 2026-10-13). Every deal in the White Label Storage SALES pipeline that moved to Closed won in the window must have a ticket in the Onboarding Pipeline. Any deal without one is reported under question 1, with a link to the deal. VERIFIED (records): the deal's "Date entered Closed won" and its ticket links.
-6. **The company is linked before the ticket moves to Pre-Launch Setup** (Cherine, 2026-10-20). A ticket that reaches Pre-Launch Setup or a later stage before its company is linked is a process issue for the Transitions team (see "The Transitions process", step 4), not a workflow fault.
-7. **Kickoff tasks without a company are fine, by design** (Cherine, 2026-10-20). Transition Kickoff tasks, and their checklist subtasks, can be created before the company is linked, so they may have none. They are not reported as problems; each run lists them under "By design, not problems" with this reason.
+6. **The company is associated before the ticket moves to Pre-Launch Setup** (Cherine, 2026-10-20). A ticket that reaches Pre-Launch Setup or a later stage before its company is associated is a process issue for the Transitions team (see "The Transitions process", step 4), not a workflow fault.
+7. **Kickoff tasks without a company are fine, by design** (Cherine, 2026-10-20). Transition Kickoff tasks, and their checklist subtasks, can be created before the company is associated, so they may have none. They are not reported as problems; each run lists them under "By design, not problems" with this reason.
 
 ## Task types
 
@@ -124,9 +124,9 @@ None. The Closed Won edit of 2026-10-08 (revision 13 -> 14, it no longer copies 
 
 Report each once, as a known issue, with this week's count where it applies.
 
-- **F-05:** "Transition | FINAL SIGN-OFF | Subtask - Mike" (Final Sign Off, action 20) is set up without a company link, so it is always flagged under question 2. Reported here once a week instead.
+- **F-05:** "Transition | FINAL SIGN-OFF | Subtask - Mike" (Final Sign Off, action 20) is set up without a company association, so it is always flagged under question 2. Reported here once a week instead.
 - **F-09:** new tickets are created owned by Elizabeth Airey (owner 81929768), a deactivated user. Every "Ticket Owner/PM" task follows the ticket owner.
-- **F-10:** tasks copy only contacts with the "Transition" label, but the Closed Won workflow links contacts without a label, so tasks probably get no contact.
+- **F-10:** tasks copy only contacts with the "Transition" label, but the Closed Won workflow associates contacts without a label, so tasks probably get no contact.
 - **F-12:** the Transition Complete check is created after the ticket reaches Transition Completed, which is a closed stage, due the same day.
 
 ## Excluded companies
@@ -306,7 +306,7 @@ The scripts read this block. Keep it in step with the text above.
   "known_issues": [
     {
       "id": "F-05",
-      "text": "\"Transition | FINAL SIGN-OFF | Subtask - Mike\" (Final Sign Off, action 20) is set up without a company link, so it never has a company.",
+      "text": "\"Transition | FINAL SIGN-OFF | Subtask - Mike\" (Final Sign Off, action 20) is set up without a company association, so it never has a company.",
       "link_titles": [
         "final sign-?off \\| subtask - mike"
       ]
@@ -317,7 +317,7 @@ The scripts read this block. Keep it in step with the text above.
     },
     {
       "id": "F-10",
-      "text": "Tasks copy only contacts with the \"Transition\" label, but the Closed Won workflow links contacts without a label, so tasks probably get no contact."
+      "text": "Tasks copy only contacts with the \"Transition\" label, but the Closed Won workflow associates contacts without a label, so tasks probably get no contact."
     },
     {
       "id": "F-12",
@@ -400,14 +400,14 @@ The scripts read this block. Keep it in step with the text above.
       "1102485356",
       "1094530724"
     ],
-    "stages_note": "Pre-Launch Setup and every later stage of the Onboarding Pipeline (the company must be linked before Pre-Launch Setup)."
+    "stages_note": "Pre-Launch Setup and every later stage of the Onboarding Pipeline (the company must be associated before Pre-Launch Setup)."
   },
   "by_design_no_company": [
     {
       "task_types": [
         "Transition Kickoff"
       ],
-      "reason": "The ticket gets its company by hand before Pre-Launch Setup, so Kickoff tasks (and their checklist subtasks) can be created before it's linked.",
+      "reason": "The ticket gets its company by hand before Pre-Launch Setup, so Kickoff tasks (and their checklist subtasks) can be created before it's associated.",
       "decided": "2026-10-20",
       "by": "Cherine"
     }

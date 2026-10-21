@@ -3,7 +3,7 @@
 
   1. Were the tasks created?          per task type: should have / did get / missing (with reason) / shouldn't have,
                                        plus new facilities (became live this week)
-  2. Are they linked to the right company?   main task -> company; subtask -> no ticket (per team settings)
+  2. Are they associated with the right company?   main task -> company; subtask -> no ticket (per team settings)
   3. Did anyone change the workflows?        live settings vs the team's master rules file
 
 Usage:
@@ -366,7 +366,7 @@ def ticket_type_results(tt, first, last, rows):
                 continue
             seen_tickets.add(tid)
             if not fac:
-                problem(1, 'no_facility', f'Ticket "{e["subject"]}" ({tid}) entered {e["stage"]} on {fmt_dt(e["at"])} but is not linked to any company, so it has no facility.',
+                problem(1, 'no_facility', f'Ticket "{e["subject"]}" ({tid}) entered {e["stage"]} on {fmt_dt(e["at"])} but is not associated with any company, so it has no facility.',
                         'VERIFIED (records)', 'Confirmed', name, None, None, wid, 'ticket has no company', group=f'no_facility:{name}')
                 continue
             got_titles = {rules.norm(r['title']) for r in by_ticket.get(tid, [])}
@@ -416,8 +416,8 @@ def ticket_type_results(tt, first, last, rows):
         tp = (t or {}).get('properties', {})
         if not team_tix and t:
             made = P(tp.get('createdate'))
-            reason = (f'the task is linked only to a ticket in another pipeline' + (f', created {fmt_dt(made)}' + (', after the task' if made and made > r['created'] else '') if made else '')
-                      + '; it was probably linked by hand later')
+            reason = (f'the task is associated only with a ticket in another pipeline' + (f', created {fmt_dt(made)}' + (', after the task' if made and made > r['created'] else '') if made else '')
+                      + '; it was probably associated by hand later')
         else:
             reason = 'its ticket did not enter the stage before this task was created' if t else f'its ticket {tid} is not in the team pipeline'
         shouldnt[fac or tid] = {'reason': reason + f' (ticket {tid})', 'label': 'INFERENCE', 'task': r['id'], 'workflow': r['flow'], 'created': fmt_dt(r['created'])}
@@ -623,7 +623,7 @@ def build_process_issues():
                      'fixed_by_hand': fixed[0]['id'] in FIXED and FIXED[fixed[0]['id']].get('fixed') if fixed else None,
                      'section': 'before_start' if CUTOFF and local(at).date() < CUTOFF else 'main', 'label': 'VERIFIED (records)'})
         e['status'] = 'process'
-        e['detail'] = f'moved before the company was linked ({"linked " + fmt_dt(linked) if linked else "no company linked yet"}): its tasks got no company'
+        e['detail'] = f'moved before the company was associated ({"associated " + fmt_dt(linked) if linked else "no company associated yet"}): its tasks got no company'
 
 
 MAIN_FIRST = CUTOFF or FIRST
@@ -820,7 +820,7 @@ for e in TICKET_DAYS:
         continue
     if bad:
         e['status'] = 'bad'
-        e['detail'] += f'; {len(bad)} task{"s" if len(bad) > 1 else ""} with a link problem (' + ', '.join(sorted({r["link"] for r in bad})) + ')'
+        e['detail'] += f'; {len(bad)} task{"s" if len(bad) > 1 else ""} with an association problem (' + ', '.join(sorted({r["link"] for r in bad})) + ')'
 for e in TICKET_DAYS:                       # by-design gaps are noted on the day, without making it a problem day
     b_ = BY_DESIGN.get((e['ticket'], e['type'])) if e['kind'] == 'stage' else None
     if b_ and e.get('status') == 'ok':
@@ -836,15 +836,16 @@ for r in SUBS:
             diff = 'main task not found'
         else:
             parts = []
-            for what, a_, b_ in (('companies', r['companies'], par['companies']), ('ticket', r['tickets'], par['tickets'])):
+            tname = lambda x: (TICKETS.get(x) or {}).get('properties', {}).get('subject') or f'ticket {x}'
+            for what, a_, b_, nm in (('Company', r['companies'], par['companies'], cname), ('Ticket', r['tickets'], par['tickets'], tname)):
                 if set(a_) != set(b_):
-                    parts.append(f'{what}: subtask {", ".join(sorted(a_)) or "none"} vs main task {", ".join(sorted(b_)) or "none"}')
+                    parts.append(f'{what}: subtask has {", ".join(nm(x) for x in sorted(a_)) or "none"}, main task has {", ".join(nm(x) for x in sorted(b_)) or "none"}')
             diff = '; '.join(parts) or None
     par_ = PARENTS.get(r['parent']) or {}
     if diff and par_.get('type') in BYD and not r['companies'] and set(r['tickets']) == set(par_.get('tickets') or []):
         by_design_note({**r, 'type': par_['type'], 'tickets': r['tickets'] or par_.get('tickets') or []}, sub=True)
         diff = None                            # only the company is missing, at a stage where that's by design
-    st = 'linked to a ticket' if bad else (f'links differ from its main task ({diff})' if diff else 'ok')
+    st = 'associated with a ticket' if bad else (f'associations differ from its main task ({diff})' if diff else 'ok')
     if r['id'] in PROC_TASKS and st != 'ok':
         SUB_ROWS.append({'task': r['id'], 'title': r['title'], 'parent': r['parent'], 'tickets': r['tickets'], 'status': 'process issue: ' + st})
         continue
@@ -854,9 +855,9 @@ for r in SUBS:
                 None, None, r['id'], r['flow'], group='subtask_ticket')
     elif diff:
         par = PARENTS.get(r['parent']) or {}
-        problem(2, 'subtask_links', f'Subtask "{r["title"]}" ({r["id"]}) has different links from its main task "{par.get("title", r["parent"])}" ({diff}).',
+        problem(2, 'subtask_links', f'Subtask "{r["title"]}" ({r["id"]}) has different associations from its main task "{par.get("title", r["parent"])}" ({diff}).',
                 'VERIFIED (records)', 'Confirmed', par.get('type'), (r['companies'] or par.get('companies') or [None])[0], r['id'], r['flow'] or par.get('flow'),
-                'links differ from main task', group=f'subtask_links:{par.get("flow") or r["flow"]}')
+                diff, group=f'subtask_links:{par.get("flow") or r["flow"]}')
 
 # ------------------------------------------------------------------ Question 3
 def _short(seg):
@@ -1017,7 +1018,7 @@ for (kind, kid), ps in FOLDED.items():
 def folded_text(ps):
     by = collections.Counter(re.sub(r' \(from known issue [^)]*\)', '', p.get('source') or wfname(p.get('workflow'))) for p in ps)
     kinds = {p['kind'] for p in ps}
-    what = 'moved out of the ' + TEAM.get('queue_name', 'team') + ' queue' if kinds == {'not_in_queue'} else 'not linked to any company' if kinds == {'link'} else \
+    what = 'moved out of the ' + TEAM.get('queue_name', 'team') + ' queue' if kinds == {'not_in_queue'} else 'not associated with any company' if kinds == {'link'} else \
         'subtasks linked to the ticket' if kinds == {'subtask_ticket'} else 'affected'
     if kinds == {'subtask_ticket'}:
         return f'{len(ps)} {what} (' + '; '.join(f'{k}: {v}' for k, v in by.most_common()) + ').'
@@ -1041,7 +1042,7 @@ def headline(g, ps):
         r = p['reason']
         return f'{n} facilit{"y" if n == 1 else "ies"} did not get "{p["type"]}" — reason: {r}.'
     if k == 'subtask_links':
-        return f'{n} subtask{"s" if n > 1 else ""} with different links from {"their" if n > 1 else "its"} main task ({p["source"]}).'
+        return f'{n} subtask{"s" if n > 1 else ""} with different associations from {"their" if n > 1 else "its"} main task ({p["source"]}).'
     if k == 'subtask_ticket':
         src = collections.Counter(x.get('source') for x in ps)
         return f'{n} subtask{"s" if n > 1 else ""} linked to a ticket, which the team rules forbid (' + '; '.join(f'{k_}: {v}' for k_, v in src.most_common()) + ').'
@@ -1347,19 +1348,19 @@ print(f'1. **Were the tasks created?** {line(q_counts[1], "")}' + (f' ({len(NEW)
 for rc_ in RECORD_CHECKS:
     nm_ = sum(1 for r_ in rc_['records'] if r_['status'] != 'ok')
     print(f'   - {rc_["name"]}: {len(rc_["records"])} checked, ' + ('all good' if not nm_ else f'{nm_} without one'))
-print(f'2. **Are they linked to the right company?** {line(q_counts[2], "")}')
+print(f'2. **Are they associated with the right company?** {line(q_counts[2], "")}')
 print(f'3. **Did anyone change the workflows?** ' + ('no changes' if not q_counts[3] else f'{sum(1 for c in CHANGES if c["status"] != "same")} workflow(s) differ from the master rules file'))
 if TOP:
     print('\n**Top problems**')
     for i, t in enumerate(TOP, 1):
         print(f'{i}. {t["text"]} [{t["label"]}]')
 if TF and (TEAM.get('process_issues') or {}).get('company_before_stage'):
-    print(f'\n**Process issues for the {TEAM_NAME} team** (a ticket moved to a stage before its company was linked)')
+    print(f'\n**Process issues for the {TEAM_NAME} team** (a ticket moved to a stage before its company was associated)')
     if not PROC:
         print('- None')
     for x in PROC:
         print(f'- {x["ticket_name"]} (ticket {x["ticket"]}): moved to {x["stage"]} on {x["moved"]}' + (f' by {x["moved_by"]}' if x['moved_by'] else '')
-              + (f'; company linked {x["linked"]} ({x["seconds_after"]} s later)' if x['linked'] else '; no company linked yet')
+              + (f'; company associated {x["linked"]} ({x["seconds_after"]} s later)' if x['linked'] else '; no company associated yet')
               + f'. {x["tasks_without_company"]} of {x["tasks"]} tasks and {x["subtasks_without_company"]} of {x["subtasks"]} subtasks have no company'
               + (f'; main tasks fixed by hand on {x["fixed_by_hand"]}' if x['fixed_by_hand'] else '') + (' (before the start date)' if x['section'] == 'before_start' else '') + '. [VERIFIED (records)]')
 if BY_DESIGN:
