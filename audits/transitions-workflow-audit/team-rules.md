@@ -54,7 +54,7 @@ Transitions workflows don't run on a schedule. Each one starts when a **ticket**
 2. Every Create task action uses the Transitions queue (13519270).
 3. **Main tasks and subtasks** (Cherine, 2026-10-13; subtask part changed 2026-10-16):
    - **Main tasks** are the tasks the workflows create, including every task named "... | Subtask - [person]" (e.g. "Transition | TRANSITION KICK-OFF | Subtask - Bryn"). Despite the word "Subtask" in the name, these are main tasks. Each must be linked to the **ticket** and to exactly **one company**.
-   - **Checklist subtasks** are only the real checklist items inside a task (HubSpot's "Is subtask" = true, with a parent task). They **share their main task's links**, including the ticket: HubSpot copies them automatically. This is accepted, by design (2026-10-16, closes W-5 and SUB-1). The audit flags a subtask only if its links (companies or ticket) **differ** from its main task's. Exception (Cherine, 2026-10-23): a subtask with **no company** is fine when its main task has the company; that is not flagged.
+   - **Checklist subtasks** are only the real checklist items inside a task (HubSpot's "Is subtask" = true, with a parent task). They **share their main task's links**, including the ticket: HubSpot copies them automatically. This is accepted, by design (2026-10-16, closes W-5 and SUB-1). The audit flags a subtask only if its links (companies or ticket) **differ** from its main task's. Exception (Cherine, 2026-10-23): if **only one of the two has a company** (the subtask or its main task), that's fine and not flagged. Only different companies on both, or a different ticket, are flagged.
 4. Tasks that shouldn't exist (a ticket that didn't enter the stage, or a second set for the same ticket) are reported.
 5. **Every Closed Won deal gets an onboarding ticket** (Cherine, 2026-10-13). Every deal in the White Label Storage SALES pipeline that moved to Closed won in the window must have a ticket in the Onboarding Pipeline. Any deal without one is reported under question 1, with a link to the deal. VERIFIED (records): the deal's "Date entered Closed won" and its ticket links.
 6. **The company is associated before the ticket moves to Pre-Launch Setup** (Cherine, 2026-10-20). A ticket that reaches Pre-Launch Setup or a later stage before its company is associated is a process issue for the Transitions team (see "The Transitions process", step 4), not a workflow fault.
@@ -92,7 +92,7 @@ All agreed with Cherine on 2026-10-13:
 - **Excluded companies:** demo Facility (44541671248), the same as CS Ops.
 - **Closed Won adds no company, by design** (Cherine, 2026-10-20; was W-4): the facility doesn't exist yet when the deal closes. The 8 Oct edit was planned.
 - **The onboarding team links the company before the ticket moves to Pre-Launch Setup** (Cherine, 2026-10-20; was W-6): "By design. The company must be linked by the onboarding team before the ticket moves on. Cherine is raising it with Ilsa." The deadline is Pre-Launch Setup: a Kickoff ticket may not have its company yet (rule 7). A ticket that reaches Pre-Launch Setup or later without it is a process issue (rule 6), not a workflow problem.
-- **A subtask without a company is fine if its main task has the company** (Cherine, 2026-10-23). Not flagged under question 2. A subtask that has a company its main task doesn't (or a different one), or a different ticket, is still flagged.
+- **A subtask and its main task only need the company on one of them** (Cherine, 2026-10-23). A subtask with no company when its main task has one is fine, and so is a subtask with the company when its main task has none (e.g. Rindge Self Storage, Final Sign-Off; the main task's missing company is known issue F-05). Not flagged under question 2. Still flagged: both have a company but different ones, or a different ticket.
 - **Checklist subtasks share their main task's links** (2026-10-16; was W-5 / SUB-1): accepted, by design. Subtasks linked to the ticket are not a problem. Only a subtask whose links differ from its main task's is flagged (question 2). Cherine has been told and may ask to revisit it.
 - **Marketing Proposal routing is by design** (Cherine, 2026-10-15; was W-3 / F-11): the PPC check looks at any company linked to the ticket; the proposal goes to the Marketing Portfolio Manager of the first-created "Transitions" company; Brock Hegr is the correct default when that manager is empty or someone else. Keep the workflow as it is. **Never flag this** in a weekly run: the check only looks at whether the proposal was created when PPC Enrolled = Yes, not who it went to.
 - **"Subtask - Automated" (30-Day Monitoring) is by design** (Cherine, 2026-10-15; was W-2 / F-15): the CSAT survey goes out automatically when the ticket enters Post 30-Day Monitoring, and this task tells the ticket owner it was sent. "Automated" refers to the survey, not the task. Not a problem. Survey name to be confirmed.
@@ -227,7 +227,7 @@ The scripts read this block. Keep it in step with the text above.
     "main_task_ticket": true,
     "subtask_ticket_forbidden": false,
     "subtask_links_match_parent": true,
-    "subtask_company_ok_if_parent_has": true
+    "subtask_company_ok_if_one_has": true
   },
   "task_types": [
     {
