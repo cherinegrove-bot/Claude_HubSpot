@@ -838,6 +838,8 @@ for r in SUBS:
             parts = []
             tname = lambda x: (TICKETS.get(x) or {}).get('properties', {}).get('subject') or f'ticket {x}'
             for what, a_, b_, nm in (('Company', r['companies'], par['companies'], cname), ('Ticket', r['tickets'], par['tickets'], tname)):
+                if what == 'Company' and not a_ and b_ and links.get('subtask_company_ok_if_parent_has'):
+                    continue                   # the main task carries the company, which is enough (team setting)
                 if set(a_) != set(b_):
                     parts.append(f'{what}: subtask has {", ".join(nm(x) for x in sorted(a_)) or "none"}, main task has {", ".join(nm(x) for x in sorted(b_)) or "none"}')
             diff = '; '.join(parts) or None
