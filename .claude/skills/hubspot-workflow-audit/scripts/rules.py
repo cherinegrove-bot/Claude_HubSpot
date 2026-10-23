@@ -370,6 +370,25 @@ def report_day(team, window_end):
     return window_end + dt.timedelta(days=(end_wd - window_end.weekday()) % 7 + 1)
 
 
+def delay_after(cfg, action):
+    """Minutes of fixed delays (Delay actions) that follow a Create task action on its path. A record stays enrolled
+    in the workflow until they run out, and HubSpot does not re-enroll a record that is still in the workflow."""
+    acts = {a['actionId']: a for a in cfg.get('actions', [])}
+    total, aid, seen = 0, (action or {}).get('connection', {}).get('nextActionId'), set()
+    while aid and aid in acts and aid not in seen:
+        seen.add(aid)
+        a = acts[aid]
+        k = a.get('actionTypeId') or a.get('type')
+        if k == '0-1':
+            f = a.get('fields', {})
+            n = float(f.get('delta') or 0)
+            total += n * {'MINUTES': 1, 'HOURS': 60, 'DAYS': 1440, 'WEEKS': 10080}.get(f.get('time_unit', 'MINUTES'), 1)
+        elif k in ('LIST_BRANCH', 'STATIC_BRANCH', 'AB_TEST_BRANCH', '0-35', '0-29'):
+            break                                   # branch or wait-until: can't tell how long from the settings alone
+        aid = a.get('connection', {}).get('nextActionId')
+    return total
+
+
 def schedule_runs(cfg, first, last, tz, now=None):
     """Scheduled re-check times of a workflow that fall in [first, last] (dates in tz) and are not in the future."""
     sc = cfg.get('enrollmentSchedule')

@@ -186,7 +186,7 @@ def branch_reason(path, props=None, wid=None):
     return None
 
 
-def evaluate(cid, wid, when, type_name, pre=False):
+def evaluate(cid, wid, when, type_name, pre=False, _no_hold=False):
     """Would this company get this task type from this workflow at `when`, by the master settings?
     Returns dict(state, reason, label, path). state: expected | missing_reason | not_expected | out_of_scope | unknown."""
     c = COMP.get(cid)
@@ -218,6 +218,15 @@ def evaluate(cid, wid, when, type_name, pre=False):
     if outcome == 'task':
         t = rules.task_type_of(TEAM, wid, action.get('fields', {}).get('subject'))
         if t == type_name:
+            hold = rules.delay_after(cfg, action)
+            if hold and not _no_hold:
+                prev = rules.schedule_runs(cfg, (when - dt.timedelta(minutes=hold)).astimezone(TZ).date(), (when - dt.timedelta(minutes=1)).astimezone(TZ).date(), TZ)
+                prev = [p for p in (prev or []) if when - dt.timedelta(minutes=hold) < p < when]
+                if prev and evaluate(cid, wid, prev[-1].astimezone(dt.timezone.utc), type_name, pre, _no_hold=True)['state'] == 'expected':
+                    free = prev[-1] + dt.timedelta(minutes=hold)
+                    return {'state': 'not_expected', 'label': 'VERIFIED (config)', 'path': path, 'hold': True,
+                            'reason': f'still in the workflow from the {fmt_dt(prev[-1])} run: a {round(hold / 1440)}-day delay follows the task, '
+                                      f'so it can\'t be enrolled again until {fmt_dt(free)}'}
             return {'state': 'expected', 'path': path, 'label': 'INFERENCE'}
         return {'state': 'not_expected', 'reason': f'gets "{t or action.get("fields", {}).get("subject")}" instead ({path})', 'label': 'VERIFIED (config)'}
     b = branch_reason(path, props, wid)
