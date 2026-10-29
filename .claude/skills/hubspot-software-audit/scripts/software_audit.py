@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 """HubSpot Software Audit: compares software fields on Deals and Companies and writes an XLSX.
 
-Inputs are the raw outputs of the HubSpot query_crm_data tool, saved to files (the tool
-saves large results to a file automatically; save small inline results to a file yourself).
+Inputs are raw HubSpot tool outputs saved to files (large results are saved to a file
+automatically; save small inline results to a file yourself).
 
-  --companies FILE [FILE ...]  output(s) of the COMPANY query (hs_object_id, name, previous_software, prior_software)
-  --deals FILE [FILE ...]      output(s) of the DEAL query (hs_object_id, dealname, dealstage, pipeline,
-                               current_mgmt_software, prior_software, COMPANY.hs_object_id)
+Field values must come from search_crm_objects, which is live. query_crm_data (SQL) reads a
+copy that can lag behind recent edits by hours, so it is only used for deal-company links
+and pipeline/stage names.
+
+  --companies FILE [FILE ...]  search_crm_objects COMPANY pages (name, previous_software, prior_software)
+  --deals FILE [FILE ...]      search_crm_objects DEAL pages (dealname, pipeline, dealstage,
+                               current_mgmt_software, prior_software)
+  --deal-links FILE [FILE ...] query_crm_data DEAL join (hs_object_id, dealname, dealstage, pipeline,
+                               COMPANY.hs_object_id): supplies company links and pipeline/stage names
   --out PATH                   where to write the workbook
   --expect-companies N / --expect-deals N   counts from COUNT(*) queries, to catch truncated pulls
 
@@ -30,10 +36,14 @@ def _blank(v):
     return None if v in ('', 'Unassigned') else v
 
 def read_records(path, warnings):
-    """Return a list of dicts from a saved query_crm_data result (JSON-record or TSV shape)."""
+    """Return a list of dicts from a saved search_crm_objects page or query_crm_data result."""
     raw = open(path, encoding='utf-8').read()
     try:
-        contents = [r['content'] for r in json.loads(raw)['results']]
+        results = json.loads(raw)['results']
+        if results and 'properties' in results[0]:  # search_crm_objects page
+            return [{k: _blank(None if v is None else str(v)) for k, v in dict(r['properties'], hs_object_id=r.get('id', r['properties'].get('hs_object_id'))).items()}
+                    for r in results]
+        contents = [r['content'] for r in results]
     except (ValueError, KeyError, TypeError):
         contents = [raw]  # plain TSV pasted into a file
     out = []
@@ -129,7 +139,7 @@ def compare(text, enum):
 
 # ---------- audit ----------
 
-def run(company_files, deal_files, expect_c, expect_d):
+def run(company_files, deal_files, expect_c, expect_d, link_files=()):
     warnings = []
     C = {}
     for f in company_files:
@@ -142,6 +152,26 @@ def run(company_files, deal_files, expect_c, expect_d):
     rows = [r for r in rows if r.get('deal_id') or r.get('hs_object_id')]
     for r in rows:
         r.setdefault('deal_id', r.get('hs_object_id'))
+    if link_files:
+        # Live field values from search; company links and pipeline/stage names from the SQL join.
+        labels, links = {}, collections.defaultdict(set)
+        for f in link_files:
+            for l in read_records(f, warnings):
+                for k in ('pipeline', 'dealstage'):
+                    m = re.match(r'(.*) \((\d+)\)$', l.get(k) or '')
+                    if m: labels[m.group(2)] = m.group(1)
+                ids = links[l.get('deal_id') or l.get('hs_object_id')]  # a deal with no company still gets an entry
+                if l.get('company_id'): ids.add(l['company_id'])
+        unlinked = 0; expanded = []
+        for r in rows:
+            for k in ('pipeline', 'dealstage'):
+                r[k] = labels.get(r.get(k), r.get(k))
+            if r['deal_id'] not in links: unlinked += 1
+            for cid in sorted(links.get(r['deal_id'], ())) or [None]:
+                expanded.append(dict(r, company_id=cid))
+        rows = expanded
+        if unlinked:
+            warnings.append(f'{unlinked} deals are not in the deal-links pull yet (new since the SQL copy was refreshed), so check 3 treats them as having no company')
     seen = set(); rows = [r for r in rows if not ((r['deal_id'], r.get('company_id')) in seen or seen.add((r['deal_id'], r.get('company_id'))))]
     D = {}
     for r in rows:
@@ -251,12 +281,13 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--companies', nargs='+', required=True)
     ap.add_argument('--deals', nargs='+', required=True)
+    ap.add_argument('--deal-links', nargs='+', default=[])
     ap.add_argument('--out', required=True)
     ap.add_argument('--expect-companies', type=int)
     ap.add_argument('--expect-deals', type=int)
     ap.add_argument('--date', default=datetime.date.today().isoformat())
     a = ap.parse_args()
-    co, dl, x, no_co, redacted, warnings = run(a.companies, a.deals, a.expect_companies, a.expect_deals)
+    co, dl, x, no_co, redacted, warnings = run(a.companies, a.deals, a.expect_companies, a.expect_deals, a.deal_links)
     write_xlsx(a.out, co, dl, x, no_co, redacted, a.date)
     def counts(rows): return dict(sorted(collections.Counter(r['result'] for r in rows).items(), key=lambda kv: rank(kv[0])))
     def by_pipeline(rows):

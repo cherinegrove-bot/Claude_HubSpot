@@ -18,34 +18,41 @@ The text fields are free-form ("storedge", "Storable Edge", "ESS", "n/a"), so th
 ### 1. Confirm the property names still exist
 Run `search_properties` on COMPANY and DEAL for `prior_software`, `previous_software` and `current_mgmt_software`. If one has been renamed or removed, stop and tell the user rather than guessing. Also run `get_properties` on `prior_software` and compare its options to the `VENDORS` list in the script. If a new dropdown option has been added (a new vendor), add a pattern for it to `VENDORS` before running. Otherwise the new vendor's text will be classed as "Other" and show up as false mismatches.
 
-### 2. Get the expected counts
-Call `tool_guidance` for `query_crm_data` first if it hasn't been called this session, because the tool requires it.
-```sql
-SELECT COUNT(*) FROM COMPANY WHERE previous_software IS NOT NULL OR prior_software IS NOT NULL
-SELECT COUNT(*) FROM DEAL WHERE current_mgmt_software IS NOT NULL OR prior_software IS NOT NULL
+### 2. Pull the field values with `search_crm_objects` (live)
+**Don't take field values from `query_crm_data` (SQL).** It reads a copy of the CRM that can be hours behind. On 2026-10-29 it still showed 986 deals with empty Prior Software after the team had filled in about 500 of them. `search_crm_objects` reads the live records.
+
+Deals: two filter groups (OR), sorted so the pages don't shift:
 ```
-Pass these numbers to the script. If a pull comes back short, the script warns you, so a truncated pull can't pass for a clean result.
+objectType: DEAL, limit: 200, offset: 0, 200, 400, ...
+filterGroups: [{filters:[{propertyName:"current_mgmt_software", operator:"HAS_PROPERTY"}]},
+               {filters:[{propertyName:"prior_software", operator:"HAS_PROPERTY"}]}]
+properties: ["dealname","pipeline","dealstage","current_mgmt_software","prior_software"]
+sorts: [{propertyName:"hs_object_id", direction:"ASCENDING"}]
+```
+Companies: the same with `objectType: COMPANY`, `previous_software` in place of `current_mgmt_software`, and `properties: ["name","previous_software","prior_software"]`.
 
-### 3. Pull the data with `query_crm_data` (verbosityLevel LOW)
+- Every page reports `total`. Keep paging until offset + 200 ≥ total, and pass the totals to the script as `--expect-deals` / `--expect-companies`. If it loads fewer, it warns you, so a missing page can't pass for a clean result.
+- A full page is saved to a file automatically (the message gives the path), and that path is the script input. The **last, short page usually comes back inline instead**. Rather than retyping it, request a full 200-row page that ends at the total (offset = total − 200). It overlaps the previous page, which is fine because the script removes duplicates by ID.
+
+### 3. Pull the deal–company links with `query_crm_data`
+Call `tool_guidance` for `query_crm_data` first if it hasn't been called this session, because the tool requires it. Search doesn't return associations, so get them, plus pipeline and stage names, from one SQL join (verbosityLevel LOW):
 ```sql
-SELECT hs_object_id, name, previous_software, prior_software FROM COMPANY
-WHERE previous_software IS NOT NULL OR prior_software IS NOT NULL LIMIT 500
-
-SELECT hs_object_id, dealname, dealstage, pipeline, current_mgmt_software, prior_software, COMPANY.hs_object_id FROM DEAL
+SELECT hs_object_id, dealname, dealstage, pipeline, COMPANY.hs_object_id FROM DEAL
 WHERE current_mgmt_software IS NOT NULL OR prior_software IS NOT NULL LIMIT 2000
 ```
-- Large results are saved to a file automatically, and the tool error message gives the path. That path is the script input. If a result comes back inline instead, write the raw text to a file in the scratch/outputs folder and use that file.
-- Single-object queries are capped at **500 rows**. If the company count is over 500, pull it in parts and pass all the files, for example with `AND hs_object_id < 'X'` / `>= 'X'` filters or by splitting on `prior_software IS NULL` / `IS NOT NULL`. The script removes duplicates by ID.
-- The deal query joins to COMPANY, so it returns one row per deal–company pair. Last time that was about 1,400 rows, all returned. Don't add `COMPANY.prior_software` to this query: its column would have the same header as the deal's Prior Software, and the two would be indistinguishable. The script looks up company values from the company pull instead.
+This returns one row per deal–company pair; last time that was about 1,400 rows, all returned. Because the SQL copy lags, very new deals or links may be missing; the script warns how many deals it couldn't find here. Don't add `COMPANY.prior_software` to this query: its column would have the same header as the deal's Prior Software, and the two would be indistinguishable.
 
 ### 4. Run the script
 ```bash
 python3 scripts/software_audit.py \
-  --companies <company file(s)> --deals <deal file(s)> \
-  --expect-companies <N> --expect-deals <N> \
+  --companies <company search page files> --deals <deal search page files> \
+  --deal-links <SQL join file> \
+  --expect-companies <company total> --expect-deals <deal total> \
   --out <outputs dir>/Software_Audit_<YYYY-MM-DD>.xlsx
 ```
-It needs `openpyxl` (`pip install openpyxl` if missing). It prints a JSON summary with counts per check, a breakdown by pipeline, any records containing logins, and warnings. If there are warnings, resolve them (usually by pulling the missing rows) before reporting.
+It needs `openpyxl` (`pip install openpyxl` if missing). It prints a JSON summary with counts per check, a breakdown by pipeline, any records containing logins, and warnings. If there are warnings, resolve them (usually by pulling the missing page) before reporting.
+
+If the user says records have been fixed but the report still shows them as wrong, read a few of them directly with `get_crm_objects` and compare. A difference means some input came from a delayed source.
 
 Save the workbook to the user's outputs folder or scratchpad, **not inside a git repository**. It contains customer data, and committing it would spread that data.
 
