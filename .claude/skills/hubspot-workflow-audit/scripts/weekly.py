@@ -123,6 +123,17 @@ ROWS = [task_row(t) for t in TASKS if T0 <= P(t['properties']['hs_createdate']) 
 ROWS = [resolve_alias(r) if isinstance(r['flow'], str) and r['flow'].startswith('alias:') else r for r in ROWS]
 EXCLUDED_TASKS = sum(1 for r in ROWS if TASSOC.get(r['id'], {}).get('_only_excluded'))
 ROWS = [r for r in ROWS if not TASSOC.get(r['id'], {}).get('_only_excluded')]      # tasks linked only to an excluded company are not checked
+# Planned one-off make-up workflows (team-rules.md "makeup_workflows"): their tasks make up a missed run of a task type.
+# They are listed on their own, not checked as scheduled tasks and not reported as tasks from an unknown workflow.
+MAKEUP = {m['name']: m for m in TEAM.get('makeup_workflows', [])}
+MAKEUP_ROWS = [r for r in ROWS if r['flow'] not in M and r['source'] in MAKEUP]
+ROWS = [r for r in ROWS if r not in MAKEUP_ROWS]
+MADE_UP = {}                                   # (task type, company, run date) -> (make-up date, workflow name)
+for r in MAKEUP_ROWS:
+    m = MAKEUP[r['source']]
+    r['type'] = m['type']
+    for cid in r['companies']:
+        MADE_UP[(m['type'], cid, m['makes_up_run'])] = (local(r['created']).date().isoformat(), m['name'])
 for r in ROWS:
     r['before_start'] = bool(CUTOFF and local(r['created']).date() < CUTOFF)
 PRE_MAIN = [r for r in ROWS if not r['sub'] and r['before_start']]
@@ -321,6 +332,11 @@ def type_results(first, last, rows, pre=False):
             cov = next((c for c in BEFORE.get('covered_by', []) if pre and c['type'] == name and cid in COVERED.get(c['covered_by_type'], set())), None)
             if cov:                              # got the task type that replaced it under the old settings: shown, not flagged
                 missing[cid] = {'reason': cov['reason'], 'label': 'VERIFIED (records)', 'workflow': s['wf'], 'run': fmt_dt(s['run']), 'not_flagged': True}
+                continue
+            mu = MADE_UP.get((name, cid, local(s['run']).date().isoformat()))
+            if mu:                               # made up later by a planned one-off workflow: shown, not flagged
+                missing[cid] = {'reason': f'made up on {mu[0]} by "{mu[1]}" (planned)', 'label': 'VERIFIED (records)',
+                                'workflow': s['wf'], 'run': fmt_dt(s['run']), 'not_flagged': True}
                 continue
             gap = next((g for g in BEFORE.get('old_settings_gaps', []) if pre and g['type'] == name and
                         rules.props_at(COMP[cid], s['run']).get(TEAM.get('tier_property')) in g.get('tiers', [])), None)
@@ -901,6 +917,8 @@ RESULT = {
                'q1': q_counts[1], 'q2': q_counts[2], 'q3': q_counts[3]},
     'top': TOP, 'types': TYPE_RESULTS, 'new_facilities': NEW, 'links': LINK_ROWS, 'subtasks': SUB_ROWS, 'changes': CHANGES,
     'schedules': SCHEDULES, 'task_list': TASK_LIST, 'tier_columns': TIER_COLUMNS, 'switched_off': SWITCHED_OFF, 'before_start': BEFORE_START, 'known_days': [{'date': d, 'type': t, 'known_issue': k, 'tasks': n} for (d, t, k), n in sorted(KNOWN_DAYS.items())],
+    'makeup': [{'workflow': n, 'type': MAKEUP[n]['type'], 'makes_up_run': MAKEUP[n]['makes_up_run'], 'tasks': c}
+               for n, c in collections.Counter(r['source'] for r in MAKEUP_ROWS).items()],
     'waiting_on': waiting, 'known_issues': known, 'expected_off': off_state, 'problems': PROBLEMS,
     'companies': {cid: cname(cid) for cid in {x for tr in TYPE_RESULTS + PRE_TYPES for x in tr['should'] + tr['got'] + list(tr['missing']) + list(tr['shouldnt'])} | {c for r in MAIN + PRE_MAIN for c in r['companies']} | LIVE_NOW},
     'tasks': [{'id': r['id'], 'title': r['title'], 'type': r['type'], 'workflow': wfname(r['flow']) if r['flow'] in M else r['source'],
@@ -935,6 +953,10 @@ if BEFORE_START:
             nf = collections.Counter(m['reason'] for m in t['missing'].values() if m.get('not_flagged'))
             print(f'- {t["name"]}: {len(t["got"])} of {len(t["should"])} got it' + (f'; {len(fl)} real problem(s)' if fl else '; no real problems')
                   + ''.join(f'; {n} {r}' for r, n in nf.items()))
+if MAKEUP_ROWS:
+    print('\n**Planned make-up tasks** (not checked as scheduled tasks)')
+    for n, c in collections.Counter(r['source'] for r in MAKEUP_ROWS).items():
+        print(f'- {c} "{MAKEUP[n]["type"]}" task(s) from "{n}", making up the {MAKEUP[n]["makes_up_run"]} run')
 print(f'\n**Waiting on {OWNER}**')
 if not waiting:
     print('- None')

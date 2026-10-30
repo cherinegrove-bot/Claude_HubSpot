@@ -86,6 +86,7 @@ One task type can be made by several workflows, for example split by tier. Each 
 - **Tier 2 - L1 facilities with no OM in Update Customer Sentiment (Ent, Tier 1, Tier 2.1):** they get no task. Cherine confirmed on 2026-10-08 that this is fine, so it's reported as "excluded by rule", not as missing.
 - **Weekly KPI review** (1838568062) is switched off on purpose since 2026-10-08: it was the duplicate of the Weekly calls workflow (Cherine). Weekly Call tasks now come only from Weekly calls; if both workflows create one again, it's a broken rule 4.
 - **No SM or OM on the facility:** a facility that should get a task but has neither an SM nor an OM is shown as missing, with the reason "no SM or OM on the facility", labelled VERIFIED (records).
+- **Planned make-up workflows:** "R+S - Facility Performance Monitoring and Escalation (Fix)" (1903582998) and "Create Tasks | Review Tow and Unsold Auctions report, action as needed (Fix))" (1903583033) were a planned one-off make-up (Cherine, 2026-10-30). On 16 October they created the 1 October tasks the exclusion list had stopped. A facility they reached is shown as "made up", not missed; their tasks are listed on their own, not as tasks from an unknown workflow. Both are enrolled by hand only.
 - **Missed because of the exclusion list before 6 October:** facilities on list 4291 "Exclude from Ops tasks" (Street Rate Management) that should have got a task by today's settings but didn't, because the list was still excluded until 6 October, are shown as **missed tasks** (Cherine, 2026-10-14), labelled INFERENCE. Rate Review still excludes the list on purpose (rule 2), so it isn't counted.
 - **Unsold Unit, Towing, SCRA before 6 October:** Tier 1 facilities got it on 1 August but none got it on 1 September or 1 October. The old settings didn't give it to Tier 1; today's settings do. Those misses are shown as "Tier 1 not given this task by the old settings (September to 5 October)", not flagged (Cherine, 2026-10-13). The 1 November run is the first to check Tier 1 under the new settings.
 - **BOG Weekly for Tier 1 goes to the site manager:** the "T1 OM" branch (Tier 1 facility with an OM) assigns the task to the facility's Site Manager, and the "T1 SM" branch has no task. That's fine (Cherine, 2026-10-13); not a problem.
@@ -99,15 +100,13 @@ One task type can be made by several workflows, for example split by tier. Each 
 
 Report these once per run, in their own section, not as new problems every week.
 
-9. **Two new (Fix) workflows made up the 1 October tasks** (asked 2026-10-20)
-   - Workflows: R+S - Facility Performance Monitoring and Escalation (Fix) (1903582998), Create Tasks | Review Tow and Unsold Auctions report, action as needed (Fix)) (1903583033).
-   - On 16 October they created 75 and 57 tasks for exactly the facilities that missed these tasks on 1 October because of the exclusion list. Both are enrolled by hand only; the Performance Monitoring one is still switched on. They aren't in the master rules file.
-   - **Were they a planned one-off make-up, so their tasks count as making up the 1 October misses?**
+None right now.
 
 ### Closed (answered by Cherine)
 
 | Item | Answer |
 |---|---|
+| 9. Were the two (Fix) workflows a planned one-off make-up? | Yes, planned (Cherine, 2026-10-30). Their 75 Facility Performance Monitoring and 57 Unsold Unit tasks of 16 October make up the 1 October run. Listed as "makeup_workflows". |
 | 8. Should Tier 1 facilities get both BOG Weekly and BOG Oversight each week? | Yes, they need both (Cherine, 2026-10-13). Added as rule 6. |
 | 1. Tier 1 SM gap | By design: in these 7 workflows, Tier 1 tasks go only to the OM. The T1 SM branches never had a task, so these facilities never got these tasks, even before the empty branches were deleted; the deletion only cleaned up the workflows. Confirmed by Cherine. Added as rule 5 (2026-10-08). |
 | 3. First-90-days tasks before a facility is live | OK by design: the first-90-days workflows start from the go-live date, not Status = Live. Added as an exception to rule 1 (2026-10-08). |
@@ -489,19 +488,7 @@ The scripts read this block. Keep it in step with the text above.
       "label": "VERIFIED (records)"
     }
   ],
-  "waiting_on": [
-    {
-      "id": "W-9",
-      "title": "Two new (Fix) workflows made up the 1 October tasks",
-      "asked": "2026-10-20",
-      "workflows": [
-        "1903582998",
-        "1903583033"
-      ],
-      "detail": "On 16 October, \"R+S - Facility Performance Monitoring and Escalation (Fix)\" created 75 tasks and \"Create Tasks | Review Tow and Unsold Auctions report, action as needed (Fix))\" created 57. They went to exactly the facilities that missed these tasks on 1 October because of the exclusion list, assigned to the expected person, in Ops Tasks, due 30 October. Both are enrolled by hand only; the Performance Monitoring one is still switched on. They are not in the master rules file. Until this is answered, their tasks are listed here instead of as problems, and the 1 October misses still show as missed.",
-      "question": "Were the two (Fix) workflows a planned one-off make-up, so their tasks count as making up the 1 October misses?"
-    }
-  ],
+  "waiting_on": [],
   "changes_not_confirmed": [],
   "queue_names": {
     "13519269": {
@@ -544,6 +531,11 @@ The scripts read this block. Keep it in step with the text above.
     }
   ],
   "closed": [
+    {
+      "id": "W-9",
+      "closed": "2026-10-30",
+      "answer": "The two (Fix) workflows were a planned one-off make-up of the 1 October Performance Monitoring and Unsold Unit tasks (Cherine)"
+    },
     {
       "id": "W-8",
       "closed": "2026-10-13",
@@ -660,6 +652,22 @@ The scripts read this block. Keep it in step with the text above.
     "flag_excluded": true,
     "flagged_reason": "missed: the facility is on the Street Rate Management exclusion list (\"Exclude from Ops tasks\"), which this workflow still excluded until 6 October",
     "flag_excluded_decided": "2026-10-14"
-  }
+  },
+  "makeup_workflows": [
+    {
+      "name": "R+S - Facility Performance Monitoring and Escalation (Fix)",
+      "id": "1903582998",
+      "type": "Facility Performance Monitoring and Escalation",
+      "makes_up_run": "2026-10-01",
+      "decided": "2026-10-30"
+    },
+    {
+      "name": "Create Tasks | Review Tow and Unsold Auctions report, action as needed (Fix))",
+      "id": "1903583033",
+      "type": "Unsold Unit, Towing, SCRA",
+      "makes_up_run": "2026-10-01",
+      "decided": "2026-10-30"
+    }
+  ]
 }
 ```
