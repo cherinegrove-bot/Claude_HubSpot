@@ -102,6 +102,8 @@ ALL_FLOWS = {str(f['id']): f for f in W('all_flows.json', [])}       # every wor
 wfname = lambda w: (M.get(w, {}).get('row', {}).get('Workflow Name') or LIVE.get(w, {}).get('name') or ALL_FLOWS.get(str(w), {}).get('name') or str(w))
 # tasks a person fixed by hand after the run (team-rules.md "fixed_by_hand"): still this week's problem, shown as fixed
 FIXED = {t: f for f in (TEAM.get('fixed_by_hand') or []) for t in f.get('task_ids', [])}
+# tasks the workflow created that a person deleted later (team-rules.md "deleted_tasks"): not missing, reported under their known issue
+DELETED = TEAM.get('deleted_tasks') or []
 PROBLEMS = []
 
 
@@ -376,11 +378,18 @@ def ticket_type_results(tt, first, last, rows):
                 if m:
                     have.add(m)
             lack = [x for x in e['titles'] if x not in have]
+            gone = [x for x in lack if any(d.get('ticket') == tid and d.get('task_type') == name and any(rules.norm(y) == x for y in d.get('titles', []))
+                                           for d in DELETED)]            # created by the workflow, deleted later by a person (team-rules.md)
+            for x in gone:
+                d = next(d for d in DELETED if d.get('ticket') == tid and any(rules.norm(y) == x for y in d.get('titles', [])))
+                problem(1, 'deleted', f'Ticket "{e["subject"]}" ({tid}): "{x}" was created on {fmt_dt(e["at"])} and later deleted. {d.get("note", "")}'.strip(),
+                        d.get('label', 'VERIFIED (screenshot)'), 'Confirmed', name, fac, None, wid, 'created, then deleted', extra={'known_issue': d.get('known_issue')})
+                lack.remove(x); have.add(x)
             should.setdefault(fac, {'wf': wid, 'run': e['at'], 'ticket': tid})
             TICKET_DAYS.append({'date': local(e['at']).date().isoformat(), 'time': local(e['at']).strftime('%H:%M'), 'kind': 'stage', 'type': name,
                                 'at_iso': e['at'].isoformat(), 'stage': e['stage'],
                                 'workflow': wid, 'workflow_name': wfname(wid), 'ticket': tid, 'ticket_name': e['subject'], 'company_id': fac,
-                                'status': 'ok' if not lack else 'bad', 'detail': 'all tasks created' if not lack else
+                                'status': 'ok' if not lack else 'bad', 'detail': ('all tasks created' + (f'; {len(gone)} later deleted' if gone else '')) if not lack else
                                 (f'got {len(have)} of {len(e["titles"])} tasks' if have else 'no tasks created')})
             if not lack:
                 got.add(fac)
@@ -994,6 +1003,8 @@ for p in PROBLEMS:
         FOLDED[('known', p['nr_issue'])].append(p)
     elif p['kind'] == 'link' and link_known(p):
         FOLDED[('known', link_known(p))].append(p)
+    elif p['kind'] == 'deleted' and p.get('known_issue'):
+        FOLDED[('known', p['known_issue'])].append(p)
     elif p['kind'] == 'subtask_ticket' and SUB_KNOWN:
         FOLDED[('known', SUB_KNOWN)].append(p)
     elif p.get('company_id') in wait_cos:
@@ -1021,7 +1032,7 @@ def folded_text(ps):
     by = collections.Counter(re.sub(r' \(from known issue [^)]*\)', '', p.get('source') or wfname(p.get('workflow'))) for p in ps)
     kinds = {p['kind'] for p in ps}
     what = 'moved out of the ' + TEAM.get('queue_name', 'team') + ' queue' if kinds == {'not_in_queue'} else 'not associated with any company' if kinds == {'link'} else \
-        'subtasks linked to the ticket' if kinds == {'subtask_ticket'} else 'affected'
+        'subtasks linked to the ticket' if kinds == {'subtask_ticket'} else 'created by the workflow, then deleted' if kinds == {'deleted'} else 'affected'
     if kinds == {'subtask_ticket'}:
         return f'{len(ps)} {what} (' + '; '.join(f'{k}: {v}' for k, v in by.most_common()) + ').'
     return f'{len(ps)} task(s) {what} (' + '; '.join(f'{k}: {v}' for k, v in by.most_common()) + ').'

@@ -126,7 +126,7 @@ None. The Closed Won edit of 2026-10-08 (revision 13 -> 14, it no longer copies 
 Report each once, as a known issue, with this week's count where it applies.
 
 - **F-05:** "Transition | FINAL SIGN-OFF | Subtask - Mike" (Final Sign Off, action 20) is set up without a company association, so it is always flagged under question 2. Reported here once a week instead.
-- **F-09:** new tickets are created owned by Elizabeth Airey (owner 81929768), a deactivated user. Every "Ticket Owner/PM" task follows the ticket owner.
+- **F-09:** new tickets are created owned by Elizabeth Airey (owner 81929768), a deactivated user. Every "Ticket Owner/PM" task follows the ticket owner. On 22 Oct 2026 the Kickoff task for SSU Storage - Shenandoah (ticket 49916242185) was created, assigned to her, then deleted (VERIFIED (screenshot) of the workflow action log, 2026-10-30). The audit reports such a task under F-09 as "created, then deleted", not as missing (setting `deleted_tasks`).
 - **F-10:** tasks copy only contacts with the "Transition" label, but the Closed Won workflow associates contacts without a label, so tasks probably get no contact.
 - **F-12:** the Transition Complete check is created after the ticket reaches Transition Completed, which is a closed stage, due the same day.
 
@@ -376,6 +376,16 @@ The scripts read this block. Keep it in step with the text above.
   ],
   "workflow_summaries": {},
   "old_workflow_names": {},
+  "deleted_tasks": [
+    {
+      "ticket": "49916242185",
+      "task_type": "Transition Kickoff",
+      "titles": ["Transition | TRANSITION KICK-OFF"],
+      "known_issue": "F-09",
+      "label": "VERIFIED (screenshot)",
+      "note": "The workflow log shows it was created and assigned to Elizabeth Airey (deactivated); it no longer exists in HubSpot. Confirmed by Cherine from the action log on 2026-10-30."
+    }
+  ],
   "fixed_by_hand": [
     {
       "task_ids": [
