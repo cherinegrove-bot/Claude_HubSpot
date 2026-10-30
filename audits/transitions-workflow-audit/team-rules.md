@@ -89,6 +89,7 @@ All agreed with Cherine on 2026-10-13:
   - Checked on 2026-10-13: this is the same property as CS Ops. Company property `live` (label "Status"); Live is the internal value `Yes`. The go-live date is `go_live_date` (label "Actual Go-Live Date").
 - **Closed Won deals:** every deal that moved to Closed won (White Label Storage SALES) in the window must have an Onboarding Pipeline ticket (rule 5).
 - **Finish Line Self Storage, 3 Kickoff tasks with no company (12 Oct): by design, not a problem** (corrected 2026-10-20, Cherine; replaces the earlier notes). Ilse Modene moved the ticket to Transition Kickoff at 2:35 PM (US Eastern) on 12 Oct; the Kickoff workflow created its tasks seconds later, while the ticket had no company; she linked Finish Line Self Storage to the ticket 24 seconds after the move (VERIFIED (records): ticket status history and "Number of Associated Companies" history; Cherine said about a minute). That's before Pre-Launch Setup, so the process was followed, and Kickoff tasks without a company are by design (rule 7). Not caused by W-4. Cherine linked the company to the 3 main tasks by hand on 2026-10-15; their 17 checklist subtasks still have no company, which is also fine at Kickoff. W-7 (why the hand fix didn't reach the subtasks) was closed as done and resolved on 2026-10-20.
+- **Owensville Storage, Pre-Launch tasks created late (20 Oct): already dealt with** (Cherine, 2026-10-30). The ticket passed through Pre-Launch Setup in 6 seconds on 14 Oct, so the workflow skipped it; the Pre-Launch tasks and the Marketing Proposal were created on 20 Oct to make up for it. Listed under "Already dealt with" (setting `handled`), not as problems.
 - **Excluded companies:** demo Facility (44541671248), the same as CS Ops.
 - **Closed Won adds no company, by design** (Cherine, 2026-10-20; was W-4): the facility doesn't exist yet when the deal closes. The 8 Oct edit was planned.
 - **The onboarding team links the company before the ticket moves to Pre-Launch Setup** (Cherine, 2026-10-20; was W-6): "By design. The company must be linked by the onboarding team before the ticket moves on. Cherine is raising it with Ilsa." The deadline is Pre-Launch Setup: a Kickoff ticket may not have its company yet (rule 7). A ticket that reaches Pre-Launch Setup or later without it is a process issue (rule 6), not a workflow problem.
@@ -376,6 +377,14 @@ The scripts read this block. Keep it in step with the text above.
   ],
   "workflow_summaries": {},
   "old_workflow_names": {},
+  "handled": [
+    {
+      "ticket": "47886783564",
+      "task_types": ["Pre-Launch Setup", "Marketing Proposal"],
+      "handled": "week of 2026-10-19",
+      "note": "Owensville passed through Pre-Launch Setup in 6 seconds on 14 Oct, so the workflow skipped it; the Pre-Launch tasks and the Marketing Proposal were created late on 20 Oct to make up for it. Dealt with the week of 19 Oct (Cherine, 2026-10-30)."
+    }
+  ],
   "deleted_tasks": [
     {
       "ticket": "49916242185",

@@ -992,10 +992,34 @@ def link_known(p):
     t = rules.norm((ROW_BY_ID.get(p.get('task_id')) or {}).get('title'))
     return next((k['id'] for k in TEAM.get('known_issues', []) if any(re.search(x, t, re.I) for x in k.get('link_titles', []))), None)
 wait_cos = {cid: wid for wid, w in WAIT.items() for cid in w.get('company_ids', [])}
+HANDLED = collections.OrderedDict()       # problems the team already dealt with (team-rules.md "handled"): listed once, not as problems
+
+
+def handled_by(p):
+    for h in TEAM.get('handled') or []:
+        if p.get('type') not in h.get('task_types', []):
+            continue
+        r = ROW_BY_ID.get(p.get('task_id')) or {}
+        if h.get('ticket') in (r.get('tickets') or []) or (h.get('ticket') and h['ticket'] in (p.get('reason') or '') + p.get('text', '')) \
+                or (p.get('company_id') and p['company_id'] == facility_of(h.get('ticket'))):
+            return h
+    return None
+
+
 keep = []
 for p in PROBLEMS:
     km = known_move(p) if p['kind'] == 'not_in_queue' else None
-    if km:
+    hd = handled_by(p)
+    if hd:
+        e = HANDLED.setdefault(hd['ticket'], {'ticket': hd['ticket'], 'ticket_name': (TICKETS.get(hd['ticket']) or {}).get('properties', {}).get('subject') or f'ticket {hd["ticket"]}',
+                                              'company_id': facility_of(hd['ticket']), 'handled': hd.get('handled'), 'note': hd.get('note'), 'findings': 0, 'types': []})
+        e['findings'] += 1
+        if p['type'] not in e['types']:
+            e['types'].append(p['type'])
+        for tr in TYPE_RESULTS:
+            if tr['name'] == p['type']:
+                tr['shouldnt'].pop(p.get('company_id'), None)
+    elif km:
         FOLDED[('known', km['known_issue'])].append(p)
         if km.get('waiting_on'):
             FOLDED[('wait', km['waiting_on'])].append(p)
@@ -1341,7 +1365,7 @@ RESULT = {
     'counts': {'facilities_in_scope': in_scope_count, 'main_tasks': len(MAIN), 'subtasks': len(SUBS), 'workflows': len(M),
                'q1': q_counts[1], 'q2': q_counts[2], 'q3': q_counts[3]},
     'top': TOP, 'types': TYPE_RESULTS, 'record_checks': RECORD_CHECKS, 'ticket_days': TICKET_DAYS,
-    'process_issues': [{k: v for k, v in x.items() if k != 'key'} for x in PROC], 'by_design': list(BY_DESIGN.values()), 'process_heading': f'Process issues for the {TEAM_NAME} team', 'process_stages_note': (TEAM.get('process_issues') or {}).get('stages_note'), 'new_facilities': NEW, 'links': LINK_ROWS, 'subtasks': SUB_ROWS, 'changes': CHANGES,
+    'process_issues': [{k: v for k, v in x.items() if k != 'key'} for x in PROC], 'by_design': list(BY_DESIGN.values()), 'handled': list(HANDLED.values()), 'process_heading': f'Process issues for the {TEAM_NAME} team', 'process_stages_note': (TEAM.get('process_issues') or {}).get('stages_note'), 'new_facilities': NEW, 'links': LINK_ROWS, 'subtasks': SUB_ROWS, 'changes': CHANGES,
     'schedules': SCHEDULES, 'task_list': TASK_LIST, 'tier_columns': TIER_COLUMNS, 'switched_off': SWITCHED_OFF, 'before_start': BEFORE_START, 'known_days': [{'date': d, 'type': t, 'known_issue': k, 'tasks': n} for (d, t, k), n in sorted(KNOWN_DAYS.items())],
     'waiting_on': waiting, 'known_issues': known, 'expected_off': off_state, 'problems': PROBLEMS,
     'companies': {cid: cname(cid) for cid in {x for tr in TYPE_RESULTS + PRE_TYPES for x in tr['should'] + tr['got'] + list(tr['missing']) + list(tr['shouldnt'])} | {c for r in MAIN + PRE_MAIN for c in r['companies']} | LIVE_NOW | {e['company_id'] for e in TICKET_DAYS if e['company_id']}},
@@ -1381,6 +1405,10 @@ if BY_DESIGN:
     for x in BY_DESIGN.values():
         print(f'- {x["type"]}: {x["ticket_name"]} (ticket {x["ticket"]}): {x["tasks"]} task(s) and {x["subtasks"]} subtask(s) created without a company. Why: {x["reason"]}'
               + (f' (main tasks were also given the company by hand on {x["fixed_by_hand"]})' if x['fixed_by_hand'] else ''))
+if HANDLED:
+    print('\n**Already dealt with** (not counted as problems)')
+    for x in HANDLED.values():
+        print(f'- {x["ticket_name"]} (ticket {x["ticket"]}): {x["findings"]} finding(s) ({", ".join(x["types"])}). {x["note"]}')
 print('\n**Known issues** (reported once)')
 for k in known:
     print(f'- {k["id"]}: {k["text"]}' + (f' This week: {k["this_week"]}' if k.get('this_week') else ''))
