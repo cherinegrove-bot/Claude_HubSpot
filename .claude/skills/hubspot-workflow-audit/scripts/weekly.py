@@ -344,7 +344,8 @@ def type_results(first, last, rows, pre=False):
         # companies that qualify now but did not at the run (became live / full management after it)
         if any(x.get('at') for x in runs) and not pre:
             for cid in LIVE_NOW - set(should) - got:
-                wid = next((w for w in tt['workflows'] if M.get(w, {}).get('cfg', {}).get('isEnabled')), None)
+                wid = next((w for w in tt['workflows'] if M.get(w, {}).get('cfg', {}).get('isEnabled')
+                            and any(x.get('workflow') == w and x.get('at') for x in runs)), None)   # only a workflow that ran in the window
                 if not wid:
                     continue
                 e = evaluate(cid, wid, NOW, name, pre)
