@@ -254,12 +254,14 @@ function qStatus(arr,extraWait){if(nBad(arr))return['st-bad','Needs attention'];
 function qLine(arr,good,extraWait){if(!arr.length)return extraWait?`${good.replace(/\.$/,'')}, except ${plural(extraWait,'facility','facilities')} waiting on ${D.decision_owner}.`:good;return arr.map(i=>i.title).join('. ')+'.';}
 const isDate=s=>/^\d{4}-\d{2}-\d{2}/.test(s||'');
 const runs=D.types.flatMap(t=>t.runs.filter(r=>isDate(r.when)).map(r=>({...r,type:t.name})));
-const events=D.types.filter(t=>t.runs.some(r=>!isDate(r.when))).map(t=>t.name);
+const manualT=(D.schedules||[]).filter(s=>s.kind==='manual').map(s=>s.type);
+const events=D.types.filter(t=>t.runs.some(r=>!isDate(r.when))&&!manualT.includes(t.name)).map(t=>t.name);
+const manuals=D.types.filter(t=>manualT.includes(t.name)).map(t=>t.name);
 const Q=[[1,'Were the tasks created?',q1,'Every facility that should have got a task this week got it.','tasks',q1wait],
  [2,'Are they linked to the right company?',q2,'Every task is linked to exactly one qualifying company.','links',0],
  [3,'Did anyone change the workflows?',q3,'All workflows match the master rules file.','changes',0]];
 $('#t-overview').innerHTML=`<h2>This week at a glance</h2>
-<p class="lead">${runs.length?`${plural(runs.length,'scheduled run')} this week: ${runs.map(r=>esc(r.type)+' ('+esc(day(r.when))+')').join(' and ')}.`:'No scheduled workflow runs fell in this window.'}${events.length?` ${events.map(esc).join(', ')} can run any time a facility meets ${events.length===1?'its':'their'} trigger.`:''}</p>
+<p class="lead">${runs.length?`${plural(runs.length,'scheduled run')} this week: ${runs.map(r=>esc(r.type)+' ('+esc(day(r.when))+')').join(' and ')}.`:'No scheduled workflow runs fell in this window.'}${events.length?` ${events.map(esc).join(', ')} can run any time a facility meets ${events.length===1?'its':'their'} trigger.`:''}${manuals.length?` ${manuals.map(esc).join(', ')} ${manuals.length===1?'is':'are'} created when someone enrolls a facility by hand.`:''}</p>
 <div class="qs">${Q.map(([n,t,arr,good,tab,xw])=>{const [cls,lab]=qStatus(arr,xw);return `<button class="qcard" data-go="${tab}"><span class="qn">Question ${n}</span><h3>${t}</h3><span class="status ${cls}"><span class="dot"></span>${lab}</span><p>${esc(qLine(arr,good,xw))}</p><span class="more">See details →</span></button>`;}).join('')}</div>
 <div class="stats"><span><b>${D.counts.facilities_in_scope}</b> facilities checked</span><span><b>${D.counts.main_tasks}</b> tasks created</span><span><b>${D.counts.subtasks}</b> subtasks</span><span><b>${D.counts.workflows}</b> workflows compared</span></div>
 <h2>What needs attention</h2><p class="lead">Grouped so each problem shows once. Click one to see the facilities.</p>
@@ -313,13 +315,14 @@ function calHTML(){const first=(new Date(Date.UTC(calY,calM,1)).getUTCDay()+6)%7
  for(let i=0;i<first;i++)g+='<div class="cal-day pad"></div>';
  for(let d=1;d<=n;d++){g+=dayCell(calY,calM,d,false);if(runsOn(calY,calM,d).length)list+=dayCell(calY,calM,d,true);}
  const trig=(D.schedules||[]).filter(s=>s.kind==='trigger').map(s=>s.type).filter((v,i,a)=>a.indexOf(v)===i);
+ const man=(D.schedules||[]).filter(s=>s.kind==='manual').map(s=>s.type).filter((v,i,a)=>a.indexOf(v)===i);
  const off=(D.schedules||[]).filter(s=>s.off_now).map(s=>s.workflow_name).filter((v,i,a)=>a.indexOf(v)===i);
  const selIn=calSel&&calSel.slice(0,7)===ymd(calY,calM,1).slice(0,7);
  return `<div class="cal-top"><div><h2>${MONL[calM]} ${calY}</h2></div><div class="cal-nav"><button data-cal="-1" aria-label="Previous month">‹</button><b>${MONL[calM].slice(0,3)} ${calY}</b><button data-cal="1" aria-label="Next month">›</button></div></div>
  <p class="lead" style="margin-bottom:0">Every task type on the day its workflows are set to create it, from the master rules file. Click a day to see which task types ran and their result.</p>
  <div class="cal-grid">${g}</div><div class="cal-list">${list||'<div class="empty">No scheduled runs this month.</div>'}</div>
  <div class="cal-key"><span><span class="cal-sw s-ok"></span>Created correctly</span><span><span class="cal-sw s-bad"></span>Problems</span><span><span class="cal-sw s-known"></span>Known issue only</span><span><span class="cal-sw s-wait"></span>Waiting on ${esc(D.decision_owner)}</span><span><span class="cal-sw s-grey"></span>Not happened yet, or outside this week's window</span></div>
- ${trig.length||off.length?`<div class="cal-key">${trig.length?`<span>${trig.map(esc).join(', ')}: no schedule, created when a facility meets the trigger.</span>`:''}${off.length?`<span>Switched off now: ${off.map(esc).join(', ')}.</span>`:''}</div>`:''}
+ ${trig.length||man.length||off.length?`<div class="cal-key">${trig.length?`<span>${trig.map(esc).join(', ')}: no schedule, created when a facility meets the trigger.</span>`:''}${man.length?`<span>${man.map(esc).join(', ')}: no schedule, created when someone enrolls a facility by hand.</span>`:''}${off.length?`<span>Switched off now: ${off.map(esc).join(', ')}.</span>`:''}</div>`:''}
  <div id="calday">${selIn?dayDetail(calSel):''}</div>`;}
 $('#t-overview').insertAdjacentHTML('beforeend','<div class="cal" id="cal"></div>');
 function drawCal(){$('#cal').innerHTML=calHTML();}
@@ -343,7 +346,7 @@ function taskListHTML(){const L=D.task_list||[];if(!L.length)return'';
    const targets=only?[only]:(TC.length?g.tier_list:['Who']);targets.forEach(c=>{if(g.who)ln.cells[c]=ln.cells[c]?ln.cells[c]+' / '+g.who:g.who;});
    g.notes.forEach(n=>{const x=(n.match(onlyRe)||n.match(notRe)||[])[1];if(!extra.includes(x))ln.notes.add(n);});});
   Object.values(by).forEach(l=>lines.push(l));});
- const SEC=[['weekly','Weekly'],['monthly','Monthly'],['daily','Daily'],['trigger','When triggered']];
+ const SEC=[['weekly','Weekly'],['monthly','Monthly'],['daily','Daily'],['trigger','When triggered'],['manual','Enrolled by hand']];
  const num=f=>+((f.match(/\d+/)||[99])[0]),DW=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],dw=f=>{const i=DW.findIndex(d=>f.includes(d));return i<0?9:i;};
  const short=f=>f.replace(/^Weekly on /,'').replace(/^Monthly on the /,'').replace(/^Daily, /,'');
  const chip=w=>w?`<span class="who-chip">${esc(w)}</span>`:'<span class="who-none">–</span>';

@@ -215,8 +215,8 @@ def evaluate(cid, wid, when, type_name, pre=False, _no_hold=False):
             return {'state': 'unknown', 'reason': "the workflow's trigger could not be checked from the data", 'label': 'NEEDS VERIFICATION'}
         if not ok:
             return {'state': 'not_expected', 'reason': "doesn't meet the workflow trigger", 'label': 'VERIFIED (config)'}
-    elif cfg.get('enrollmentCriteria', {}).get('type') != 'LIST_BASED':
-        return {'state': 'unknown', 'reason': 'event or manual trigger', 'label': 'NEEDS VERIFICATION'}
+    elif cfg.get('enrollmentCriteria', {}).get('type') not in ('LIST_BASED', 'MANUAL'):    # manual: enrolled by hand, so only scope and branches are checked
+        return {'state': 'unknown', 'reason': 'event trigger', 'label': 'NEEDS VERIFICATION'}
     sup = rules.suppression(cfg)
     if sup:
         s = rules.eval_branch(sup, props, LISTS)
@@ -303,6 +303,9 @@ def type_results(first, last, rows, pre=False):
             sched = rules.schedule_runs(mc, first, last, TZ, NOW)
             off_now = live is not None and not live.get('isEnabled') and mc.get('isEnabled')
             if not mc.get('isEnabled'):
+                continue
+            if mc.get('enrollmentCriteria', {}).get('type') == 'MANUAL':     # enrolled by hand: nobody "should have" it; only created tasks are checked
+                runs.append({'workflow': wid, 'name': wfname(wid), 'when': 'when someone enrolls a company by hand', 'off': off_now})
                 continue
             if sched is None:          # no schedule: enrolls when a company newly meets the trigger
                 tp = trigger_props(mc)
@@ -500,7 +503,8 @@ for cid, c in COMP.items():
                         rs = rules.schedule_runs(mc, LAST + dt.timedelta(days=1), LAST + dt.timedelta(days=62), TZ)
                         if rs:
                             nxt = min(nxt or rs[0], rs[0])
-                st = 'not yet' + (f': next run {fmt_dt(nxt)}' if nxt else ' (no schedule: when the trigger is met)')
+                manual = (M.get(wid, {}).get('cfg') or {}).get('enrollmentCriteria', {}).get('type') == 'MANUAL'
+                st = 'not yet' + (f': next run {fmt_dt(nxt)}' if nxt else ' (enrolled by hand)' if manual else ' (no schedule: when the trigger is met)')
             else:
                 st = 'not for this facility: ' + e.get('reason', '')
         types.append({'type': tr['name'], 'status': st})
@@ -739,7 +743,7 @@ for tt in TYPES:
         t = sc.get('timeOfDay', {})
         live = LIVE.get(wid)
         SCHEDULES.append({'type': tt['name'], 'workflow': wid, 'workflow_name': wfname(wid),
-                          'kind': {'MONTHLY_SPECIFIC_DAYS': 'monthly', 'WEEKLY': 'weekly', 'DAILY': 'daily'}.get(sc.get('type'), 'trigger'),
+                          'kind': {'MONTHLY_SPECIFIC_DAYS': 'monthly', 'WEEKLY': 'weekly', 'DAILY': 'daily'}.get(sc.get('type')) or ('manual' if mc.get('enrollmentCriteria', {}).get('type') == 'MANUAL' else 'trigger'),
                           'days': sc.get('daysOfMonth') or [d.upper() for d in sc.get('daysOfWeek', [])],
                           'time': f'{t.get("hour", 0):02d}:{t.get("minute", 0):02d}' if sc else '',
                           'off_now': bool(live is not None and not live.get('isEnabled'))})
@@ -767,11 +771,14 @@ def _freq(cfg):
         return f'Weekly on {_and_list(d.capitalize() for d in sc.get("daysOfWeek", []))}{at}'
     if sc.get('type') == 'DAILY':
         return f'Daily{at}'
+    if cfg.get('enrollmentCriteria', {}).get('type') == 'MANUAL':
+        return 'Enrolled by hand'
     return 'When triggered'
 
 
 def _kind(cfg):
-    return {'MONTHLY_SPECIFIC_DAYS': 'monthly', 'WEEKLY': 'weekly', 'DAILY': 'daily'}.get((cfg.get('enrollmentSchedule') or {}).get('type'), 'trigger')
+    k = {'MONTHLY_SPECIFIC_DAYS': 'monthly', 'WEEKLY': 'weekly', 'DAILY': 'daily'}.get((cfg.get('enrollmentSchedule') or {}).get('type'))
+    return k or ('manual' if cfg.get('enrollmentCriteria', {}).get('type') == 'MANUAL' else 'trigger')
 
 
 def _conds(fb, tiers, notes):

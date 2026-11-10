@@ -399,6 +399,7 @@ Keep each team's audits in its own folder: `audits/<team>-workflow-audit/`.
   - The weekly fetch matches tasks against both the live name and the name in the master rules file.
   - The full-map fetch finds older names through task titles and saves them in `aliases.json` (INFERENCE; confirm them with the user).
 - **Queue names can't be looked up through the API.** Only queue IDs exist on tasks (`hs_queue_membership_ids`). The user confirms which ID is which queue.
+- **Manual enrollment.** A workflow whose trigger is "Manual enrollment only" (`enrollmentCriteria.type` = `MANUAL`) has no conditions to judge by, so nobody "should have" its task. The weekly audit checks only the tasks it created: team scope, branches, owner, queue and associations. A new facility shows "not yet (enrolled by hand)".
 - **Scheduled re-checks.** Many company workflows re-check their trigger on a schedule (`enrollmentSchedule`: weekly days or days of the month, at a time in the portal's time zone) and re-enroll. A company that starts to qualify between runs may only get the task at the next run, so say "not yet, next run …", not "missing".
 - **Branch order matters.** An If/then branch takes the **first** matching branch. Two branches that both match (e.g. "manager A is known", then "manager B is known") always send the record down the first.
 - **Suppression** ("don't enroll if…") is stored at the top level of the workflow (`suppressionFilterBranch`), not in the trigger.
