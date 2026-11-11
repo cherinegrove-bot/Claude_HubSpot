@@ -81,7 +81,7 @@ Report these once per run, in their own section, not as new problems every week.
 
 | Item | Question | Asked |
 |---|---|---|
-| W-1 | **Were the 6 November deletions planned?** 192 tasks from the 5 November run were deleted on 6 November, 20:24 to 20:28 UTC: 34 review tasks (At Risk 21, Improving 13; Brock Hegr 24, Sarah Schlosberg 10) and 158 subtasks. Deleted tasks from that day are listed under this item, not as new problems. | 2026-11-10 |
+| W-1 | **Were the 6 November deletions planned?** 192 tasks from the 5 November run were deleted on 6 November, 20:24 to 20:28 UTC: 34 review tasks (At Risk 21, Improving 13; Brock Hegr 24, Sarah Schlosberg 10) and 158 subtasks. Deleted tasks from that day are listed under this item, not as new problems. Found on 2026-11-11 (VERIFIED, records): every task from that run that had an owner was deleted, and the 8 kept are all unowned; none had been started; 15 of the 34 were marked Completed by Ilse Modene in HubSpot 5 to 15 seconds before deletion, the other 19 were deleted with no change first (who deleted them needs HubSpot's audit log, which the token can't read); none were replaced by another review task; 14 of the facilities already had an open review task from 5 October in the other workflow. The facilities stay in the 45-day wait until 20 December. Being asked to Cherine. | 2026-11-10 |
 
 ## Changes not yet confirmed
 
@@ -217,7 +217,7 @@ The scripts read this block. Keep it in step with the text above.
       "id": "W-1",
       "title": "Review tasks deleted on 6 November",
       "asked": "2026-11-10",
-      "detail": "On 6 November between 20:24 and 20:28 UTC, 192 tasks from the 5 November run were deleted: 34 Marketing Performance Review tasks (At Risk 21, Improving 13; Brock Hegr 24, Sarah Schlosberg 10) and 158 subtasks. HubSpot doesn't say who deleted them or why. The workflows were switched to manual enrollment the next day.",
+      "detail": "On 6 November between 20:24 and 20:28 UTC, 192 tasks from the 5 November run were deleted: 34 Marketing Performance Review tasks (At Risk 21, Improving 13; Brock Hegr 24, Sarah Schlosberg 10) and 158 subtasks. HubSpot doesn't say who deleted them or why. The workflows were switched to manual enrollment the next day. Found on 2026-11-11: every task from that run that had an owner was deleted (the 8 kept are unowned); none had been started; 15 were marked Completed by Ilse Modene seconds before deletion, the other 19 were deleted with no change first; none were replaced; 14 of the facilities already had an open review task from 5 October in the other workflow. Who deleted them needs HubSpot's audit log.",
       "question": "Were the 6 November deletions planned?",
       "workflows": [
         "1892196753",
