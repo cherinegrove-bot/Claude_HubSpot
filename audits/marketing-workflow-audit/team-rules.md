@@ -43,6 +43,11 @@ Decided by Cherine on 2026-11-11. Each enrolled company is checked instead of "w
 11. **Coverage.** Live companies with PPC Enrolled = Yes that have had no review task in the last 45 days are listed in two groups (Cherine, 2026-11-11): those that fit a review workflow today (with which one), and those that fit none (e.g. Trend to Goal On Track), shown for information.
     - Review tasks made before the start date count as a company's last review; they're used only for this date, never audited.
     - Deleted review tasks don't count as a review.
+    - A company that's still in a workflow's 45-day wait isn't listed (rule 12), so the "fits a review workflow" group is exactly the companies that should have got the task and didn't.
+12. **In the 45-day wait** (Cherine, 2026-11-11). Every path ends with a 45-day delay after the task, and HubSpot won't enroll a company again until it's out. The page lists, per workflow, every company in the wait now: the date it got the task (the action just above the delay), when the wait ends, and whether the task is open, completed or deleted. Labelled INFERENCE: HubSpot's API doesn't show enrollments, so this is worked out from the tasks.
+    - A deleted task no longer shows its company. It's matched to a company only when that's unambiguous: same run and owner, and exactly as many companies that fitted the workflow then, weren't already in its wait and got no other task from that run. Otherwise it's shown as "not matched". Deleted tasks made before the start date are never matched.
+    - A company can be in two workflows' waits at once (e.g. Improving on 5 October, At Risk on 5 November).
+    - The fetch reads the team's tasks and deleted tasks from the 90 days before the window, so a run can tell who was already in a wait.
 
 ## Task types
 
@@ -379,7 +384,8 @@ The scripts read this block. Keep it in step with the text above.
           ]
         }
       ]
-    }
+    },
+    "wait_days": 90
   },
   "manual_tasks_not_checked": true
 }

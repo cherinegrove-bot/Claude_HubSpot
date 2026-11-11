@@ -438,9 +438,9 @@ def fetch_weekly(a, flows):
     # 2b. manual-enrollment checks (team-rules.md "manual_checks"): the team workflows' main tasks from before the window
     #     (for "enrolled twice within N days" and the coverage list) and tasks deleted during the window
     mc = team.get('manual_checks') or {}
-    look, deleted = [], []
+    look, deleted, days = [], [], 0
     if mc:
-        days = max(int(mc.get('duplicate_days') or 0), int((mc.get('coverage') or {}).get('days') or 0))
+        days = max(int(mc.get('duplicate_days') or 0), int((mc.get('coverage') or {}).get('days') or 0), int(mc.get('wait_days') or 0))
         if days:
             lb = [{'propertyName': 'hs_createdate', 'operator': 'GTE', 'value': iso(t1 - dt.timedelta(days=days))},
                   {'propertyName': 'hs_createdate', 'operator': 'LT', 'value': iso(t0)}]
@@ -460,7 +460,8 @@ def fetch_weekly(a, flows):
                 scanned += len(d.get('results', []))
                 for t in d.get('results', []):
                     p, at = t['properties'], t.get('archivedAt') or ''
-                    if not (iso(t0) <= at[:19] + 'Z' < iso(t1)):
+                    # deleted in the window, or earlier while its company may still be in the workflow's wait (last `days`)
+                    if not (iso(t1 - dt.timedelta(days=days or 0) if days else t0) <= at[:19] + 'Z' < iso(t1)):
                         continue
                     if names.get(p.get('hs_object_source_detail_1')) in M or set((p.get('hs_queue_membership_ids') or '').split(';')) & set(queue_ids) and p.get('hs_object_source_detail_1'):
                         t['_flow'] = names.get(p.get('hs_object_source_detail_1'))
@@ -468,7 +469,7 @@ def fetch_weekly(a, flows):
                 after = (d.get('paging') or {}).get('next', {}).get('after')
                 if not after:
                     break
-            print(f'deleted tasks scanned: {scanned}; deleted in the window from the team workflows: {len(deleted)}')
+            print(f'deleted tasks scanned: {scanned}; deleted from the team workflows (window and the {days} days before): {len(deleted)}')
     save(a.work, 'lookback_tasks.json', look)
     save(a.work, 'deleted_tasks.json', deleted)
     save(a.work, 'task_assoc.json', assoc)

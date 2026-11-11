@@ -562,6 +562,7 @@ _own = W('owners.json', [])
 OWNERS = {str(o['id']): f'{o.get("firstName") or ""} {o.get("lastName") or ""}'.strip() or o.get('email', '') for o in (_own if isinstance(_own, list) else _own.values())}
 oname = lambda i: OWNERS.get(str(i), f'user {i}') if i else 'no owner'
 MANUAL = {'deleted': [], 'coverage': []}
+TASK_STATUS = {t['id']: t['properties'].get('hs_task_status') for t in TASKS + W('lookback_tasks.json', [])}
 if MC:
     LOOK = [task_row(t) for t in W('lookback_tasks.json', [])]
     for r in LOOK:
@@ -615,11 +616,14 @@ if MC:
                     problem(1, 'dup_window', f'{cname(cid)} got "{r["type"]}" on {fmt_dt(r["created"])[:10]}, {(r["created"] - x["created"]).days} day(s) after "{x["type"] or x["title"]}" ({fmt_dt(x["created"])[:10]}).',
                             'VERIFIED (records)', 'Potential Issue', r['type'], cid, r['id'], r['flow'],
                             f'{(r["created"] - x["created"]).days} day(s) after {x["type"] or x["title"]} (task {x["id"]})', group='dup_window')
+    DELETED_ALL = W('deleted_tasks.json', [])
     if MC.get('deleted'):
-        for t in W('deleted_tasks.json', []):
+        for t in DELETED_ALL:
             pr = t['properties']
             sub_ = pr.get('hs_task_is_sub_task') == 'true'
             at = P(t.get('archivedAt'))
+            if not (at and T0 <= at < T1):
+                continue                                  # deleted before the window: only used for "in the wait" below
             MANUAL['deleted'].append({'task': t['id'], 'title': pr.get('hs_task_subject'), 'subtask': sub_, 'workflow': wfname(t.get('_flow')) if t.get('_flow') else pr.get('hs_object_source_detail_1'),
                                       'workflow_id': t.get('_flow'), 'owner': oname(pr.get('hubspot_owner_id')), 'created': fmt_dt(P(pr['hs_createdate'])), 'deleted': fmt_dt(at) if at else ''})
             if not sub_:
@@ -627,6 +631,72 @@ if MC:
                         rules.task_type_of(TEAM, t.get('_flow'), pr.get('hs_task_subject')), None, t['id'], t.get('_flow'),
                         f'made {fmt_dt(P(pr["hs_createdate"]))} for {oname(pr.get("hubspot_owner_id"))}, deleted {fmt_dt(at) if at else "?"}',
                         group='deleted', extra={'deleted_on': local(at).date().isoformat() if at else None})
+    # Who is in a workflow's wait now: a company stays enrolled until the delay after its task runs out, and HubSpot
+    # won't enroll it again until then. The task date is when it got the action above the delay. Enrollments aren't
+    # in the API, so this is worked out from the tasks (INFERENCE). For a deleted task (no company any more), the
+    # company is worked out only when it's unambiguous: same run, same owner, and exactly as many companies that
+    # fitted the workflow then, weren't already in its wait and got no other task from that run.
+    WAITING = {}                                     # (company, workflow) -> entry
+    by_id = {}
+    for x in MAIN + LOOK:
+        if x['type'] in MC_TYPES and x['flow'] in M:
+            by_id[x['id']] = x
+    def _hold(w, props):
+        cfg = M.get(w, {}).get('cfg') or {}
+        o, act, _p = rules.task_path(cfg, props, LISTS)
+        return rules.delay_after(cfg, act) if o == 'task' else 0
+    for x in sorted(by_id.values(), key=lambda x: x['created']):
+        for cid in x['companies'][:1]:
+            if cid not in COMP:
+                continue
+            hold = _hold(x['flow'], rules.props_at(COMP[cid], x['created']))
+            end = x['created'] + dt.timedelta(minutes=hold)
+            if hold and end > NOW:
+                st = (TASK_STATUS.get(x['id']) or '').upper()
+                WAITING[(cid, x['flow'])] = {'company_id': cid, 'company': cname(cid), 'workflow': wfname(x['flow']), 'workflow_id': x['flow'], 'task': x['id'],
+                                'got_task': fmt_dt(x['created'])[:10], 'wait_ends': fmt_dt(end)[:10],
+                                'task_status': 'completed' if st == 'COMPLETED' else 'open', 'label': 'INFERENCE', 'before_start': local(x['created']).date().isoformat() < (TEAM.get('start_date') or '')}
+    UNMATCHED = []
+    dgroups = collections.defaultdict(list)
+    for t in DELETED_ALL:
+        pr = t['properties']
+        if pr.get('hs_task_is_sub_task') == 'true' or t.get('_flow') not in M or rules.task_type_of(TEAM, t.get('_flow'), pr.get('hs_task_subject')) not in MC_TYPES:
+            continue
+        if TEAM.get('start_date') and local(P(pr['hs_createdate'])).date().isoformat() < TEAM['start_date']:
+            continue                                      # made before the start date: never audited
+        dgroups[(t['_flow'], pr['hs_createdate'][:13], pr.get('hubspot_owner_id') or '')].append(t)
+    for (w, hour, owner), ts in dgroups.items():
+        when = min(P(t['properties']['hs_createdate']) for t in ts)
+        same_run = {c for x in by_id.values() if x['flow'] == w and abs((x['created'] - when).total_seconds()) < 3 * 3600 for c in x['companies']}
+        in_wait_then = {c for x in by_id.values() if x['flow'] == w and x['created'] < when - dt.timedelta(hours=3) for c in x['companies'][:1]
+                        if c in COMP and x['created'] + dt.timedelta(minutes=_hold(w, rules.props_at(COMP[c], x['created']))) > when}
+        cands = []
+        for cid, c in COMP.items():
+            if cid in same_run or cid in in_wait_then:
+                continue
+            props = rules.props_at(c, when)
+            f = fit.get(str(w))
+            if not f or rules.eval_branch(rules.simple_filters(f['filters']), props) is not True:
+                continue
+            o, act, _p = rules.task_path(M[w]['cfg'], props, LISTS)
+            if o != 'task':
+                continue
+            kind, v = rules.owner_spec(act.get('fields', {}))
+            want = v if kind == 'static' else (props.get(v) if kind == 'property' else None)
+            if str(want or '') == owner:
+                cands.append((cid, rules.delay_after(M[w]['cfg'], act)))
+        if len(cands) == len(ts):
+            for (cid, hold), t in zip(sorted(cands), sorted(ts, key=lambda t: t['id'])):
+                end = when + dt.timedelta(minutes=hold)
+                if hold and end > NOW and (cid, w) not in WAITING:
+                    WAITING[(cid, w)] = {'company_id': cid, 'company': cname(cid), 'workflow': wfname(w), 'workflow_id': w, 'task': None,
+                                    'got_task': fmt_dt(when)[:10], 'wait_ends': fmt_dt(end)[:10], 'task_status': 'deleted', 'label': 'INFERENCE',
+                                    'deleted': fmt_dt(P(t.get('archivedAt')))[:10] if t.get('archivedAt') else ''}
+        else:
+            UNMATCHED.append({'workflow': wfname(w), 'created': fmt_dt(when)[:10], 'owner': oname(owner), 'tasks': len(ts), 'candidates': len(cands)})
+    MANUAL['waiting'] = sorted(WAITING.values(), key=lambda e: (e['workflow'], e['wait_ends'], e['company']))
+    MANUAL['deleted_unmatched'] = UNMATCHED
+
     cov = MC.get('coverage') or {}
     if cov.get('days'):
         since = NOW - dt.timedelta(days=int(cov['days']))
@@ -639,8 +709,8 @@ if MC:
             props = c.get('properties') or {}
             if rules.in_scope(props, TEAM) is False or rules.eval_branch(rules.simple_filters(cov.get('filters')), props) is not True:
                 continue
-            if last.get(cid) and last[cid] >= since:
-                continue
+            if (last.get(cid) and last[cid] >= since) or any(k[0] == cid for k in WAITING):
+                continue                                  # had a review task lately, or is still in a workflow's wait
             fits = [f.get('short') or wfname(w) for w, f in fit.items() if rules.eval_branch(rules.simple_filters(f['filters']), props) is True]
             fitw = ', '.join(fits) or 'none of the review workflows'
             when = f'last review task {fmt_dt(last[cid])[:10]}' if last.get(cid) else f'no review task in the last {cov["days"]} days'
@@ -765,7 +835,7 @@ def headline(g, ps):
         d = (MC.get('coverage') or {}).get('days')
         if p.get('fits_any'):
             fw = collections.Counter(re.sub(r'^.*fits (.*) today$', r'\1', x['reason']) for x in ps)
-            return f'{n} facilit{"y" if n == 1 else "ies"} that fit a review workflow had no review task in the last {d} days (' + ', '.join(f'{v} {k_}' for k_, v in fw.most_common()) + ').'
+            return f'{n} facilit{"y" if n == 1 else "ies"} fit a review workflow but didn\'t get the task: no review task in the last {d} days and not in any workflow\'s wait (' + ', '.join(f'{v} {k_}' for k_, v in fw.most_common()) + ').'
         return f'{n} facilit{"y" if n == 1 else "ies"} that fit none of the review workflows had no review task in the last {d} days (for information).'
     if k == 'deleted':
         return f'{n} review task{"s" if n > 1 else ""} deleted in the window (' + ', '.join(f'{v} from {k_}' for k_, v in collections.Counter(x['source'] for x in ps).most_common()) + ').'
@@ -1064,6 +1134,13 @@ if TOP:
     print('\n**Top problems**')
     for i, t in enumerate(TOP, 1):
         print(f'{i}. {t["text"]} [{t["label"]}]')
+if MC and MANUAL.get('waiting') is not None:
+    wc = collections.Counter((e['workflow'], e['task_status'] == 'deleted') for e in MANUAL['waiting'])
+    nf = len({e['company_id'] for e in MANUAL['waiting']})
+    print(f'\n**In the 45-day wait** ({nf} facilities, {len(MANUAL["waiting"])} enrollments, worked out from the tasks): ' + '; '.join(
+        f'{wf}: {n}' + (' (task deleted)' if dl else '') for (wf, dl), n in sorted(wc.items())) +
+        f'. Fit a review workflow but didn\'t get the task: {sum(1 for c in MANUAL["coverage"] if c.get("fits_any"))}' +
+        (f'. Not matched: {sum(u["tasks"] for u in MANUAL["deleted_unmatched"])} deleted task(s).' if MANUAL.get('deleted_unmatched') else '.'))
 print('\n**Known issues** (reported once)')
 for k in known:
     print(f'- {k["id"]}: {k["text"]}' + (f' This week: {k["this_week"]}' if k.get('this_week') else ''))
