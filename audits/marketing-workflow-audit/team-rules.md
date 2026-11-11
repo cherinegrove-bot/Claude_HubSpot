@@ -3,7 +3,7 @@
 This file and `Marketing_Master_Rules.xlsx` hold everything specific to Marketing Services. The skill
 (`.claude/skills/hubspot-workflow-audit/SKILL.md`) is general and reads them with `--team marketing`.
 
-- **Last updated:** 2026-11-10
+- **Last updated:** 2026-11-11
 - **Edited by:** WLS (Cherine's team). Change this file only when a rule or decision changes.
 
 ## Basics
@@ -27,6 +27,22 @@ This file and `Marketing_Master_Rules.xlsx` hold everything specific to Marketin
 3. Every **main task** is associated with **exactly one company** and with that company's **Marketing ticket**.
 4. **Subtasks must not be associated with a ticket.**
 5. Every task the three workflows create is in the **Marketing Services queue** (13519272).
+
+### Enrollment checks (because enrollment is manual)
+
+Decided by Cherine on 2026-11-11. Each enrolled company is checked instead of "who should have had it":
+
+6. **Right workflow.** At the time of the task, the company fits the workflow it was put in. These are the conditions the workflows used until 7 November:
+   - **Standalone:** Live, PPC Enrolled = Yes, Standalone Services includes Marketing.
+   - **Improving:** Live, PPC Enrolled = Yes, Trend to Goal = Improving, Customer Tier Enterprise, Tier 1 or Tier 2 - L1.
+   - **At Risk:** Live, PPC Enrolled = Yes, Trend to Goal = At Risk, Customer Tier Enterprise, Tier 1, Tier 2 - L1, Tier 2 - L2 or Tier 3.
+7. **Right owner.** The task's owner is the one the workflow's branches give for the company's Marketing Portfolio Manager (no owner for "Not Assigned").
+8. **Right subtasks.** Every review has Google Business Profile, Website Health & Optimization, Website Performance (GA4 & Search Console) and HubSpot Marketing Card, plus Sparefoot (if active) only when SpareFoot (Y/N) = Yes.
+9. **Not enrolled twice.** No company gets a review task within 45 days of another review task from any of the three workflows.
+10. **Deleted tasks.** Review tasks and subtasks from the three workflows deleted during the window are listed (count, workflow, owner, when). HubSpot doesn't say who deleted them.
+11. **Coverage.** Live companies with PPC Enrolled = Yes that have had no review task in the last 45 days are listed in two groups (Cherine, 2026-11-11): those that fit a review workflow today (with which one), and those that fit none (e.g. Trend to Goal On Track), shown for information.
+    - Review tasks made before the start date count as a company's last review; they're used only for this date, never audited.
+    - Deleted review tasks don't count as a review.
 
 ## Task types
 
@@ -57,7 +73,9 @@ The three workflows create the same task title. Each workflow counts as its own 
 
 Report these once per run, in their own section, not as new problems every week.
 
-None right now.
+| Item | Question | Asked |
+|---|---|---|
+| W-1 | **Were the 6 November deletions planned?** 192 tasks from the 5 November run were deleted on 6 November, 20:24 to 20:28 UTC: 34 review tasks (At Risk 21, Improving 13; Brock Hegr 24, Sarah Schlosberg 10) and 158 subtasks. Deleted tasks from that day are listed under this item, not as new problems. | 2026-11-10 |
 
 ## Changes not yet confirmed
 
@@ -188,7 +206,22 @@ The scripts read this block. Keep it in step with the text above.
   "expected_off": [],
   "not_readable": [],
   "branch_reasons": [],
-  "waiting_on": [],
+  "waiting_on": [
+    {
+      "id": "W-1",
+      "title": "Review tasks deleted on 6 November",
+      "asked": "2026-11-10",
+      "detail": "On 6 November between 20:24 and 20:28 UTC, 192 tasks from the 5 November run were deleted: 34 Marketing Performance Review tasks (At Risk 21, Improving 13; Brock Hegr 24, Sarah Schlosberg 10) and 158 subtasks. HubSpot doesn't say who deleted them or why. The workflows were switched to manual enrollment the next day.",
+      "question": "Were the 6 November deletions planned?",
+      "workflows": [
+        "1892196753",
+        "1892165928"
+      ],
+      "deleted_on": [
+        "2026-11-06"
+      ]
+    }
+  ],
   "known_issues": [],
   "queue_names": {
     "13519272": {
@@ -197,6 +230,157 @@ The scripts read this block. Keep it in step with the text above.
       "confirmed": "2026-10-06"
     }
   },
-  "known_queue_moves": []
+  "known_queue_moves": [],
+  "manual_checks": {
+    "task_types": [
+      "Standalone Marketing review",
+      "Improving review",
+      "At Risk review"
+    ],
+    "fit": {
+      "1892197644": {
+        "short": "Standalone",
+        "description": "Live, PPC Enrolled Yes, Standalone Services includes Marketing",
+        "filters": [
+          {
+            "property": "live",
+            "operator": "IS_ANY_OF",
+            "values": [
+              "Yes"
+            ]
+          },
+          {
+            "property": "ppc_ads__yes_no_",
+            "operator": "IS_ANY_OF",
+            "values": [
+              "true"
+            ]
+          },
+          {
+            "property": "standalone_services",
+            "operator": "IS_ANY_OF",
+            "values": [
+              "Marketing"
+            ]
+          }
+        ]
+      },
+      "1892196753": {
+        "short": "Improving",
+        "description": "Live, PPC Enrolled Yes, Trend to Goal Improving, Tier Enterprise, Tier 1 or Tier 2 - L1",
+        "filters": [
+          {
+            "property": "live",
+            "operator": "IS_ANY_OF",
+            "values": [
+              "Yes"
+            ]
+          },
+          {
+            "property": "ppc_ads__yes_no_",
+            "operator": "IS_ANY_OF",
+            "values": [
+              "true"
+            ]
+          },
+          {
+            "property": "trend_to_goal_",
+            "operator": "IS_ANY_OF",
+            "values": [
+              "Improving"
+            ]
+          },
+          {
+            "property": "customer_tier",
+            "operator": "IS_ANY_OF",
+            "values": [
+              "Enterprise",
+              "TIER 1",
+              "TIER 2"
+            ]
+          }
+        ]
+      },
+      "1892165928": {
+        "short": "At Risk",
+        "description": "Live, PPC Enrolled Yes, Trend to Goal At Risk, Tier Enterprise, Tier 1, Tier 2 - L1, Tier 2 - L2 or Tier 3",
+        "filters": [
+          {
+            "property": "live",
+            "operator": "IS_ANY_OF",
+            "values": [
+              "Yes"
+            ]
+          },
+          {
+            "property": "ppc_ads__yes_no_",
+            "operator": "IS_ANY_OF",
+            "values": [
+              "true"
+            ]
+          },
+          {
+            "property": "trend_to_goal_",
+            "operator": "IS_ANY_OF",
+            "values": [
+              "At Risk"
+            ]
+          },
+          {
+            "property": "customer_tier",
+            "operator": "IS_ANY_OF",
+            "values": [
+              "Enterprise",
+              "TIER 1",
+              "TIER 2",
+              "Tier 2 - L2",
+              "TIER 3"
+            ]
+          }
+        ]
+      }
+    },
+    "owner": true,
+    "subtasks": {
+      "required": [
+        "Google Business Profile",
+        "Website Health & Optimization",
+        "Website Performance (GA4 & Search Console)",
+        "HubSpot Marketing Card"
+      ],
+      "conditional": [
+        {
+          "title": "Sparefoot (if active)",
+          "property": "sparefoot__y_n_",
+          "values": [
+            "true"
+          ]
+        }
+      ]
+    },
+    "duplicate_days": 45,
+    "deleted": true,
+    "coverage": {
+      "days": 45,
+      "description": "Live, PPC Enrolled Yes",
+      "filters": [
+        {
+          "property": "live",
+          "operator": "IS_ANY_OF",
+          "values": [
+            "Yes"
+          ]
+        },
+        {
+          "property": "ppc_ads__yes_no_",
+          "operator": "IS_ANY_OF",
+          "values": [
+            "true"
+          ]
+        }
+      ]
+    }
+  },
+  "manual_tasks_not_checked": true
 }
 ```

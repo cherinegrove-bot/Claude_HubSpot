@@ -198,6 +198,19 @@ def in_scope(company_props, team_cfg):
     return eval_branch(fb, company_props)
 
 
+def simple_filters(filters):
+    """Team-rules filters ({"property", "operator", "values"}, all must hold) as a HubSpot filter branch."""
+    return {'filterBranchType': 'AND', 'filters': [{'filterType': 'PROPERTY', 'property': f['property'],
+                                                     'operation': {'operator': f['operator'], 'values': f.get('values')}} for f in filters or []]}
+
+
+def manual_check_props(team_cfg):
+    """Company properties the team's manual_checks read (fit filters, coverage filters, conditional subtasks)."""
+    mc = (team_cfg or {}).get('manual_checks') or {}
+    fs = [f for v in (mc.get('fit') or {}).values() for f in v.get('filters', [])] + list((mc.get('coverage') or {}).get('filters', []))
+    return sorted({f['property'] for f in fs} | {c['property'] for c in (mc.get('subtasks') or {}).get('conditional', [])})
+
+
 def referenced_props(cfg):
     return sorted(set(re.findall(r'"property": "(\w+)"', json.dumps(cfg.get('enrollmentCriteria', {})))) - {'hs_name', 'hs_value'})
 

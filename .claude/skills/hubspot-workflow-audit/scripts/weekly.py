@@ -101,7 +101,7 @@ def task_row(t):
             'parent': p.get('hs_task_parent_task_id'), 'companies': comps, 'tickets': tix,
             'queues': [q for q in (p.get('hs_queue_membership_ids') or '').split(';') if q],
             'in_queue': bool(set((p.get('hs_queue_membership_ids') or '').split(';')) & QIDS),
-            'type': rules.task_type_of(TEAM, flow, p.get('hs_task_subject')) if flow in M else None, 'problems': []}
+            'type': rules.task_type_of(TEAM, flow, p.get('hs_task_subject')) if flow in M else None, 'owner': p.get('hubspot_owner_id') or None, 'problems': []}
 
 
 def resolve_alias(r):
@@ -121,6 +121,9 @@ def resolve_alias(r):
 
 ROWS = [task_row(t) for t in TASKS if T0 <= P(t['properties']['hs_createdate']) < T1]
 ROWS = [resolve_alias(r) if isinstance(r['flow'], str) and r['flow'].startswith('alias:') else r for r in ROWS]
+# Tasks people made by hand in the team queue (no workflow): left out when the team says so (team-rules.md "manual_tasks_not_checked").
+MANUAL_TASKS = [r for r in ROWS if TEAM.get('manual_tasks_not_checked') and r['flow'] is None and (r['source'] or '') in ('CRM_UI', 'MOBILE_IOS', 'MOBILE_ANDROID', 'IMPORT', 'API', '')]
+ROWS = [r for r in ROWS if r not in MANUAL_TASKS]
 EXCLUDED_TASKS = sum(1 for r in ROWS if TASSOC.get(r['id'], {}).get('_only_excluded'))
 ROWS = [r for r in ROWS if not TASSOC.get(r['id'], {}).get('_only_excluded')]      # tasks linked only to an excluded company are not checked
 # Planned one-off make-up workflows (team-rules.md "makeup_workflows"): their tasks make up a missed run of a task type.
@@ -551,6 +554,100 @@ for r in SUBS:
         problem(2, 'subtask_ticket', f'Subtask "{r["title"]}" ({r["id"]}) is associated with ticket {", ".join(r["tickets"])}.', 'VERIFIED (records)', 'Confirmed',
                 None, None, r['id'], r['flow'], group='subtask_ticket')
 
+# ------------------------------------------------------------------ manual-enrollment checks (team-rules.md "manual_checks")
+# For workflows that are enrolled by hand nobody "should have" a task, so instead each enrollment is checked:
+# right workflow for the company, right owner, right subtasks, not enrolled twice, tasks deleted, and companies not reviewed lately.
+MC = TEAM.get('manual_checks') or {}
+_own = W('owners.json', [])
+OWNERS = {str(o['id']): f'{o.get("firstName") or ""} {o.get("lastName") or ""}'.strip() or o.get('email', '') for o in (_own if isinstance(_own, list) else _own.values())}
+oname = lambda i: OWNERS.get(str(i), f'user {i}') if i else 'no owner'
+MANUAL = {'deleted': [], 'coverage': []}
+if MC:
+    LOOK = [task_row(t) for t in W('lookback_tasks.json', [])]
+    for r in LOOK:
+        r['companies'] = [x['id'] for x in TASSOC.get(r['id'], {}).get('companies', [])]
+    MC_TYPES = set(MC.get('task_types') or TYPE_NAMES)
+    fit = MC.get('fit') or {}
+    for r in MAIN:
+        if r['type'] not in MC_TYPES or len(r['companies']) != 1 or r['companies'][0] not in COMP:
+            continue
+        cid = r['companies'][0]
+        props = rules.props_at(COMP[cid], r['created'])
+        f = fit.get(str(r['flow']))
+        if f:
+            bad = [x for x in f['filters'] if rules.eval_branch(rules.simple_filters([x]), props) is False]
+            if bad:
+                why = '; '.join(f'{describe.plabel(x["property"])} was {describe.pval(x["property"], props.get(x["property"])) or "empty"}' for x in bad)
+                problem(1, 'wrong_workflow', f'{cname(cid)} was enrolled in {wfname(r["flow"])} but doesn\'t fit it: {why}.', 'VERIFIED (records)', 'Potential Issue',
+                        r['type'], cid, r['id'], r['flow'], why + f' (needs: {f.get("description", "")})', group=f'wrong_workflow:{r["type"]}')
+        cfg = M.get(r['flow'], {}).get('cfg') or {}
+        if MC.get('owner') and cfg:
+            outcome, action, path = rules.task_path(cfg, props, LISTS)
+            if outcome == 'task':
+                kind, v = rules.owner_spec(action.get('fields', {}))
+                want = v if kind == 'static' else (props.get(v) if kind == 'property' else None)
+                if str(want or '') != str(r['owner'] or ''):
+                    problem(1, 'owner', f'Task "{r["title"]}" for {cname(cid)} went to {oname(r["owner"])}; the workflow settings give {oname(want)} ({path}).',
+                            'VERIFIED (config) + VERIFIED (records)', 'Potential Issue', r['type'], cid, r['id'], r['flow'],
+                            f'owner {oname(r["owner"])}, settings give {oname(want)}', group=f'owner:{r["type"]}')
+        sub = MC.get('subtasks')
+        if sub:
+            want = [rules.norm(t) for t in sub.get('required', [])] + [rules.norm(c['title']) for c in sub.get('conditional', [])
+                                                                         if str(props.get(c['property']) or '') in [str(v) for v in c.get('values', [])]]
+            have = [rules.norm(x['title']) for x in SUBS if x['parent'] == r['id']]
+            miss = [t for t in want if t not in have]
+            extra = [t for t in have if t not in want]
+            if miss or extra:
+                why = '; '.join((['missing: ' + ', '.join(miss)] if miss else []) + (['not expected: ' + ', '.join(extra)] if extra else []))
+                problem(1, 'subtasks', f'Task "{r["title"]}" for {cname(cid)} has the wrong subtasks ({why}).', 'VERIFIED (records)', 'Potential Issue',
+                        r['type'], cid, r['id'], r['flow'], why, group=f'subtasks:{r["type"]}')
+    days = int(MC.get('duplicate_days') or 0)
+    if days:
+        pool = [x for x in MAIN + LOOK if x['type'] in MC_TYPES]
+        for r in MAIN:
+            if r['type'] not in MC_TYPES:
+                continue
+            for cid in r['companies']:
+                prev = [x for x in pool if x['id'] != r['id'] and cid in x['companies'] and dt.timedelta(0) <= r['created'] - x['created'] <= dt.timedelta(days=days)
+                        and (x['created'], x['id']) < (r['created'], r['id'])]
+                if prev:
+                    x = max(prev, key=lambda x: x['created'])
+                    problem(1, 'dup_window', f'{cname(cid)} got "{r["type"]}" on {fmt_dt(r["created"])[:10]}, {(r["created"] - x["created"]).days} day(s) after "{x["type"] or x["title"]}" ({fmt_dt(x["created"])[:10]}).',
+                            'VERIFIED (records)', 'Potential Issue', r['type'], cid, r['id'], r['flow'],
+                            f'{(r["created"] - x["created"]).days} day(s) after {x["type"] or x["title"]} (task {x["id"]})', group='dup_window')
+    if MC.get('deleted'):
+        for t in W('deleted_tasks.json', []):
+            pr = t['properties']
+            sub_ = pr.get('hs_task_is_sub_task') == 'true'
+            at = P(t.get('archivedAt'))
+            MANUAL['deleted'].append({'task': t['id'], 'title': pr.get('hs_task_subject'), 'subtask': sub_, 'workflow': wfname(t.get('_flow')) if t.get('_flow') else pr.get('hs_object_source_detail_1'),
+                                      'workflow_id': t.get('_flow'), 'owner': oname(pr.get('hubspot_owner_id')), 'created': fmt_dt(P(pr['hs_createdate'])), 'deleted': fmt_dt(at) if at else ''})
+            if not sub_:
+                problem(1, 'deleted', f'Task "{pr.get("hs_task_subject")}" ({t["id"]}) from {wfname(t.get("_flow"))} was deleted on {fmt_dt(at) if at else "?"}.', 'VERIFIED (records)', 'Needs Verification',
+                        rules.task_type_of(TEAM, t.get('_flow'), pr.get('hs_task_subject')), None, t['id'], t.get('_flow'),
+                        f'made {fmt_dt(P(pr["hs_createdate"]))} for {oname(pr.get("hubspot_owner_id"))}, deleted {fmt_dt(at) if at else "?"}',
+                        group='deleted', extra={'deleted_on': local(at).date().isoformat() if at else None})
+    cov = MC.get('coverage') or {}
+    if cov.get('days'):
+        since = NOW - dt.timedelta(days=int(cov['days']))
+        last = {}
+        for x in MAIN + LOOK:
+            if x['type'] in MC_TYPES:
+                for cid in x['companies']:
+                    last[cid] = max(last.get(cid, x['created']), x['created'])
+        for cid, c in COMP.items():
+            props = c.get('properties') or {}
+            if rules.in_scope(props, TEAM) is False or rules.eval_branch(rules.simple_filters(cov.get('filters')), props) is not True:
+                continue
+            if last.get(cid) and last[cid] >= since:
+                continue
+            fits = [f.get('short') or wfname(w) for w, f in fit.items() if rules.eval_branch(rules.simple_filters(f['filters']), props) is True]
+            fitw = ', '.join(fits) or 'none of the review workflows'
+            when = f'last review task {fmt_dt(last[cid])[:10]}' if last.get(cid) else f'no review task in the last {cov["days"]} days'
+            MANUAL['coverage'].append({'company_id': cid, 'company': cname(cid), 'last': fmt_dt(last[cid])[:10] if last.get(cid) else None, 'fits': fitw, 'fits_any': bool(fits)})
+            problem(1, 'coverage', f'{cname(cid)} has had no review task for {cov["days"]} days ({when}); fits {fitw} today.', 'VERIFIED (records)', 'Potential Issue',
+                    None, cid, None, None, f'{when}; fits {fitw} today', group='coverage:fits' if fits else 'coverage:none', extra={'fits_any': bool(fits)})
+
 # ------------------------------------------------------------------ Question 3
 CHANGES = []
 excl = TEAM.get('exclusion') or {}
@@ -600,6 +697,7 @@ def known_move(p):
         return None
     return m
 wait_cos = {cid: wid for wid, w in WAIT.items() for cid in w.get('company_ids', [])}
+wait_del = {d: wid for wid, w in WAIT.items() for d in w.get('deleted_on', [])}      # tasks deleted on these days are with an open question
 # tasks from a workflow outside the master rules file that an open question is about: listed with the question, not as new problems
 wait_src = {ALLF[str(x)]['name']: wid for wid, w in WAIT.items() for x in w.get('workflows', []) if str(x) in ALLF and str(x) not in M}
 keep = []
@@ -613,6 +711,8 @@ for p in PROBLEMS:
         FOLDED[('known', p['nr_issue'])].append(p)
     elif p['kind'] == 'unknown_source' and p.get('source') in wait_src:
         FOLDED[('wait', wait_src[p['source']])].append(p)
+    elif p['kind'] == 'deleted' and p.get('deleted_on') in wait_del:
+        FOLDED[('wait', wait_del[p['deleted_on']])].append(p)
     elif p.get('company_id') in wait_cos:
         FOLDED[('wait', wait_cos[p['company_id']])].append(p)
     else:
@@ -646,7 +746,7 @@ q_counts = {q: len([p for p in PROBLEMS if p['q'] == q]) for q in (1, 2, 3)}
 groups = collections.OrderedDict()
 for p in PROBLEMS:
     groups.setdefault(p['group'], []).append(p)
-WEIGHT = {'missing': 4, 'link': 5, 'subtask_ticket': 5, 'rule2': 5, 'off_task': 5, 'changed': 4, 'not_in_queue': 5, 'shouldnt': 3, 'duplicate': 3,
+WEIGHT = {'wrong_workflow': 4, 'owner': 4, 'subtasks': 3, 'dup_window': 3, 'deleted': 3, 'coverage': 2, 'missing': 4, 'link': 5, 'subtask_ticket': 5, 'rule2': 5, 'off_task': 5, 'changed': 4, 'not_in_queue': 5, 'shouldnt': 3, 'duplicate': 3,
           'not_returned': 3, 'unknown_source': 2, 'unknown_type': 2, 'not_live_90': 2, 'golive_gap': 1}
 
 
@@ -661,6 +761,17 @@ def headline(g, ps):
         return f'{n} facilit{"y" if n == 1 else "ies"} got "{p["type"]}" but should not have ({p["reason"]}).'
     if k == 'link':
         return f'{n} main task{"s" if n > 1 else ""} from {p["source"]}: {p["reason"]}.'
+    if k == 'coverage':
+        d = (MC.get('coverage') or {}).get('days')
+        if p.get('fits_any'):
+            fw = collections.Counter(re.sub(r'^.*fits (.*) today$', r'\1', x['reason']) for x in ps)
+            return f'{n} facilit{"y" if n == 1 else "ies"} that fit a review workflow had no review task in the last {d} days (' + ', '.join(f'{v} {k_}' for k_, v in fw.most_common()) + ').'
+        return f'{n} facilit{"y" if n == 1 else "ies"} that fit none of the review workflows had no review task in the last {d} days (for information).'
+    if k == 'deleted':
+        return f'{n} review task{"s" if n > 1 else ""} deleted in the window (' + ', '.join(f'{v} from {k_}' for k_, v in collections.Counter(x['source'] for x in ps).most_common()) + ').'
+    if k in ('wrong_workflow', 'owner', 'subtasks', 'dup_window') and n > 1:
+        return f'{n} × ' + {'wrong_workflow': 'company enrolled in a workflow it doesn\'t fit', 'owner': 'task with a different owner than the settings give',
+                           'subtasks': 'review task with the wrong subtasks', 'dup_window': 'company enrolled again within ' + str(MC.get('duplicate_days')) + ' days'}[k] + f' ({p["type"] or p["source"]}).'
     if k == 'not_in_queue':
         mv = p.get('moved_by') or {}
         return (f'{n} task{"s" if n > 1 else ""} from {p["source"]} {"are" if n > 1 else "is"} {p["reason"]}, not the {TEAM.get("queue_name")} queue'
@@ -677,6 +788,8 @@ def score(ps):
     s = WEIGHT.get(p['kind'], 1) + min(len(ps), 50) / 25
     if p['kind'] == 'missing' and p.get('reason') in ('unknown', 'workflow off'):
         s += 3                                        # tasks nobody can explain go first
+    if p['kind'] == 'coverage' and not p.get('fits_any'):
+        s -= 3                                        # for information only
     if p.get('pending'):
         s -= 2                                        # already seen, waiting on confirmation
     if 'Waiting on' in (p.get('reason') or ''):
@@ -713,6 +826,10 @@ for wid_, w in WAIT.items():
         item['found'] = item.get('found', []) + [{'type': (ROW_BY_ID.get(p.get('task_id')) or {}).get('title') or p.get('type'), 'company_id': p.get('company_id'), 'company': p.get('company'),
                                                   'task': p.get('task_id'), 'reason': f'made by {p.get("source")}'} for p in fp]
         item['summary'] = '; '.join(f'{n} task(s) from {src}' for src, n in collections.Counter(p.get('source') for p in fp).most_common())
+    elif fp and all(p['kind'] == 'deleted' for p in fp):
+        item['found'] = item.get('found', []) + [{'type': p.get('type'), 'company_id': None, 'company': None, 'task': p.get('task_id'), 'reason': p['reason']} for p in fp]
+        item['summary'] = f'{len(fp)} review task(s) deleted: ' + '; '.join(f'{n} from {src}' for src, n in collections.Counter(p.get('source') for p in fp).most_common()) \
+            + (f' (plus {sum(1 for d in MANUAL["deleted"] if d["subtask"] and d["deleted"][:10] in w.get("deleted_on", []))} subtasks)' if MANUAL.get('deleted') else '')
     elif fp:
         item['found'] = item.get('found', []) + [{'type': p.get('type'), 'company_id': p.get('company_id'), 'company': p.get('company'), 'reason': p['text']} for p in fp]
     waiting.append(item)
@@ -919,14 +1036,14 @@ RESULT = {
     'window': [FIRST.isoformat(), LAST.isoformat()], 'report_day': rules.report_day(TEAM, LAST).isoformat(), 'time_zone': ACCT.get('timeZone'),
     'fetched_at': fmt_dt(NOW), 'start_date': TEAM.get('start_date'),
     'excluded_companies': [{'id': k, 'name': v.get('name'), 'reason': v.get('reason')} for k, v in EXCLUDED.items()],
-    'excluded_tasks': EXCLUDED_TASKS,
+    'excluded_tasks': EXCLUDED_TASKS, 'manual_tasks_not_checked': len(MANUAL_TASKS),
     'counts': {'facilities_in_scope': in_scope_count, 'main_tasks': len(MAIN), 'subtasks': len(SUBS), 'workflows': len(M),
                'q1': q_counts[1], 'q2': q_counts[2], 'q3': q_counts[3]},
     'top': TOP, 'types': TYPE_RESULTS, 'new_facilities': NEW, 'links': LINK_ROWS, 'subtasks': SUB_ROWS, 'changes': CHANGES,
     'schedules': SCHEDULES, 'task_list': TASK_LIST, 'tier_columns': TIER_COLUMNS, 'switched_off': SWITCHED_OFF, 'before_start': BEFORE_START, 'known_days': [{'date': d, 'type': t, 'known_issue': k, 'tasks': n} for (d, t, k), n in sorted(KNOWN_DAYS.items())],
     'makeup': [{'workflow': n, 'type': MAKEUP[n]['type'], 'makes_up_run': MAKEUP[n]['makes_up_run'], 'tasks': c}
                for n, c in collections.Counter(r['source'] for r in MAKEUP_ROWS).items()],
-    'waiting_on': waiting, 'known_issues': known, 'expected_off': off_state, 'problems': PROBLEMS,
+    'manual': {**MANUAL, 'duplicate_days': MC.get('duplicate_days'), 'coverage_days': (MC.get('coverage') or {}).get('days')} if MC else None, 'waiting_on': waiting, 'known_issues': known, 'expected_off': off_state, 'problems': PROBLEMS,
     'companies': {cid: cname(cid) for cid in {x for tr in TYPE_RESULTS + PRE_TYPES for x in tr['should'] + tr['got'] + list(tr['missing']) + list(tr['shouldnt'])} | {c for r in MAIN + PRE_MAIN for c in r['companies']} | LIVE_NOW},
     'tasks': [{'id': r['id'], 'title': r['title'], 'type': r['type'], 'workflow': wfname(r['flow']) if r['flow'] in M else r['source'],
                'workflow_id': r['flow'] if r['flow'] in M else None, 'created': fmt_dt(r['created']),

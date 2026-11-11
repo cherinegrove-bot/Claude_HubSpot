@@ -435,9 +435,47 @@ def fetch_weekly(a, flows):
             assoc.setdefault(k, {})[obj] = v
     save(a.work, 'task_assoc.json', assoc)
 
+    # 2b. manual-enrollment checks (team-rules.md "manual_checks"): the team workflows' main tasks from before the window
+    #     (for "enrolled twice within N days" and the coverage list) and tasks deleted during the window
+    mc = team.get('manual_checks') or {}
+    look, deleted = [], []
+    if mc:
+        days = max(int(mc.get('duplicate_days') or 0), int((mc.get('coverage') or {}).get('days') or 0))
+        if days:
+            lb = [{'propertyName': 'hs_createdate', 'operator': 'GTE', 'value': iso(t1 - dt.timedelta(days=days))},
+                  {'propertyName': 'hs_createdate', 'operator': 'LT', 'value': iso(t0)}]
+            for n, i in names.items():
+                if i in M:
+                    look += [t for t in search_all('tasks', [{'propertyName': 'hs_object_source_detail_1', 'operator': 'EQ', 'value': n}] + lb, TASK_PROPS)
+                             if t['properties'].get('hs_task_is_sub_task') != 'true']
+            for t in look:
+                t['_flow'] = names.get(t['properties'].get('hs_object_source_detail_1'))
+            for k, v in batch_assoc('tasks', 'companies', [t['id'] for t in look]).items():
+                assoc.setdefault(k, {})['companies'] = v
+            print(f'earlier main tasks from the team workflows (last {days} days before the window): {len(look)}')
+        if mc.get('deleted'):
+            after, scanned = None, 0
+            while True:
+                d = req('/crm/v3/objects/tasks?archived=true&limit=100&properties=' + ','.join(TASK_PROPS) + (f'&after={after}' if after else ''))
+                scanned += len(d.get('results', []))
+                for t in d.get('results', []):
+                    p, at = t['properties'], t.get('archivedAt') or ''
+                    if not (iso(t0) <= at[:19] + 'Z' < iso(t1)):
+                        continue
+                    if names.get(p.get('hs_object_source_detail_1')) in M or set((p.get('hs_queue_membership_ids') or '').split(';')) & set(queue_ids) and p.get('hs_object_source_detail_1'):
+                        t['_flow'] = names.get(p.get('hs_object_source_detail_1'))
+                        deleted.append(t)
+                after = (d.get('paging') or {}).get('next', {}).get('after')
+                if not after:
+                    break
+            print(f'deleted tasks scanned: {scanned}; deleted in the window from the team workflows: {len(deleted)}')
+    save(a.work, 'lookback_tasks.json', look)
+    save(a.work, 'deleted_tasks.json', deleted)
+    save(a.work, 'task_assoc.json', assoc)
+
     # 3. companies: every live company, every company changed during the window, and every company a task is linked to
     mcfgs = [e['cfg'] for e in M.values() if e.get('cfg')] + list(cfg.values())
-    hist = sorted(set(rules.scope_props(team)) | {p for c in mcfgs for p in rules.referenced_props_all(c)} |
+    hist = sorted(set(rules.scope_props(team)) | set(rules.manual_check_props(team)) | {p for c in mcfgs for p in rules.referenced_props_all(c)} |
                   {p for c in mcfgs for p in rules.branch_props(c)} | {(team.get('went_live') or {}).get(k) for k in ('status_property', 'go_live_date_property')} - {None, 'hs_name', 'hs_value'})
     cprops = sorted(set(hist) | {'name', 'hs_object_id'})
     sp = (team.get('went_live') or {}).get('status_property', 'live')

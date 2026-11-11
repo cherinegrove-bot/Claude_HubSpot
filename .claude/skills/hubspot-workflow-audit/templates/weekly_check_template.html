@@ -217,6 +217,13 @@ function describe(key,ps){
  if(p.kind==='shouldnt'){return{q:1,kind:'bad',title:`${plural(n,'facility','facilities')} got “${p.type}” but shouldn't have`,text:`Reason: ${p.reason||'not in scope'}.`,who:'You',label:p.label,ps};}
  if(p.kind==='changed'){const c=D.changes.find(c=>c.workflow===p.workflow)||{};return{q:3,kind:'wait',title:`“${c.name||p.workflow}” changed`,
   text:changeText(c),who:D.decision_owner,label:p.label,ps,wf:c.workflow?{id:c.workflow,name:c.name}:null};}
+ if(p.kind==='wrong_workflow')return{q:1,kind:'bad',title:`${plural(n,'facility','facilities')} enrolled in “${p.source}” but ${n===1?"doesn't":"don't"} fit it`,text:`The workflow is for: ${(p.reason||'').replace(/^.*\(needs: /,'').replace(/\)$/,'')}. The facility's values when the task was made are in each row.`,who:'You',label:p.label,ps};
+ if(p.kind==='owner')return{q:1,kind:'bad',title:`${plural(n,'task')} went to a different owner than the workflow gives`,text:`The workflow assigns the task from the facility's Marketing Portfolio Manager. Each row shows the owner and the one the settings give.`,who:'You',label:p.label,ps};
+ if(p.kind==='subtasks')return{q:1,kind:'bad',title:`${plural(n,'review task')} with the wrong subtasks`,text:`Each row lists the subtasks that are missing or not expected.`,who:'You',label:p.label,ps};
+ if(p.kind==='dup_window')return{q:1,kind:'bad',title:`${plural(n,'facility','facilities')} enrolled again within ${D.manual&&D.manual.duplicate_days||45} days`,text:`Each got a review task soon after an earlier one.`,who:'You',label:p.label,ps};
+ if(p.kind==='deleted')return{q:1,kind:'bad',title:`${plural(n,'review task')} deleted this week`,text:`HubSpot doesn't say who deleted them. Each row shows the owner and when it was made and deleted.`,who:D.decision_owner,label:p.label,ps};
+ if(p.kind==='coverage')return p.fits_any?{q:1,kind:'bad',title:`${plural(n,'facility','facilities')} that fit a review workflow had no review task in the last ${D.manual&&D.manual.coverage_days||45} days`,text:`Live, PPC-enrolled facilities. Each row says which review workflow the facility fits today.`,who:D.decision_owner,label:p.label,ps}
+  :{q:1,kind:'wait',title:`${plural(n,'facility','facilities')} that fit none of the review workflows had no review task in the last ${D.manual&&D.manual.coverage_days||45} days`,text:`Live, PPC-enrolled facilities whose Trend to Goal, tier or Standalone Services don't match any review workflow today (e.g. On Track). Listed for information.`,who:D.decision_owner,label:p.label,ps};
  return{q:p.q,kind:'bad',title:p.text,text:'',who:'You',label:p.label,ps};
 }
 function changeText(c){if(!c.diffs)return'';const real=c.diffs.filter(d=>d.column!=='Revision');
