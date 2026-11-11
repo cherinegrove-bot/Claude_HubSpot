@@ -48,6 +48,7 @@ Decided by Cherine on 2026-11-11. Each enrolled company is checked instead of "w
     - A deleted task no longer shows its company. It's matched to a company only when that's unambiguous: same run and owner, and exactly as many companies that fitted the workflow then, weren't already in its wait and got no other task from that run. Otherwise it's shown as "not matched". Deleted tasks made before the start date are never matched.
     - A company can be in two workflows' waits at once (e.g. Improving on 5 October, At Risk on 5 November).
     - The fetch reads the team's tasks and deleted tasks from the 90 days before the window, so a run can tell who was already in a wait.
+    - **Calendar** (Cherine, 2026-11-11): the day each workflow's wait ends is marked in its own colour, with the number of facilities: At Risk purple, Improving teal, Standalone magenta. Clicking the day lists the facilities.
 
 ## Task types
 

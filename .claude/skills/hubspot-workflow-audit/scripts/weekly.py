@@ -654,6 +654,7 @@ if MC:
             if hold and end > NOW:
                 st = (TASK_STATUS.get(x['id']) or '').upper()
                 WAITING[(cid, x['flow'])] = {'company_id': cid, 'company': cname(cid), 'workflow': wfname(x['flow']), 'workflow_id': x['flow'], 'task': x['id'],
+                                'short': (fit.get(str(x['flow'])) or {}).get('short') or wfname(x['flow']),
                                 'got_task': fmt_dt(x['created'])[:10], 'wait_ends': fmt_dt(end)[:10],
                                 'task_status': 'completed' if st == 'COMPLETED' else 'open', 'label': 'INFERENCE', 'before_start': local(x['created']).date().isoformat() < (TEAM.get('start_date') or '')}
     UNMATCHED = []
@@ -690,6 +691,7 @@ if MC:
                 end = when + dt.timedelta(minutes=hold)
                 if hold and end > NOW and (cid, w) not in WAITING:
                     WAITING[(cid, w)] = {'company_id': cid, 'company': cname(cid), 'workflow': wfname(w), 'workflow_id': w, 'task': None,
+                                    'short': (fit.get(str(w)) or {}).get('short') or wfname(w),
                                     'got_task': fmt_dt(when)[:10], 'wait_ends': fmt_dt(end)[:10], 'task_status': 'deleted', 'label': 'INFERENCE',
                                     'deleted': fmt_dt(P(t.get('archivedAt')))[:10] if t.get('archivedAt') else ''}
         else:
