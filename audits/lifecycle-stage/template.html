@@ -1,0 +1,180 @@
+<title>Lifecycle Stage Audit</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: single reading column; summary ledger first, then settings findings, then filterable record tables */
+:root{
+  --bg:#f5f7f8; --surface:#ffffff; --fg:#17212b; --muted:#5b6875; --line:#d9e0e5;
+  --accent:#0b6e75; --accent-soft:#e1f0f0;
+  --crit:#b3261e; --crit-soft:#fbe9e7; --warn:#8a5a00; --warn-soft:#fdf1d8; --ok:#1e6b3a; --ok-soft:#e3f2e8; --info:#3a4fa0; --info-soft:#e7eafa;
+  --f-display:"Archivo","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#10161b; --surface:#172028; --fg:#e4eaee; --muted:#9aa8b4; --line:#2a3640;
+  --accent:#5cc3c9; --accent-soft:#16343a;
+  --crit:#ff8a80; --crit-soft:#3a1d1b; --warn:#f2c35b; --warn-soft:#382c12; --ok:#7fd59a; --ok-soft:#163223; --info:#a9b6ff; --info-soft:#1f2645;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10161b; --surface:#172028; --fg:#e4eaee; --muted:#9aa8b4; --line:#2a3640;
+  --accent:#5cc3c9; --accent-soft:#16343a;
+  --crit:#ff8a80; --crit-soft:#3a1d1b; --warn:#f2c35b; --warn-soft:#382c12; --ok:#7fd59a; --ok-soft:#163223; --info:#a9b6ff; --info-soft:#1f2645;
+  color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font:16px/1.55 var(--f-body)}
+.wrap{max-width:1180px;margin:0 auto;padding-block:40px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:48px}
+h1,h2,h3{font-family:var(--f-display);font-stretch:85%;text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(30px,5vw,44px);font-weight:800}
+h2{font-size:26px;font-weight:700}
+h3{font-size:18px;font-weight:700}
+p{margin:0;max-width:72ch}
+a{color:var(--accent)}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.eyebrow{font:500 12px/1 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+header{display:grid;gap:14px}
+.meta{display:flex;flex-wrap:wrap;gap:8px 20px;color:var(--muted);font-size:14px}
+.meta b{color:var(--fg);font-weight:600}
+section{display:grid;gap:18px}
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.rule{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 16px;display:grid;gap:6px;align-content:start}
+.stage{display:inline-block;font:600 12px/1 var(--f-body);padding:4px 8px;border-radius:999px;white-space:nowrap}
+.st-Lead{background:var(--info-soft);color:var(--info)}
+.st-Opportunity{background:var(--warn-soft);color:var(--warn)}
+.st-Customer{background:var(--ok-soft);color:var(--ok)}
+.st-blank{background:var(--crit-soft);color:var(--crit)}
+.ledger{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:6px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 12px/1.3 var(--f-body);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);background:var(--surface);position:sticky;top:0}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--f-mono)}
+tr:last-child td{border-bottom:0}
+.findings{display:grid;gap:12px}
+.finding{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 16px}
+.finding>div{min-width:0;display:grid;gap:6px}
+.sev{font:600 11px/1 var(--f-mono);letter-spacing:.06em;text-transform:uppercase;padding:5px 7px;border-radius:4px;align-self:start;white-space:nowrap}
+.sev-crit{background:var(--crit-soft);color:var(--crit)}
+.sev-warn{background:var(--warn-soft);color:var(--warn)}
+.sev-ok{background:var(--ok-soft);color:var(--ok)}
+.sev-info{background:var(--info-soft);color:var(--info)}
+.finding p{font-size:15px}
+.path{font:13px/1.4 var(--f-mono);color:var(--muted)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.tabs button,.chips button{font:600 14px/1 var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:9px 14px;border-radius:6px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{font-weight:400;font-size:13px;padding:7px 10px}
+.chips button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--fg)}
+.chips .c{font-family:var(--f-mono);color:var(--muted);margin-left:6px}
+.tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.tools input{font:15px var(--f-body);padding:8px 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--fg);min-width:0;flex:1 1 240px;max-width:380px}
+.panel{display:grid;gap:14px}
+.desc{font-size:15px;color:var(--muted)}
+.rec{font-weight:600}
+.sub{color:var(--muted);font-size:13px;word-break:break-all}
+.dl{display:grid;gap:3px}
+.dl a{font-size:13px}
+.dl .s{color:var(--muted);font-size:12px}
+.arrow{color:var(--muted);padding:0 4px}
+.pager{display:flex;gap:10px;align-items:center;color:var(--muted);font-size:14px}
+.pager button{font:600 13px var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:6px 10px;border-radius:6px;cursor:pointer}
+.pager button:disabled{opacity:.4;cursor:default}
+.id{font:12px var(--f-mono);color:var(--muted)}
+.note{font-size:14px;color:var(--muted)}
+.copy{font:600 13px var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:7px 10px;border-radius:6px;cursor:pointer}
+@media (max-width:640px){.finding{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px;display:grid;gap:6px}
+.tile .big{font:700 34px/1 var(--f-display);font-stretch:85%;font-variant-numeric:tabular-nums}
+.tile .of{color:var(--muted);font-size:14px}
+.rulelist{display:grid;gap:6px;margin:0;padding-left:20px;font-size:15px;max-width:72ch}
+.why{font-size:13px;color:var(--muted)}
+td:nth-child(2){white-space:nowrap}
+</style>
+<div class="wrap">
+<header>
+  <span class="eyebrow">White Label Storage · HubSpot portal 45059701</span>
+  <h1>Lifecycle Stage Audit</h1>
+  <div class="meta"><span>Run <b>__RUNTIME__</b></span><span>Rules <b>v2</b></span><span>Read-only. No records were changed.</span></div>
+</header>
+
+<section>
+  <h2>Rules</h2>
+  <ol class="rulelist">
+    <li>Every <b>company</b> is <span class="stage st-Customer">Customer</span>.</li>
+    <li>A <b>contact associated to a company</b> is <span class="stage st-Customer">Customer</span>.</li>
+    <li>A <b>contact associated to a White Label Storage SALES deal</b> is <span class="stage st-Opportunity">Opportunity</span>, or <span class="stage st-Customer">Customer</span> if the deal is Closed won.</li>
+    <li>Every other contact is <span class="stage st-Lead">Lead</span>.</li>
+  </ol>
+  <p class="note">Ignored: the __DEMO_CO__ “demo Facility” companies and the __DEMO_C__ contacts linked only to them.</p>
+</section>
+
+<section>
+  <h2>Results</h2>
+  <div class="summary" id="summary"></div>
+</section>
+
+<section>
+  <h2>Flagged records</h2>
+  <div class="tabs" role="tablist" id="tabs"></div>
+  <div class="panel" id="panel"></div>
+</section>
+</div>
+
+<script id="data" type="application/json">__DATA__</script>
+<script>
+const DATA=JSON.parse(document.getElementById('data').textContent);
+const P='https://app.hubspot.com/contacts/45059701/record/';
+const url=(t,id)=>P+t+'/'+id;
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=n=>n.toLocaleString('en-US');
+const stage=s=>`<span class="stage st-${s==='(blank)'?'blank':s}">${esc(s)}</span>`;
+const link=(t,id,n)=>`<a href="${url(t,id)}" target="_blank" rel="noopener">${esc(n)}</a>`;
+const CAT={
+ 'lead>customer':'Lead → Customer','opportunity>customer':'Opportunity → Customer','lead>opportunity':'Lead → Opportunity',
+ 'customer>lead':'Customer → Lead','customer>opportunity':'Customer → Opportunity','opportunity>lead':'Opportunity → Lead',
+ 'blank>customer':'Blank → Customer','blank>opportunity':'Blank → Opportunity','blank>lead':'Blank → Lead'
+};
+document.getElementById('summary').innerHTML=`
+ <div class="tile"><span class="eyebrow">Contacts flagged</span><span class="big">${fmt(DATA.C.length)}</span><span class="of">of ${fmt(DATA.n_contacts)} contacts that are Opportunity or Customer, on a deal, or associated to a company</span></div>
+ <div class="tile"><span class="eyebrow">Companies flagged</span><span class="big">${fmt(DATA.K.length)}</span><span class="of">of ${fmt(DATA.n_companies)} companies (excluding demo facilities)</span></div>`;
+const list=(arr,t)=>arr.length?`<div class="dl">${arr.map(x=>`<span>${link(t,x[0],x[1])}${x[3]?` <span class="s">${esc(x[2])} · ${esc(x[3])}</span>`:''}</span>`).join('')}</div>`:'<span class="sub">None</span>';
+const TABS=[
+ {key:'contacts',label:'Contacts',rows:DATA.C,
+  head:['Contact','Stage now → should be','Reason','Companies','Deals'],
+  cell:r=>[`<a class="rec" href="${url('0-1',r.id)}" target="_blank" rel="noopener">${esc(r.n)}</a><div class="sub">${esc(r.e)}</div><div class="id">${r.id}${r.o?' · '+esc(r.o):''}</div>`,`${stage(r.cur)}<span class="arrow">→</span>${stage(r.exp)}`,`<span class="why">${esc(r.why)}</span>`,list(r.co,'0-2'),list(r.d,'0-3')]},
+ {key:'companies',label:'Companies',rows:DATA.K,
+  head:['Company','Stage now → should be','Deals'],
+  cell:r=>[`<a class="rec" href="${url('0-2',r.id)}" target="_blank" rel="noopener">${esc(r.n)}</a><div class="sub">${esc(r.e)}</div><div class="id">${r.id}${r.o?' · '+esc(r.o):''}</div>`,`${stage(r.cur)}<span class="arrow">→</span>${stage(r.exp)}`,list(r.d,'0-3')]}
+];
+let state={tab:'contacts',cat:{},q:'',page:0};
+try{const h=location.hash.slice(1);if(TABS.some(t=>t.key===h))state.tab=h}catch(e){}
+const PER=50;
+function render(){
+ document.getElementById('tabs').innerHTML=TABS.map(t=>`<button role="tab" id="tab-${t.key}" aria-selected="${t.key===state.tab}" data-k="${t.key}">${t.label} <span class="c">${fmt(t.rows.length)}</span></button>`).join('');
+ document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{state.tab=b.dataset.k;state.page=0;state.q='';try{history.replaceState(null,'','#'+state.tab)}catch(e){}render()});
+ const t=TABS.find(x=>x.key===state.tab), el=document.getElementById('panel');
+ const sel=state.cat[t.key]||'all';
+ const cnt={};t.rows.forEach(r=>cnt[r.cat]=(cnt[r.cat]||0)+1);
+ let rows=t.rows.filter(r=>sel==='all'||r.cat===sel);
+ const q=state.q.trim().toLowerCase();
+ if(q)rows=rows.filter(r=>(r.n+' '+r.e+' '+r.id+' '+(r.o||'')+' '+(r.co||[]).map(x=>x[1]).join(' ')).toLowerCase().includes(q));
+ const pages=Math.max(1,Math.ceil(rows.length/PER)); if(state.page>=pages)state.page=pages-1;
+ const slice=rows.slice(state.page*PER,(state.page+1)*PER);
+ const keys=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]);
+ el.innerHTML=`${keys.length>1?`<div class="chips"><button data-c="all" aria-pressed="${sel==='all'}">All<span class="c">${fmt(t.rows.length)}</span></button>${keys.map(k=>`<button data-c="${k}" aria-pressed="${sel===k}">${esc(CAT[k]||k)}<span class="c">${fmt(cnt[k])}</span></button>`).join('')}</div>`:''}
+ <div class="tools"><input id="q-${t.key}" type="search" placeholder="Search name, email, domain, ID, owner or company" value="${esc(state.q)}" aria-label="Search records"><button class="copy" id="copy">Copy record IDs (${fmt(rows.length)})</button><span class="note" id="copied" aria-live="polite"></span></div>
+ <div class="ledger"><table><thead><tr>${t.head.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${slice.map(r=>`<tr>${t.cell(r).map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')||`<tr><td colspan="${t.head.length}">${t.rows.length?'No records match.':'Nothing flagged. Every record matches the rules.'}</td></tr>`}</tbody></table></div>
+ <div class="pager"><button id="prev" ${state.page===0?'disabled':''}>Previous</button><span>Page ${state.page+1} of ${pages} · ${fmt(rows.length)} records</span><button id="next" ${state.page>=pages-1?'disabled':''}>Next</button></div>`;
+ el.querySelectorAll('.chips button').forEach(b=>b.onclick=()=>{state.cat[t.key]=b.dataset.c;state.page=0;render()});
+ const inp=document.getElementById('q-'+t.key);
+ inp.oninput=()=>{state.q=inp.value;state.page=0;render();const n=document.getElementById('q-'+t.key);n.focus();n.setSelectionRange(n.value.length,n.value.length)};
+ document.getElementById('prev').onclick=()=>{state.page--;render()};
+ document.getElementById('next').onclick=()=>{state.page++;render()};
+ document.getElementById('copy').onclick=()=>{const txt=rows.map(r=>r.id).join('\n');const msg=document.getElementById('copied');
+  if(navigator.clipboard){navigator.clipboard.writeText(txt).then(()=>msg.textContent='Copied '+fmt(rows.length)+' IDs').catch(()=>msg.textContent='Copy is blocked here. Select the IDs in the table instead.')}else msg.textContent='Copy is blocked here.'};
+}
+render();
+</script>
