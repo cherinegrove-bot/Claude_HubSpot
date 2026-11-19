@@ -377,6 +377,11 @@ def ticket_type_results(tt, first, last, rows):
                 m = max((x for x in e['titles'] if gt.startswith(x)), key=len, default=None)
                 if m:
                     have.add(m)
+            for rn in TEAM.get('renamed_task_titles') or []:   # a task created under its old title, before the rename (team-rules.md)
+                nw, od = rules.norm(rn.get('new')), rules.norm(rn.get('old'))
+                if rn.get('task_type') == name and nw in e['titles'] and nw not in have and local(e['at']).date().isoformat() <= rn.get('until', '9999') \
+                        and sum(rules.norm(r['title']) == od for r in by_ticket.get(tid, [])) >= int(rn.get('old_count', 1)):
+                    have.add(nw)
             lack = [x for x in e['titles'] if x not in have]
             gone = [x for x in lack if any(d.get('ticket') == tid and d.get('task_type') == name and any(rules.norm(y) == x for y in d.get('titles', []))
                                            for d in DELETED)]            # created by the workflow, deleted later by a person (team-rules.md)
@@ -696,9 +701,19 @@ for r in MAIN:
         for cid in r['companies']:
             by_day[(r['type'], cid, local(r['created']).date())].append(r)
 dup_type = {w.get('duplicate_task_type'): wid for wid, w in WAIT.items() if w.get('duplicate_task_type')}
-for (tname, cid, day, *_), rs in by_day.items():
+
+
+def dup_known(title, day):
+    """Known issue covering same-title duplicates (known_issues[].duplicate_titles, created on or before duplicates_on_or_before)."""
+    for k in TEAM.get('known_issues', []):
+        cut = k.get('duplicates_on_or_before')
+        if title and any(rules.norm(x) == title for x in k.get('duplicate_titles', [])) and (not cut or day.isoformat() <= cut):
+            return k['id']
+    return None
+for (tname, cid, day, *rest), rs in by_day.items():
     if len(rs) < 2:
         continue
+    dk = dup_known(rest[1] if len(rest) > 1 else None, day)
     flows = sorted({r['flow'] for r in rs})
     entry = {'type': tname, 'company_id': cid, 'company': cname(cid), 'day': day.isoformat(), 'tasks': [r['id'] for r in rs], 'workflows': [wfname(f) for f in flows]}
     if tname in dup_type and len(flows) > 1:
@@ -706,7 +721,7 @@ for (tname, cid, day, *_), rs in by_day.items():
         DUPES.append(entry)
     else:
         problem(1, 'duplicate', f'{cname(cid)} got "{tname}" {len(rs)} times on {day} (rule 4: duplicates should not be created).', 'VERIFIED (records)', 'Potential Issue', tname, cid, rs[0]['id'],
-                flows[0], group=f'duplicate:{tname}')
+                flows[0], group=f'duplicate:{tname}', extra={'known_issue': dk} if dk else None)
 w3 = next((w for w in WAIT.values() if w.get('task_types')), None)
 for r in MAIN:
     if w3 and r['type'] in w3['task_types']:
@@ -1027,7 +1042,7 @@ for p in PROBLEMS:
         FOLDED[('known', p['nr_issue'])].append(p)
     elif p['kind'] == 'link' and link_known(p):
         FOLDED[('known', link_known(p))].append(p)
-    elif p['kind'] == 'deleted' and p.get('known_issue'):
+    elif p['kind'] in ('deleted', 'duplicate') and p.get('known_issue'):
         FOLDED[('known', p['known_issue'])].append(p)
     elif p['kind'] == 'subtask_ticket' and SUB_KNOWN:
         FOLDED[('known', SUB_KNOWN)].append(p)
@@ -1056,7 +1071,8 @@ def folded_text(ps):
     by = collections.Counter(re.sub(r' \(from known issue [^)]*\)', '', p.get('source') or wfname(p.get('workflow'))) for p in ps)
     kinds = {p['kind'] for p in ps}
     what = 'moved out of the ' + TEAM.get('queue_name', 'team') + ' queue' if kinds == {'not_in_queue'} else 'not associated with any company' if kinds == {'link'} else \
-        'subtasks linked to the ticket' if kinds == {'subtask_ticket'} else 'created by the workflow, then deleted' if kinds == {'deleted'} else 'affected'
+        'subtasks linked to the ticket' if kinds == {'subtask_ticket'} else 'created by the workflow, then deleted' if kinds == {'deleted'} else \
+        'given the same title twice on one ticket' if kinds == {'duplicate'} else 'affected'
     if kinds == {'subtask_ticket'}:
         return f'{len(ps)} {what} (' + '; '.join(f'{k}: {v}' for k, v in by.most_common()) + ').'
     return f'{len(ps)} task(s) {what} (' + '; '.join(f'{k}: {v}' for k, v in by.most_common()) + ').'

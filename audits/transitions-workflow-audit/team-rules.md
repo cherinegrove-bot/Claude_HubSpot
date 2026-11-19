@@ -3,7 +3,7 @@
 This file and `Transitions_Master_Rules.xlsx` hold everything specific to Transitions. The skill
 (`.claude/skills/hubspot-workflow-audit/SKILL.md`) is general and reads them with `--team transitions`.
 
-- **Last updated:** 2026-10-13
+- **Last updated:** 2026-11-19
 - **Edited by:** WLS (Cherine's team). Change this file only when a rule or decision changes.
 - **Based on:** the Transitions full map audit, v3 (`WLS_Transitions_Workflow_Audit_v3.xlsx`, 2026-10-06).
 
@@ -67,7 +67,7 @@ One type per stage, plus the marketing proposal. "Tasks" is the number of Create
 | # | Task type | Made by (workflow ID) | When | Tasks | Who should get it |
 |---|---|---|---|---|---|
 | 1 | Transition Kickoff | 1866384267 | Ticket enters Transition Kickoff | 3 | Every Onboarding ticket |
-| 2 | Pre-Launch Setup | 1866658899 | Ticket enters Pre-Launch Setup | 5 | Every Onboarding ticket |
+| 2 | Pre-Launch Setup | 1866658899 | Ticket enters Pre-Launch Setup | 6 | Every Onboarding ticket |
 | 3 | Marketing Proposal | 1866658899 | Same run as Pre-Launch Setup | 1 | Only if an associated company has PPC Enrolled = Yes |
 | 4 | Launch Readiness | 1866664080 | Ticket enters Launch Readiness | 5 | Every Onboarding ticket |
 | 5 | Go-Live Execution | 1866664222 | Ticket enters Go-Live Execution | 5 | Every Onboarding ticket |
@@ -90,6 +90,8 @@ All agreed with Cherine on 2026-10-13:
 - **Closed Won deals:** every deal that moved to Closed won (White Label Storage SALES) in the window must have an Onboarding Pipeline ticket (rule 5).
 - **Finish Line Self Storage, 3 Kickoff tasks with no company (12 Oct): by design, not a problem** (corrected 2026-10-20, Cherine; replaces the earlier notes). Ilse Modene moved the ticket to Transition Kickoff at 2:35 PM (US Eastern) on 12 Oct; the Kickoff workflow created its tasks seconds later, while the ticket had no company; she linked Finish Line Self Storage to the ticket 24 seconds after the move (VERIFIED (records): ticket status history and "Number of Associated Companies" history; Cherine said about a minute). That's before Pre-Launch Setup, so the process was followed, and Kickoff tasks without a company are by design (rule 7). Not caused by W-4. Cherine linked the company to the 3 main tasks by hand on 2026-10-15; their 17 checklist subtasks still have no company, which is also fine at Kickoff. W-7 (why the hand fix didn't reach the subtasks) was closed as done and resolved on 2026-10-20.
 - **Owensville Storage, Pre-Launch tasks created late (20 Oct): already dealt with** (Cherine, 2026-10-30). The ticket passed through Pre-Launch Setup in 6 seconds on 14 Oct, so the workflow skipped it; the Pre-Launch tasks and the Marketing Proposal were created on 20 Oct to make up for it. Listed under "Already dealt with" (setting `handled`), not as problems.
+- **Pre-Launch Setup makes 6 tasks: the 6th is "Transition \| PRE LAUNCH SET UP \| Subtask - Hunter"** (Cherine, 2026-11-19; was W-8). Ilsa added it as step 2 of the workflow on 2026-10-23 (revision 74): assigned to Hunter Stoner, due in 3 business days, about whether BOGs/1099s are paid through Gusto. It was planned. At first it had the same title as step 1 (the main task, "Transition \| PRE LAUNCH SET UP \| Subtask"), no queue, and only the ticket. On 2026-11-19 Cherine renamed it to "... \| Subtask - Hunter", gave it the Transitions queue, and associated it with the ticket, Transition contacts and all associated companies, like the other "Subtask - [person]" tasks (revision 79, VERIFIED (config)). The master rules file holds revision 79. It's a main task under rule 3.
+  - Duplicates of the old shared title created on or before 2026-11-19 are known issue F-16, not problems. From 2026-11-20 on, they are reported again under rule 4.
 - **Excluded companies:** demo Facility (44541671248), the same as CS Ops.
 - **Closed Won adds no company, by design** (Cherine, 2026-10-20; was W-4): the facility doesn't exist yet when the deal closes. The 8 Oct edit was planned.
 - **The onboarding team links the company before the ticket moves to Pre-Launch Setup** (Cherine, 2026-10-20; was W-6): "By design. The company must be linked by the onboarding team before the ticket moves on. Cherine is raising it with Ilsa." The deadline is Pre-Launch Setup: a Kickoff ticket may not have its company yet (rule 7). A ticket that reaches Pre-Launch Setup or later without it is a process issue (rule 6), not a workflow problem.
@@ -116,11 +118,12 @@ None right now.
 | W-5 and known issue SUB-1. Checklist subtasks always get the ticket link, because they copy the main task. Accept it, or look for another way? | Accepted, by design (2026-10-16). Checklist subtasks belong to their main task, so they share the main task's links, including the ticket. HubSpot does this automatically. Cherine has been told and can ask to look for another way (the client didn't like seeing subtasks on the ticket before). Closed 2026-10-16. |
 | W-4. The Closed Won workflow no longer copies the deal's companies onto the ticket (edited 8 Oct). Was that on purpose? | By design. The Closed Won workflow doesn't add a company on purpose: when the deal closes, the facility doesn't exist yet. It is created later by Create Facility from the intake form, and the onboarding team links it to the ticket by hand (Cherine, 2026-10-20). The 8 Oct edit (revision 13 -> 14) was planned; the master rules file now holds revision 14. Closed 2026-10-20. |
 | W-6. Should the facility always be linked before a ticket moves to Kickoff, or should something link it automatically? | By design. The company must be linked by the onboarding team before the ticket moves on. Cherine is raising it with Ilsa. (Cherine, 2026-10-20). Clarified 2026-10-20: the deadline is Pre-Launch Setup; Kickoff tasks without a company are by design. Closed 2026-10-20. |
+| W-8. Pre-Launch Setup gained a 6th task (step 2, same title as the main task, Hunter Stoner), with no queue and only the ticket (edited 23 Oct, revision 72 -> 74). Was that on purpose? | Yes, planned: Ilsa added it (Cherine, 2026-11-19). After approval, Cherine renamed it "Transition \| PRE LAUNCH SET UP \| Subtask - Hunter" and added the Transitions queue and the ticket, contact and company associations on 2026-11-19 (revision 79). The master rules file now holds revision 79. Earlier same-title duplicates are known issue F-16. Closed 2026-11-19. |
 | W-7. When a company is added by hand to a main task, HubSpot updates its checklist subtasks but doesn't add the company to them. Why, and how should subtasks get the company? | Done and resolved (closed by WLS on 2026-10-20). No further action. Note: Finish Line's Kickoff checklist subtasks without a company are by design anyway (rule 7). Closed 2026-10-20. |
 
 ## Changes not yet confirmed
 
-None. The Closed Won edit of 2026-10-08 (revision 13 -> 14, it no longer copies the deal's companies onto the ticket) was planned (Cherine, 2026-10-20, W-4); the master rules file was updated the same day.
+None. The Pre-Launch Setup edits of 2026-10-23 to 2026-11-19 (revision 72 -> 79: the step 2 task for Hunter Stoner added, then renamed and given the queue and associations) were planned (Cherine, 2026-11-19, W-8); the master rules file was updated the same day. The Closed Won edit of 2026-10-08 (revision 13 -> 14, it no longer copies the deal's companies onto the ticket) was planned (Cherine, 2026-10-20, W-4); the master rules file was updated the same day.
 
 ## Known issues
 
@@ -129,6 +132,7 @@ Report each once, as a known issue, with this week's count where it applies.
 - **F-05:** "Transition | FINAL SIGN-OFF | Subtask - Mike" (Final Sign Off, action 20) is set up without a company association, so it is always flagged under question 2. Reported here once a week instead.
 - **F-09:** new tickets are created owned by Elizabeth Airey (owner 81929768), a deactivated user. Every "Ticket Owner/PM" task follows the ticket owner. On 22 Oct 2026 the Kickoff task for SSU Storage - Shenandoah (ticket 49916242185) was created, assigned to her, then deleted (VERIFIED (screenshot) of the workflow action log, 2026-10-30). The audit reports such a task under F-09 as "created, then deleted", not as missing (setting `deleted_tasks`).
 - **F-10:** tasks copy only contacts with the "Transition" label, but the Closed Won workflow associates contacts without a label, so tasks probably get no contact.
+- **F-16:** until 2026-11-19, the Pre-Launch Setup step 2 task (Hunter Stoner) had the same title as the main task, "Transition \| PRE LAUNCH SET UP \| Subtask", so every ticket entering Pre-Launch Setup got that title twice and the audit reported duplicates (rule 4). Cherine renamed it to "... \| Subtask - Hunter" on 2026-11-19 (W-8). Duplicates of that title created on or before 2026-11-19 are reported here once with the week's count, not as problems; any after that date are reported as problems again (settings `duplicate_titles`, `duplicates_on_or_before`). A ticket with that title twice from on or before 2026-11-19 counts as having the Hunter task, so it isn't reported as partial (setting `renamed_task_titles`). The 9 step 2 tasks from 6 to 12 Nov also had no queue and no company; those stay in the 13 Nov report.
 - **F-12:** the Transition Complete check is created after the ticket reaches Transition Completed, which is a closed stage, due the same day.
 
 ## Excluded companies
@@ -298,6 +302,16 @@ The scripts read this block. Keep it in step with the text above.
   "branch_reasons": [],
   "waiting_on": [],
   "changes_not_confirmed": [],
+  "renamed_task_titles": [
+    {
+      "task_type": "Pre-Launch Setup",
+      "old": "Transition | PRE LAUNCH SET UP | Subtask",
+      "new": "Transition | PRE LAUNCH SET UP | Subtask - Hunter",
+      "until": "2026-11-19",
+      "old_count": 2,
+      "note": "Before the rename on 2026-11-19 (W-8, F-16), the Hunter task had the main task's title: a ticket with that title twice got both tasks."
+    }
+  ],
   "queue_names": {
     "13519270": {
       "name": "Transitions",
@@ -325,6 +339,14 @@ The scripts read this block. Keep it in step with the text above.
     {
       "id": "F-12",
       "text": "The Transition Complete check is created after the ticket reaches Transition Completed (a closed stage), due the same day."
+    },
+    {
+      "id": "F-16",
+      "text": "Until 2026-11-19 the Pre-Launch Setup step 2 task (Hunter Stoner) had the same title as the main task, \"Transition | PRE LAUNCH SET UP | Subtask\", so each ticket got that title twice. Renamed to \"... | Subtask - Hunter\" on 2026-11-19 (W-8). Duplicates created after that date are reported as problems again.",
+      "duplicate_titles": [
+        "Transition | PRE LAUNCH SET UP | Subtask"
+      ],
+      "duplicates_on_or_before": "2026-11-19"
     }
   ],
   "closed": [
