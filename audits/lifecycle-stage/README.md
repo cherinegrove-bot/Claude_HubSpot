@@ -24,4 +24,4 @@ Output:
 
 A blank lifecycle stage is usually a contact partway through the "Set Lifecycle Stage on Contact" workflow, which clears the stage, waits a minute, then sets it. The script re-reads blank contacts after 3 minutes and keeps only those still wrong.
 
-Schedule: monthly on the 1st at 07:33 SAST (scheduled task "Monthly Lifecycle Stage Audit").
+Schedule: weekly on Thursdays at 07:47 SAST (scheduled task "Weekly Lifecycle Stage Audit").
