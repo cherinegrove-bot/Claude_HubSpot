@@ -3,7 +3,7 @@
 This file and `CS_Ops_Master_Rules.xlsx` hold everything specific to CS Ops. The skill
 (`.claude/skills/hubspot-workflow-audit/SKILL.md`) is general and reads them with `--team cs-ops`.
 
-- **Last updated:** 2026-10-07
+- **Last updated:** 2026-11-20
 - **Edited by:** WLS (Cherine's team). Change this file only when a rule or decision changes.
 
 ## Basics
@@ -82,6 +82,7 @@ One task type can be made by several workflows, for example split by tier. Each 
   - Flag any facility where the two are more than 7 days apart.
 - **First-90-days tasks for facilities that aren't live:** OK by design (Cherine, 2026-10-08). They're not flagged; see the exception under rule 1.
   - This includes facilities that went live recently and are now Lost or Offboarding: they're still expected to get first-90-days tasks while their go-live date is in the last 91 days. Fine for now (WLS, 2026-10-08); update this if it changes.
+  - Hideaway Storage (32321683296) was live from June 2025, was set to Offboarding on 2026-11-18 and back to Live on 2026-11-19 by Isle; an automation then reset its go-live date to 2026-11-19. It should get the first-90-days tasks from its new go-live date (Cherine, 2026-11-20). Not a problem.
 - **Tier 1 facilities with an SM but no OM** in the 7 workflows under rule 5: "not expected, by design" (Cherine, 2026-10-08). They are not reported as missing.
 - **Tier 2 - L1 facilities with no OM in Update Customer Sentiment (Ent, Tier 1, Tier 2.1):** they get no task. Cherine confirmed on 2026-10-08 that this is fine, so it's reported as "excluded by rule", not as missing.
 - **Weekly KPI review** (1838568062) is switched off on purpose since 2026-10-08: it was the duplicate of the Weekly calls workflow (Cherine). Weekly Call tasks now come only from Weekly calls; if both workflows create one again, it's a broken rule 4.
@@ -106,7 +107,9 @@ None right now.
 
 | Item | Answer |
 |---|---|
-| 9. Were the two (Fix) workflows a planned one-off make-up? | Yes, planned (Cherine, 2026-10-30). Their 75 Facility Performance Monitoring and 57 Unsold Unit tasks of 16 October make up the 1 October run. Listed as "makeup_workflows". |
+| Due time of every C-Ops task changed from 08:00 to 18:00 (change of 2026-11-10) | Planned (Cherine, 2026-11-20). Every Create task action in all 22 workflows; nothing else changed. Master rules file updated on 2026-11-20. |
+| Hideaway Storage (32321683296): go-live date reset to 2026-11-19 after Offboarding and back to Live | Fine: it gets the first-90-days tasks from its new go-live date (Cherine, 2026-11-20). Not a problem. |
+| 9. Were the two (Fix) workflows a planned one-off make-up? | Yes, planned (Cherine, 2026-10-30). Their 75 Facility Performance Monitoring and 57 Unsold Unit tasks of 16 October make up the 1 October run. Listed as "makeup_workflows". Reconfirmed closed by Cherine on 2026-11-20. |
 | 8. Should Tier 1 facilities get both BOG Weekly and BOG Oversight each week? | Yes, they need both (Cherine, 2026-10-13). Added as rule 6. |
 | 1. Tier 1 SM gap | By design: in these 7 workflows, Tier 1 tasks go only to the OM. The T1 SM branches never had a task, so these facilities never got these tasks, even before the empty branches were deleted; the deletion only cleaned up the workflows. Confirmed by Cherine. Added as rule 5 (2026-10-08). |
 | 3. First-90-days tasks before a facility is live | OK by design: the first-90-days workflows start from the go-live date, not Status = Live. Added as an exception to rule 1 (2026-10-08). |
@@ -121,7 +124,7 @@ None right now.
 
 ## Changes not yet confirmed
 
-None. The live workflows matched the master rules file after the 2026-10-08 update.
+None. The live workflows matched the master rules file after the 2026-11-20 update.
 
 ## Known issues
 
@@ -148,16 +151,16 @@ These companies are left out of every audit: the facilities in scope, who should
 
 ## Switched-off workflow summaries
 
-Plain-English summaries for the weekly page's "Switched off" tab: what each switched-off workflow would do if it were turned back on. They were written on 2026-10-08 from the master rules file (not from the workflow's HubSpot description, which is wrong for some). Each one keeps the master revision it was written for. When a workflow's master rules row changes, the page marks its summary as out of date, and only that summary is rewritten.
+Plain-English summaries for the weekly page's "Switched off" tab: what each switched-off workflow would do if it were turned back on. They were written on 2026-10-08 from the master rules file (not from the workflow's HubSpot description, which is wrong for some). Each one keeps the master revision it was written for. When a workflow's master rules row changes, the page marks its summary as out of date, and only that summary is rewritten. The revisions were moved up on 2026-11-20 after the due-time change (08:00 to 18:00); the text didn't need changing, because it doesn't mention the due time.
 
 | Workflow | What it does when it's on | Written for revision |
 |---|---|---|
-| Create Tasks \| Playbook Review/Maintenance T1 OM (1682545542) | Creates a monthly "Playbook Review/Maintenance" task on the 1st for live, full-management Enterprise, Tier 1, Tier 2 - L1 and Tier 2 - L2 facilities (not SOA, and not on the "Exclude from Ops tasks" list), due two working days later. It goes to the facility's operations manager if it has one, otherwise to the site manager; Tier 2 - L2 always goes to the site manager. | 66 |
-| Create Tasks \| Prepare Month End Report (1682101413) | Creates a monthly "Prepare Month End Report" task on the 1st for every live, full-management facility in every tier (not SOA), due five working days later. It goes to the facility's operations manager if it has one, otherwise to the site manager; Tier 2 - L2 and Tier 3 always go to the site manager. | 109 |
-| Create Tasks \| Prepare Rate Review (1682549368) | Gives live, full-management Enterprise, Tier 1, Tier 2 - L1 and Tier 3 facilities (not SOA, and not on the "Exclude from Ops tasks" list) a "Prepare Rate Review" task, then a second one two weeks later (three weeks later for Tier 2 - L1 and Tier 3); it checks for facilities every Monday. Each task is due two working days after it's created and goes to the operations manager if the facility has one, otherwise to the site manager. | 142 |
-| Create Tasks \| Storage Reach (1697631666) | Every Wednesday it creates a "Storage Reach" task for live, full-management Tier 1 facilities that have a site manager, Tier 2 - L1 facilities and SOA facilities (not on the "Exclude from Ops tasks" list), due two working days later. The task goes to a named person, not the facility's manager: Kara Slavens for Tier 1, Hunter Stoner for Tier 2 - L1 and Luann Laughlin for SOA. | 23 |
-| Create Tasks \| Weekly KPI review to owner for first 90 days (1838568062) | Checks every Monday for full-management facilities that went live in the last 91 days (not SOA). Enterprise and Tier 1 facilities get a "Weekly KPI Review: First 90 days live" task for the operations manager (Enterprise: the site manager if there's no operations manager), and Tier 2 and Tier 3 facilities get a "Weekly Call: First 90 days Live" call task, the same one the Weekly calls workflow already creates; each is due two working days later. | 33 |
-| OM \| RISK within the first 90 days (1774165521) | When a full-management facility in its first 90 days after go-live is marked At-Risk in its customer health score, it creates a high-priority task with no title for the facility's operations manager, due three working days later. Facilities on the "Exclude from Ops tasks" list are skipped. | 8 |
+| Create Tasks \| Playbook Review/Maintenance T1 OM (1682545542) | Creates a monthly "Playbook Review/Maintenance" task on the 1st for live, full-management Enterprise, Tier 1, Tier 2 - L1 and Tier 2 - L2 facilities (not SOA, and not on the "Exclude from Ops tasks" list), due two working days later. It goes to the facility's operations manager if it has one, otherwise to the site manager; Tier 2 - L2 always goes to the site manager. | 73 |
+| Create Tasks \| Prepare Month End Report (1682101413) | Creates a monthly "Prepare Month End Report" task on the 1st for every live, full-management facility in every tier (not SOA), due five working days later. It goes to the facility's operations manager if it has one, otherwise to the site manager; Tier 2 - L2 and Tier 3 always go to the site manager. | 117 |
+| Create Tasks \| Prepare Rate Review (1682549368) | Gives live, full-management Enterprise, Tier 1, Tier 2 - L1 and Tier 3 facilities (not SOA, and not on the "Exclude from Ops tasks" list) a "Prepare Rate Review" task, then a second one two weeks later (three weeks later for Tier 2 - L1 and Tier 3); it checks for facilities every Monday. Each task is due two working days after it's created and goes to the operations manager if the facility has one, otherwise to the site manager. | 156 |
+| Create Tasks \| Storage Reach (1697631666) | Every Wednesday it creates a "Storage Reach" task for live, full-management Tier 1 facilities that have a site manager, Tier 2 - L1 facilities and SOA facilities (not on the "Exclude from Ops tasks" list), due two working days later. The task goes to a named person, not the facility's manager: Kara Slavens for Tier 1, Hunter Stoner for Tier 2 - L1 and Luann Laughlin for SOA. | 27 |
+| Create Tasks \| Weekly KPI review to owner for first 90 days (1838568062) | Checks every Monday for full-management facilities that went live in the last 91 days (not SOA). Enterprise and Tier 1 facilities get a "Weekly KPI Review: First 90 days live" task for the operations manager (Enterprise: the site manager if there's no operations manager), and Tier 2 and Tier 3 facilities get a "Weekly Call: First 90 days Live" call task, the same one the Weekly calls workflow already creates; each is due two working days later. | 40 |
+| OM \| RISK within the first 90 days (1774165521) | When a full-management facility in its first 90 days after go-live is marked At-Risk in its customer health score, it creates a high-priority task with no title for the facility's operations manager, due three working days later. Facilities on the "Exclude from Ops tasks" list are skipped. | 9 |
 
 ## HubSpot portal
 
@@ -534,7 +537,8 @@ The scripts read this block. Keep it in step with the text above.
     {
       "id": "W-9",
       "closed": "2026-10-30",
-      "answer": "The two (Fix) workflows were a planned one-off make-up of the 1 October Performance Monitoring and Unsold Unit tasks (Cherine)"
+      "answer": "The two (Fix) workflows were a planned one-off make-up of the 1 October Performance Monitoring and Unsold Unit tasks (Cherine)",
+      "reconfirmed": "2026-11-20"
     },
     {
       "id": "W-8",
@@ -580,32 +584,32 @@ The scripts read this block. Keep it in step with the text above.
   "workflow_summaries": {
     "1682545542": {
       "summary": "Creates a monthly \"Playbook Review/Maintenance\" task on the 1st for live, full-management Enterprise, Tier 1, Tier 2 - L1 and Tier 2 - L2 facilities (not SOA, and not on the \"Exclude from Ops tasks\" list), due two working days later. It goes to the facility's operations manager if it has one, otherwise to the site manager; Tier 2 - L2 always goes to the site manager.",
-      "written_for_revision": "66",
+      "written_for_revision": "73",
       "written": "2026-10-08"
     },
     "1682101413": {
       "summary": "Creates a monthly \"Prepare Month End Report\" task on the 1st for every live, full-management facility in every tier (not SOA), due five working days later. It goes to the facility's operations manager if it has one, otherwise to the site manager; Tier 2 - L2 and Tier 3 always go to the site manager.",
-      "written_for_revision": "109",
+      "written_for_revision": "117",
       "written": "2026-10-08"
     },
     "1682549368": {
       "summary": "Gives live, full-management Enterprise, Tier 1, Tier 2 - L1 and Tier 3 facilities (not SOA, and not on the \"Exclude from Ops tasks\" list) a \"Prepare Rate Review\" task, then a second one two weeks later (three weeks later for Tier 2 - L1 and Tier 3); it checks for facilities every Monday. Each task is due two working days after it's created and goes to the operations manager if the facility has one, otherwise to the site manager.",
-      "written_for_revision": "142",
+      "written_for_revision": "156",
       "written": "2026-10-08"
     },
     "1697631666": {
       "summary": "Every Wednesday it creates a \"Storage Reach\" task for live, full-management Tier 1 facilities that have a site manager, Tier 2 - L1 facilities and SOA facilities (not on the \"Exclude from Ops tasks\" list), due two working days later. The task goes to a named person, not the facility's manager: Kara Slavens for Tier 1, Hunter Stoner for Tier 2 - L1 and Luann Laughlin for SOA.",
-      "written_for_revision": "23",
+      "written_for_revision": "27",
       "written": "2026-10-08"
     },
     "1774165521": {
       "summary": "When a full-management facility in its first 90 days after go-live is marked At-Risk in its customer health score, it creates a high-priority task with no title for the facility's operations manager, due three working days later. Facilities on the \"Exclude from Ops tasks\" list are skipped.",
-      "written_for_revision": "8",
+      "written_for_revision": "9",
       "written": "2026-10-08"
     },
     "1838568062": {
       "summary": "Checks every Monday for full-management facilities that went live in the last 91 days (not SOA). Enterprise and Tier 1 facilities get a \"Weekly KPI Review: First 90 days live\" task for the operations manager (Enterprise: the site manager if there's no operations manager), and Tier 2 and Tier 3 facilities get a \"Weekly Call: First 90 days Live\" call task, the same one the Weekly calls workflow already creates; each is due two working days later.",
-      "written_for_revision": "33",
+      "written_for_revision": "40",
       "written": "2026-10-08"
     }
   },
