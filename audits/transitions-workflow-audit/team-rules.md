@@ -3,7 +3,7 @@
 This file and `Transitions_Master_Rules.xlsx` hold everything specific to Transitions. The skill
 (`.claude/skills/hubspot-workflow-audit/SKILL.md`) is general and reads them with `--team transitions`.
 
-- **Last updated:** 2026-11-19
+- **Last updated:** 2026-11-20
 - **Edited by:** WLS (Cherine's team). Change this file only when a rule or decision changes.
 - **Based on:** the Transitions full map audit, v3 (`WLS_Transitions_Workflow_Audit_v3.xlsx`, 2026-10-06).
 
@@ -132,7 +132,7 @@ Report each once, as a known issue, with this week's count where it applies.
 - **F-05:** "Transition | FINAL SIGN-OFF | Subtask - Mike" (Final Sign Off, action 20) is set up without a company association, so it is always flagged under question 2. Reported here once a week instead.
 - **F-09:** new tickets are created owned by Elizabeth Airey (owner 81929768), a deactivated user. Every "Ticket Owner/PM" task follows the ticket owner. On 22 Oct 2026 the Kickoff task for SSU Storage - Shenandoah (ticket 49916242185) was created, assigned to her, then deleted (VERIFIED (screenshot) of the workflow action log, 2026-10-30). The audit reports such a task under F-09 as "created, then deleted", not as missing (setting `deleted_tasks`).
 - **F-10:** tasks copy only contacts with the "Transition" label, but the Closed Won workflow associates contacts without a label, so tasks probably get no contact.
-- **F-16:** until 2026-11-19, the Pre-Launch Setup step 2 task (Hunter Stoner) had the same title as the main task, "Transition \| PRE LAUNCH SET UP \| Subtask", so every ticket entering Pre-Launch Setup got that title twice and the audit reported duplicates (rule 4). Cherine renamed it to "... \| Subtask - Hunter" on 2026-11-19 (W-8). Duplicates of that title created on or before 2026-11-19 are reported here once with the week's count, not as problems; any after that date are reported as problems again (settings `duplicate_titles`, `duplicates_on_or_before`). A ticket with that title twice from on or before 2026-11-19 counts as having the Hunter task, so it isn't reported as partial (setting `renamed_task_titles`). The 9 step 2 tasks from 6 to 12 Nov also had no queue and no company; those stay in the 13 Nov report.
+- **F-16:** until 2026-11-19, the Pre-Launch Setup step 2 task (Hunter Stoner) had the same title as the main task, "Transition \| PRE LAUNCH SET UP \| Subtask", so every ticket entering Pre-Launch Setup got that title twice and the audit reported duplicates (rule 4). Cherine renamed it to "... \| Subtask - Hunter" on 2026-11-19 (W-8). Duplicates of that title created on or before 2026-11-19 are reported here once with the week's count, not as problems; any after that date are reported as problems again (settings `duplicate_titles`, `duplicates_on_or_before`). A ticket with that title twice from on or before 2026-11-19 counts as having the Hunter task, so it isn't reported as partial (setting `renamed_task_titles`). Extended on 2026-11-20 (Cherine, from the 20 Nov weekly report): F-16 also covers no queue and no company on the old step 2 tasks, meaning Pre-Launch Setup tasks with the old title, owned by Hunter Stoner (owner 80038421) and created on or before 2026-11-19 (setting `task_match`). The step 1 main task has the same title but another owner, so it is still checked. The 9 step 2 tasks from 6 to 12 Nov were reported as problems in the 13 Nov report; a re-run of that week would now show them under F-16.
 - **F-12:** the Transition Complete check is created after the ticket reaches Transition Completed, which is a closed stage, due the same day.
 
 ## Excluded companies
@@ -346,7 +346,14 @@ The scripts read this block. Keep it in step with the text above.
       "duplicate_titles": [
         "Transition | PRE LAUNCH SET UP | Subtask"
       ],
-      "duplicates_on_or_before": "2026-11-19"
+      "duplicates_on_or_before": "2026-11-19",
+      "task_match": {
+        "workflow": "1866658899",
+        "title": "Transition | PRE LAUNCH SET UP | Subtask",
+        "owner": "80038421",
+        "created_on_or_before": "2026-11-19",
+        "kinds": ["not_in_queue", "link"]
+      }
     }
   ],
   "closed": [

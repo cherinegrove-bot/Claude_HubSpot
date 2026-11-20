@@ -124,10 +124,24 @@ def task_row(t):
     flow = t.get('_flow')
     return {'id': t['id'], 'title': (p.get('hs_task_subject') or '').strip(), 'flow': flow, 'source': p.get('hs_object_source_detail_1') or p.get('hs_object_source'),
             'created': P(p['hs_createdate']), 'due': P(p.get('hs_timestamp')), 'sub': p.get('hs_task_is_sub_task') == 'true',
-            'parent': p.get('hs_task_parent_task_id'), 'companies': comps, 'tickets': tix,
+            'parent': p.get('hs_task_parent_task_id'), 'companies': comps, 'tickets': tix, 'owner': p.get('hubspot_owner_id'),
             'queues': [q for q in (p.get('hs_queue_membership_ids') or '').split(';') if q],
             'in_queue': bool(set((p.get('hs_queue_membership_ids') or '').split(';')) & QIDS),
             'type': rules.task_type_of(TEAM, flow, p.get('hs_task_subject')) if flow in M else None, 'problems': []}
+
+
+def task_known(r, kind):
+    """Known issue covering this task's queue or company problem (known_issues[].task_match: workflow, exact title, owner,
+    created on or before a date, and the problem kinds it covers), so that a title alone never hides another task."""
+    if not r:
+        return None
+    for k in TEAM.get('known_issues', []):
+        m = k.get('task_match')
+        if m and kind in m.get('kinds', []) and r.get('flow') == m.get('workflow') and rules.norm(r.get('title')) == rules.norm(m.get('title')) \
+                and (not m.get('owner') or str(r.get('owner')) == str(m['owner'])) \
+                and (not m.get('created_on_or_before') or local(r['created']).date().isoformat() <= m['created_on_or_before']):
+            return k['id']
+    return None
 
 
 def resolve_alias(r):
@@ -827,6 +841,8 @@ for r in MAIN:
                 extra={**({'nr_issue': r['flow'].split(':', 1)[1], 'known_issue': r['flow'].split(':', 1)[1]} if isinstance(r['flow'], str) and r['flow'].startswith('not_readable:') else {}),
                        **({'fixed': r['fixed']['fixed'], 'fixed_note': r['fixed'].get('note', ''), 'problem_was': r['fixed'].get('problem')} if r.get('fixed') else {})} or None)
     r['known'] = r['flow'].split(':', 1)[1] if isinstance(r['flow'], str) and r['flow'].startswith('not_readable:') and st != 'ok' else None
+    if st != 'ok' and not r['known']:
+        r['known'] = task_known(r, 'link')
     LINK_ROWS.append({'task': r['id'], 'title': r['title'], 'type': r['type'], 'workflow': wfname(r['flow']) if r['flow'] in M else r['source'],
                       'workflow_id': r['flow'] if r['flow'] in M else None,
                       'companies': [{'id': c, 'name': cname(c)} for c in r['companies']], 'status': st, 'label': label, 'known': r.get('known')})
@@ -836,7 +852,7 @@ for e in TICKET_DAYS:
     if e['kind'] != 'stage' or e.get('status') == 'process':
         continue
     bad = [r for r in MAIN if e['ticket'] in r['tickets'] and r['type'] == e['type'] and r.get('link') not in (None, 'ok')
-           and not any(re.search(x, rules.norm(r['title']), re.I) for x in _known_titles)]
+           and not any(re.search(x, rules.norm(r['title']), re.I) for x in _known_titles) and not task_known(r, 'link')]
     fixed = [r for r in bad if r.get('fixed')]
     if fixed and len(fixed) == len(bad):
         e['status'] = 'fixed'
@@ -1042,6 +1058,8 @@ for p in PROBLEMS:
         FOLDED[('known', p['nr_issue'])].append(p)
     elif p['kind'] == 'link' and link_known(p):
         FOLDED[('known', link_known(p))].append(p)
+    elif p['kind'] in ('not_in_queue', 'link') and task_known(ROW_BY_ID.get(p.get('task_id')), p['kind']):
+        FOLDED[('known', task_known(ROW_BY_ID.get(p.get('task_id')), p['kind']))].append(p)
     elif p['kind'] in ('deleted', 'duplicate') and p.get('known_issue'):
         FOLDED[('known', p['known_issue'])].append(p)
     elif p['kind'] == 'subtask_ticket' and SUB_KNOWN:
@@ -1073,6 +1091,10 @@ def folded_text(ps):
     what = 'moved out of the ' + TEAM.get('queue_name', 'team') + ' queue' if kinds == {'not_in_queue'} else 'not associated with any company' if kinds == {'link'} else \
         'subtasks linked to the ticket' if kinds == {'subtask_ticket'} else 'created by the workflow, then deleted' if kinds == {'deleted'} else \
         'given the same title twice on one ticket' if kinds == {'duplicate'} else 'affected'
+    if len(kinds) > 1:                        # one known issue covering several kinds: count each
+        name = {'duplicate': 'given the same title twice', 'not_in_queue': 'not in the ' + TEAM.get('queue_name', 'team') + ' queue', 'link': 'with no company'}
+        kc = collections.Counter(p['kind'] for p in ps)
+        return '; '.join(f'{n} task(s) {name.get(k, k)}' for k, n in kc.most_common()) + ' (' + '; '.join(f'{k}: {v}' for k, v in by.most_common()) + ').'
     if kinds == {'subtask_ticket'}:
         return f'{len(ps)} {what} (' + '; '.join(f'{k}: {v}' for k, v in by.most_common()) + ').'
     return f'{len(ps)} task(s) {what} (' + '; '.join(f'{k}: {v}' for k, v in by.most_common()) + ').'
