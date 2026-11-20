@@ -13,7 +13,7 @@ This file and `Marketing_Master_Rules.xlsx` hold everything specific to Marketin
   - Subtasks are found through their main task.
   - Manual tasks in this queue (e.g. "Marketing Request - ...") are not made by a workflow and are not checked.
 - **Start date:** 2026-10-06. Nothing before this date is checked. Never audit backwards.
-- **Window:** Friday to Thursday (7 days), as Cherine asked (2026-11-10). The run on Friday covers the previous Friday to that Thursday.
+- **Window:** monthly (Cherine, 2026-11-20). The audit runs on the **5th of each month at 08:00** (Johannesburg) and covers the 5th of the previous month to the 4th of this month (US Eastern days). The review workflows are run on the 5th, so each month's enrollments are checked in the following month's run. (Until 2026-11-20: weekly, Friday to Thursday.)
 - **Workflows audited** (confirmed by Cherine, 2026-11-10):
   - Standalone Marketing | Monthly Performance Reviews | Marketing Services (UPDATED) (1892197644)
   - Improving Monthly Performance Reviews | Marketing Services (UPDATED) (1892196753)
@@ -149,8 +149,7 @@ The scripts read this block. Keep it in step with the text above.
   ],
   "start_date": "2026-10-06",
   "window": {
-    "ends_on": "Thursday",
-    "days": 7
+    "monthly_on": 5
   },
   "tier_property": "customer_tier",
   "tiers": [

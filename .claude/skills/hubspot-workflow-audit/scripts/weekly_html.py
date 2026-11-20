@@ -24,9 +24,14 @@ A = ap.parse_args()
 R = json.load(open(os.path.join(A.work, 'results.json')))
 _, TEAM = rules.load_team(R['team_slug'])
 TEAM = TEAM or {}
-out = A.out or os.path.join(rules.team_dir(R['team_slug']), 'weekly', f'{R["team_slug"]}-weekly-audit-{R["report_day"]}.html')
+_per = 'monthly' if R.get('period') == 'month' else 'weekly'
+out = A.out or os.path.join(rules.team_dir(R['team_slug']), _per, f'{R["team_slug"]}-{_per}-audit-{R["report_day"]}.html')
 os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
 page = open(A.template).read()
+if R.get('period') == 'month':          # monthly teams (team-rules.md "window": {"monthly_on": N}): same page, month wording
+    for w_, m_ in (('weekly check', 'monthly check'), ('This week', 'This month'), ('this week', 'this month'), ('every week', 'every month'),
+                   ('the audit week', 'the audit month'), ('an earlier week', 'an earlier month'), ('>Week</button>', '>Month</button>')):
+        page = page.replace(w_, m_)
 if page.count('__DATA__') != 1:
     sys.exit(f'STOP: {A.template} must contain __DATA__ exactly once.')
 
@@ -50,7 +55,7 @@ for n in data['new_facilities']:                       # field names the templat
 blob = json.dumps(data, default=str).replace('</', '<\\/')
 
 page = page.replace('__DATA__', blob)
-page = re.sub(r'<title>.*?</title>', f'<title>{html.escape(R["team"])} weekly check {R["report_day"]}</title>', page, count=1, flags=re.S)
+page = re.sub(r'<title>.*?</title>', f'<title>{html.escape(R["team"])} {"monthly" if R.get("period") == "month" else "weekly"} check {R["report_day"]}</title>', page, count=1, flags=re.S)
 col = TEAM.get('page_colours') or {}
 for key, var in (('navy', 'navy'), ('grey', 'grey'), ('red', 'red'), ('white', 'white'), ('background', 'bg')):
     if col.get(key):

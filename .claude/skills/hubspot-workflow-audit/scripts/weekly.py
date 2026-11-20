@@ -67,6 +67,7 @@ if CUTOFF and CUTOFF <= FIRST:
     CUTOFF = None
 SECTION = 'main'
 OWNER = TEAM.get('decision_owner', 'the team lead')
+PERIOD = 'month' if (TEAM.get('window') or {}).get('monthly_on') else 'week'      # wording only; the window comes from rules.week_window
 TYPES = TEAM.get('task_types', [])
 TYPE_NAMES = [t['name'] for t in TYPES]
 EXPECTED_OFF = set(TEAM.get('expected_off', []))
@@ -1105,7 +1106,7 @@ if CUTOFF:
 
 RESULT = {
     'team': TEAM_NAME, 'team_slug': rules.team_slug(A.team), 'decision_owner': OWNER, 'portal': str(ACCT.get('portalId', '')), 'queue': TEAM.get('queue_name'), 'queue_ids': sorted(QIDS),
-    'window': [FIRST.isoformat(), LAST.isoformat()], 'report_day': rules.report_day(TEAM, LAST).isoformat(), 'time_zone': ACCT.get('timeZone'),
+    'period': PERIOD, 'window': [FIRST.isoformat(), LAST.isoformat()], 'report_day': rules.report_day(TEAM, LAST).isoformat(), 'time_zone': ACCT.get('timeZone'),
     'fetched_at': fmt_dt(NOW), 'start_date': TEAM.get('start_date'),
     'excluded_companies': [{'id': k, 'name': v.get('name'), 'reason': v.get('reason')} for k, v in EXCLUDED.items()],
     'excluded_tasks': EXCLUDED_TASKS, 'manual_tasks_not_checked': len(MANUAL_TASKS),
@@ -1125,11 +1126,11 @@ RESULT = {
 json.dump(RESULT, open(os.path.join(A.work, 'results.json'), 'w'), indent=1, default=str)
 
 line = lambda n, what: 'all good' if n == 0 else f'{n} problem{"s" if n > 1 else ""} found'
-print(f'## {TEAM_NAME} weekly audit — {FIRST} to {LAST}' + (' (window shortened by the start date)' if FIRST.isoformat() == TEAM.get('start_date') else ''))
+print(f'## {TEAM_NAME} {PERIOD}ly audit — {FIRST} to {LAST}' + (' (window shortened by the start date)' if FIRST.isoformat() == TEAM.get('start_date') else ''))
 if EXCLUDED:
     print(f'Excluded from the audit: ' + '; '.join(f'{v.get("name") or k} ({k}): {v.get("reason")}' for k, v in EXCLUDED.items()) + (f' ({EXCLUDED_TASKS} task(s) linked only to them not checked)' if EXCLUDED_TASKS else ''))
 print(f'Checked {in_scope_count} companies in scope ({(TEAM.get("company_scope") or {}).get("description", "all companies")}), {len(MAIN)} main tasks and {len(SUBS)} subtasks created in the window, and {len(M)} workflows.\n')
-print(f'1. **Were the tasks created?** {line(q_counts[1], "")}' + (f' ({len(NEW)} new facilit{"y" if len(NEW) == 1 else "ies"} this week)' if NEW else ''))
+print(f'1. **Were the tasks created?** {line(q_counts[1], "")}' + (f' ({len(NEW)} new facilit{"y" if len(NEW) == 1 else "ies"} this {PERIOD})' if NEW else ''))
 print(f'2. **Are they linked to the right company?** {line(q_counts[2], "")}')
 print(f'3. **Did anyone change the workflows?** ' + ('no changes' if not q_counts[3] else f'{sum(1 for c in CHANGES if c["status"] != "same")} workflow(s) differ from the master rules file'))
 if TOP:
@@ -1164,5 +1165,5 @@ print(f'\n**Waiting on {OWNER}**')
 if not waiting:
     print('- None')
 for w in waiting:
-    print(f'- {w["id"]} {w["title"]}' + (f' — this week: ' + (w.get('summary') or '; '.join(f.get('reason') or f.get('company') or '' for f in w['found'][:3])) if w.get('found') else ''))
+    print(f'- {w["id"]} {w["title"]}' + (f' — this {PERIOD}: ' + (w.get('summary') or '; '.join(f.get('reason') or f.get('company') or '' for f in w['found'][:3])) if w.get('found') else ''))
 print(f'\nresults: {os.path.join(A.work, "results.json")}')

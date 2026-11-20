@@ -357,6 +357,25 @@ def week_window(team, today, start=None, end=None, ignore_start=False):
     Default: the 7 days ending on the team's window end day (e.g. Thursday) before today; on other days,
     the window that contains today (up to today). Never earlier than the team's start date."""
     w = (team or {}).get('window') or {'ends_on': 'Thursday', 'days': 7}
+    if w.get('monthly_on'):                               # monthly: from day N of last month to day N-1 of this month
+        n = int(w['monthly_on'])
+        if end is None:
+            ref = today if today.day >= n else (today.replace(day=1) - dt.timedelta(days=1))
+            this_n = ref.replace(day=n)                   # the last report day on or before today
+            if today == this_n:                           # report day: the month just finished
+                last = today - dt.timedelta(days=1)
+                first = (this_n.replace(day=1) - dt.timedelta(days=1)).replace(day=n)
+            else:                                         # any other day: the month that contains today (up to today)
+                first, last = this_n, today
+            end = min(last, today)
+        else:
+            first = (end.replace(day=1) - dt.timedelta(days=1)).replace(day=n) if end.day < n else end.replace(day=n)
+        if start is not None:
+            first = start
+        sd = (team or {}).get('start_date')
+        if sd and not ignore_start:
+            first = max(first, dt.date.fromisoformat(sd))
+        return first, end
     days = int(w.get('days', 7))
     end_wd = DAYS.index(w.get('ends_on', 'Thursday').upper())
     if end is None:
@@ -379,6 +398,12 @@ def week_window(team, today, start=None, end=None, ignore_start=False):
 def report_day(team, window_end):
     """The day the report is for: the day after the window's planned end (e.g. Friday)."""
     w = (team or {}).get('window') or {'ends_on': 'Thursday'}
+    if w.get('monthly_on'):                               # monthly: the next day N after the window
+        n = int(w['monthly_on'])
+        nxt = window_end + dt.timedelta(days=1)
+        while nxt.day != n:
+            nxt += dt.timedelta(days=1)
+        return nxt
     end_wd = DAYS.index(w.get('ends_on', 'Thursday').upper())
     return window_end + dt.timedelta(days=(end_wd - window_end.weekday()) % 7 + 1)
 
