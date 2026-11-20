@@ -1,0 +1,67 @@
+<title>Tenant Lead Ticket Audit</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap">
+<style>
+/* Layout: single reading column, status banner, tiles, exception tables, history */
+:root{
+  --bg:#f6f7f9;--surface:#ffffff;--fg:#1c2330;--muted:#5d6878;--line:#dde2ea;
+  --accent:#1f5fbf;--ok:#1d7a4a;--bad:#b3261e;--warn:#9a6200;
+  --font-body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-head:"Space Grotesk","Inter",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12161d;--surface:#1a2029;--fg:#e6eaf0;--muted:#9aa5b4;--line:#2b3340;
+  --accent:#6ea2f0;--ok:#4cc38a;--bad:#f2766b;--warn:#e0a84a;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12161d;--surface:#1a2029;--fg:#e6eaf0;--muted:#9aa5b4;--line:#2b3340;
+  --accent:#6ea2f0;--ok:#4cc38a;--bad:#f2766b;--warn:#e0a84a;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);line-height:1.5}
+.wrap{max-width:960px;margin:0 auto;padding-block:32px 48px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:24px}
+h1,h2{font-family:var(--font-head);text-wrap:balance;margin:0}
+h1{font-size:1.75rem}
+h2{font-size:1.15rem}
+.meta{color:var(--muted);font-size:.9rem}
+.banner{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px 20px}
+.banner strong{color:var(--accent)}
+table{border-collapse:collapse;width:100%;font-size:.9rem;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:500;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em}
+.scroll{overflow-x:auto}
+a{color:var(--accent)}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Tenant Lead Ticket Audit</h1>
+    <p class="meta">Runs daily at 08:00 SAST for the previous day · Tenant Leads pipeline · 18 in-scope facilities</p>
+  </header>
+
+  <section class="banner">
+    <strong>Waiting for the first run.</strong>
+    The first report covers 20 Nov 2026 (the day the new ticket rule went live) and appears here after 08:00 SAST on 21 Nov 2026.
+    This link stays the same; each morning's run replaces this report.
+  </section>
+
+  <section>
+    <h2>Rule being checked</h2>
+    <div class="scroll"><table>
+      <thead><tr><th>Contact Source</th><th>Tenant Leads ticket</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Internet Website</td><td>None</td><td>Correct</td></tr>
+        <tr><td>Any other source</td><td>One or more</td><td>Correct</td></tr>
+        <tr><td>Internet Website</td><td>One or more</td><td>Created incorrectly</td></tr>
+        <tr><td>Any other source</td><td>None</td><td>Missed</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>Run history</h2>
+    <div class="scroll"><table id="history">
+      <thead><tr><th>Day audited (SAST)</th><th>Contacts</th><th>Correct</th><th>Missed</th><th>Incorrect</th><th>Duplicates</th></tr></thead>
+      <tbody><tr><td colspan="6" class="meta">No runs yet.</td></tr></tbody>
+    </table></div>
+  </section>
+</div>

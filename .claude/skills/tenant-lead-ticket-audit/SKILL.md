@@ -108,7 +108,18 @@ Blank source → not website (ticket expected), but flag it.
 
 ## Step 4: report
 
-Publish an Artifact titled `Tenant Lead Ticket Audit – <YYYY-MM-DD>` containing:
+**Always update the same report page; never create a new one.**
+Fixed report URL: https://claude.ai/artifact/XA7aoyFKu2RQHPs8VnemWK
+1. Read it first with the Artifact tool (`action: "read"`, that `url`).
+2. Rebuild the page from what comes back: keep the `<title>Tenant Lead Ticket Audit</title>`
+   and the page styling, replace the report body with today's results, and add
+   one row at the top of the **Run history** table (day audited, contacts,
+   correct, missed, incorrect, duplicates), keeping all earlier rows.
+3. Publish with `url` set to that same link (no `icon`). If the publish is
+   refused with a newer version, merge into that version and publish again.
+   Never publish without `url`, as that creates a new link.
+
+The report body contains:
 - Summary tiles: contacts audited, correct, missed tickets, incorrect tickets, duplicates.
 - **Exceptions first**: Missed tickets, Incorrect tickets, Duplicates, Criteria
   changed, Blank source. Each row: contact name + clickable link
