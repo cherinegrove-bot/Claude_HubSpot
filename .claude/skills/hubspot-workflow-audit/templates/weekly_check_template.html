@@ -104,7 +104,7 @@ a.hs{text-decoration:underline;text-decoration-color:var(--line);text-underline-
 .ok{color:var(--muted)}.badtxt{color:var(--red);font-weight:600}
 @media (max-width:640px){.body{padding:0 16px 16px}.diff{grid-template-columns:1fr}.diff .arr{display:none}}
 /* monthly calendar (Overview). Green is used here only (asked for by WLS). */
-.cal{margin:36px 0 0;--c-ok:#2E9E5B;--c-bad:#E62222;--c-wait:#F2A900;--c-known:#2F80ED;--c-dash:var(--grey)}
+.cal{margin:36px 0 0;--c-ok:#2E9E5B;--c-bad:#E62222;--c-wait:#F2A900;--c-known:#2F80ED;--c-new:#00173C;--c-dash:var(--grey)}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .cal{--c-dash:var(--muted)}}
 :root[data-theme="dark"] .cal{--c-dash:var(--muted)}
 .cal-top{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;margin-bottom:6px}
@@ -124,9 +124,10 @@ button.cal-day{cursor:pointer}button.cal-day:hover{border-color:var(--grey)}
 .cal-day.s-bad{background:var(--c-bad);border-color:var(--c-bad);color:#FFFFFF}
 .cal-day.s-known{background:var(--c-known);border-color:var(--c-known);color:#FFFFFF}
 .cal-day.s-wait{background:var(--c-wait);border-color:var(--c-wait);color:#00173C}
-button.cal-day.s-ok:hover,button.cal-day.s-bad:hover,button.cal-day.s-known:hover,button.cal-day.s-wait:hover{filter:brightness(1.08);border-color:transparent}
+.cal-day.s-new{background:var(--c-new);border-color:var(--c-new);color:#FFFFFF}
+button.cal-day.s-ok:hover,button.cal-day.s-bad:hover,button.cal-day.s-known:hover,button.cal-day.s-wait:hover,button.cal-day.s-new:hover{filter:brightness(1.08);border-color:transparent}
 .cal-num{font-size:13px;font-weight:600;color:var(--muted);display:flex;justify-content:space-between;align-items:center;gap:4px}
-.cal-day.s-ok .cal-num,.cal-day.s-bad .cal-num,.cal-day.s-known .cal-num,.cal-day.s-wait .cal-num{color:inherit}
+.cal-day.s-ok .cal-num,.cal-day.s-bad .cal-num,.cal-day.s-known .cal-num,.cal-day.s-wait .cal-num,.cal-day.s-new .cal-num{color:inherit}
 /* task list under the calendar (Overview) */
 .tlist{margin-top:36px}
 .tlist td.tname{font-weight:600;min-width:150px}
@@ -147,16 +148,16 @@ button.cal-day.s-ok:hover,button.cal-day.s-bad:hover,button.cal-day.s-known:hove
 .tlist tr.off .who-chip{font-weight:400;color:var(--muted);background:transparent}
 .tlist tr.off td{color:var(--muted)}
 .cal-tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
-.cal-day.s-ok .cal-tag,.cal-day.s-bad .cal-tag,.cal-day.s-known .cal-tag,.cal-day.s-wait .cal-tag{color:inherit}
+.cal-day.s-ok .cal-tag,.cal-day.s-bad .cal-tag,.cal-day.s-known .cal-tag,.cal-day.s-wait .cal-tag,.cal-day.s-new .cal-tag{color:inherit}
 .cal-run{display:block;font-size:11px;line-height:1.3;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cal-day.s-ok .cal-run,.cal-day.s-bad .cal-run,.cal-day.s-known .cal-run,.cal-day.s-wait .cal-run{color:inherit;font-weight:500}
+.cal-day.s-ok .cal-run,.cal-day.s-bad .cal-run,.cal-day.s-known .cal-run,.cal-day.s-wait .cal-run,.cal-day.s-new .cal-run{color:inherit;font-weight:500}
 .cal-run.off{text-decoration:line-through;opacity:.75}
 .cal-day.s-grey .cal-run{color:var(--muted)}
 .cal-list{display:none;margin-top:12px}
 .cal-detail{margin-top:14px}
 .cal-key{display:flex;flex-wrap:wrap;gap:8px 18px;color:var(--muted);font-size:13px;margin-top:12px;align-items:center}
 .cal-sw{display:inline-block;width:16px;height:16px;border-radius:4px;vertical-align:-3px;margin-right:6px}
-.cal-sw.s-ok{background:var(--c-ok)}.cal-sw.s-bad{background:var(--c-bad)}.cal-sw.s-wait{background:var(--c-wait)}.cal-sw.s-known{background:var(--c-known)}
+.cal-sw.s-ok{background:var(--c-ok)}.cal-sw.s-bad{background:var(--c-bad)}.cal-sw.s-wait{background:var(--c-wait)}.cal-sw.s-known{background:var(--c-known)}.cal-sw.s-new{background:var(--c-new)}
 .cal-sw.s-grey{background:transparent;border:1.5px dashed var(--c-dash)}
 .cal{--w0:#7C3AED;--w1:#0E8A87;--w2:#BE185D;--w3:#8A5A00;--w4:#3F5066}
 .cal-w{display:block;font-size:11px;font-weight:600;line-height:1.35;border-radius:5px;padding:1px 6px;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -292,12 +293,13 @@ if(D.before_start){const n=D.before_start.problems.length;
 /* ---------- monthly calendar (Overview) ---------- */
 /* Every task type on the day(s) its workflows are set to create it this month, from the master rules file.
    Day colour: green = tasks created correctly, red = problems, grey = not happened yet / outside the window,
-   known = only a known issue, waiting = only something waiting on the decision owner. */
+   known = only a known issue, waiting = only something waiting on the decision owner,
+   new = the only facilities without the task are new ones that went live in the audit week, after the run (no issue). */
 const DOWS=['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY','SUNDAY'],MONL=['January','February','March','April','May','June','July','August','September','October','November','December'];
 const ymd=(y,m,d)=>`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 const today=(D.fetched_at||'').slice(0,10);
 let calY=+w1.slice(0,4),calM=+w1.slice(5,7)-1,calSel=null;
-const RANK={grey:0,ok:1,known:2,wait:3,bad:4};
+const RANK={grey:0,ok:1,new:2,known:3,wait:4,bad:5};
 function runsOn(y,m,d){const dow=DOWS[(new Date(Date.UTC(y,m,d)).getUTCDay()+6)%7],by={};
  (D.schedules||[]).forEach(s=>{const hit=s.kind==='daily'||(s.kind==='monthly'&&s.days.includes(d))||(s.kind==='weekly'&&s.days.includes(dow));if(!hit)return;
   const k=s.type+'|'+s.time,r=by[k]=by[k]||{type:s.type,time:s.time,wfs:[],off:true};r.wfs.push({id:s.workflow,name:s.workflow_name,off:s.off_now});r.off=r.off&&s.off_now;});
@@ -308,12 +310,13 @@ function runResult(r,date){const pre=D.before_start&&date>=w0&&date<D.before_sta
  if(date>w1||date>today)return{st:'grey',txt:'Hasn\'t happened yet'};
  if(r.off)return{st:'grey',txt:'Workflow switched off now'};
  if(!t)return{st:'grey',txt:'No result'};
- const mv=Object.values(t.missing).filter(m=>!m.not_flagged),miss=mv.filter(m=>!m.waiting_on).length,wait=mv.length-miss,sh=pre?0:Object.keys(t.shouldnt).length,
+ const NEWR='went live this week',mv=Object.values(t.missing).filter(m=>!m.not_flagged),newc=mv.filter(m=>!m.waiting_on&&m.reason===NEWR).length,miss=mv.filter(m=>!m.waiting_on&&m.reason!==NEWR).length,wait=mv.filter(m=>m.waiting_on).length,sh=pre?0:Object.keys(t.shouldnt).length,
   other=(pre?D.before_start.problems:D.problems).filter(p=>p.q===1&&p.type===t.name&&p.kind!=='missing'&&p.kind!=='shouldnt').length,
   kd=(D.known_days||[]).filter(k=>k.date===date&&k.type===r.type),base=`${t.got.length} of ${t.should.length} facilities got it`;
  if(miss||sh||other)return{st:'bad',txt:base+[miss?`${miss} missing`:'',sh?`${sh} shouldn't have it`:'',other?plural(other,'other problem'):''].filter(Boolean).map(x=>', '+x).join(''),t};
  if(kd.length)return{st:'known',txt:base+'. Known issue '+kd.map(k=>`${k.known_issue} (${plural(k.tasks,'task')}): ${(D.known_issues.find(x=>x.id===k.known_issue)||{}).text||''}`).join('; '),t};
  if(wait)return{st:'wait',txt:base+`, ${wait} waiting on ${D.decision_owner}`,t};
+ if(newc)return{st:'new',txt:base+`. ${plural(newc,'new facility','new facilities')} went live this week after the run, so no task was due yet: no issue`,t};
  return{st:'ok',txt:base+', created correctly',t};}
 /* Wait ends (manual-enrollment teams): the day each workflow's delay runs out for the facilities in it, one colour per workflow. */
 const WAITS=(D.manual&&D.manual.waiting)||[];
@@ -323,7 +326,7 @@ function waitsOn(date){const by={};WAITS.filter(e=>e.wait_ends===date).forEach(e
  return WAITWF.filter(w=>by[w]).map(w=>({wf:w,short:by[w][0].short,name:by[w][0].workflow,es:by[w]}));}
 function dayState(y,m,d){const date=ymd(y,m,d),runs=runsOn(y,m,d).map(r=>({...r,res:runResult(r,date)}));
  return{date,runs,waits:waitsOn(date),st:runs.reduce((a,r)=>RANK[r.res.st]>RANK[a]?r.res.st:a,'grey')};}
-const STLAB={ok:'All created',bad:'Problems',known:'Known issue',wait:'Waiting',grey:''};
+const STLAB={ok:'All created',new:'New facilities',bad:'Problems',known:'Known issue',wait:'Waiting',grey:''};
 function dayCell(y,m,d,list){const S=dayState(y,m,d),cls=['cal-day','s-'+S.st];if(S.date===calSel)cls.push('sel');
  const head=`<div class="cal-num"><span>${list?esc(day(S.date)):d}</span><span class="cal-tag st">${S.runs.length?STLAB[S.st]:''}${S.date===today?(S.runs.length&&STLAB[S.st]?' · ':'')+'Today':''}</span></div>`;
  const body=S.runs.map(r=>`<span class="cal-run${r.off?' off':''}" title="${esc(r.type)}">${r.time?esc(r.time)+' ':''}${esc(r.type)}</span>`).join('')
@@ -349,7 +352,7 @@ function calHTML(){const first=(new Date(Date.UTC(calY,calM,1)).getUTCDay()+6)%7
  return `<div class="cal-top"><div><h2>${MONL[calM]} ${calY}</h2></div><div class="cal-nav"><button data-cal="-1" aria-label="Previous month">‹</button><b>${MONL[calM].slice(0,3)} ${calY}</b><button data-cal="1" aria-label="Next month">›</button></div></div>
  <p class="lead" style="margin-bottom:0">Every task type on the day its workflows are set to create it, from the master rules file. Click a day to see which task types ran and their result.</p>
  <div class="cal-grid">${g}</div><div class="cal-list">${list||'<div class="empty">No scheduled runs this month.</div>'}</div>
- <div class="cal-key"><span><span class="cal-sw s-ok"></span>Created correctly</span><span><span class="cal-sw s-bad"></span>Problems</span><span><span class="cal-sw s-known"></span>Known issue only</span><span><span class="cal-sw s-wait"></span>Waiting on ${esc(D.decision_owner)}</span><span><span class="cal-sw s-grey"></span>Not happened yet, or outside this week's window</span></div>
+ <div class="cal-key"><span><span class="cal-sw s-ok"></span>Created correctly</span><span><span class="cal-sw s-bad"></span>Problems</span><span><span class="cal-sw s-new"></span>New facilities only: went live this week after the run, no issue</span><span><span class="cal-sw s-known"></span>Known issue only</span><span><span class="cal-sw s-wait"></span>Waiting on ${esc(D.decision_owner)}</span><span><span class="cal-sw s-grey"></span>Not happened yet, or outside this week's window</span></div>
  ${WAITWF.length?`<div class="cal-key"><span>45-day wait ends:</span>${WAITWF.map(w=>{const e=WAITS.find(x=>x.workflow_id===w);return `<span><span class="cal-sw ${wcol(w)}"></span>${esc(e.short)}</span>`;}).join('')}</div>`:''}
  ${trig.length||man.length||off.length?`<div class="cal-key">${trig.length?`<span>${trig.map(esc).join(', ')}: no schedule, created when a facility meets the trigger.</span>`:''}${man.length?`<span>${man.map(esc).join(', ')}: no schedule, created when someone enrolls a facility by hand.</span>`:''}${off.length?`<span>Switched off now: ${off.map(esc).join(', ')}.</span>`:''}</div>`:''}
  <div id="calday">${selIn?dayDetail(calSel):''}</div>`;}
