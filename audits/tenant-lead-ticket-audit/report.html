@@ -30,6 +30,15 @@ th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
 th{color:var(--muted);font-weight:500;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em}
 .scroll{overflow-x:auto}
 a{color:var(--accent)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:2px}
+.tile .n{font-family:var(--font-head);font-size:1.8rem;font-variant-numeric:tabular-nums}
+.tile .n.ok{color:var(--ok)}
+.tile .l{color:var(--muted);font-size:.85rem}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.78rem;font-weight:500;border:1px solid currentColor;white-space:nowrap}
+.pill.ok{color:var(--ok)}
+details summary{cursor:pointer;font-family:var(--font-head);font-size:1.15rem;font-weight:600;padding-block:4px}
+details[open] summary{margin-bottom:8px}
 </style>
 
 <div class="wrap">
@@ -39,10 +48,62 @@ a{color:var(--accent)}
   </header>
 
   <section class="banner">
-    <strong>Waiting for the first run.</strong>
-    The first report covers 20 Nov 2026 (the day the new ticket rule went live) and appears here after 08:00 SAST on 21 Nov 2026.
-    This link stays the same; each morning's run replaces this report.
+    <strong>Preliminary view: 20 Nov 2026, partial day.</strong>
+    Covers contacts created from 00:00 SAST on 20 Nov up to the latest contact at 20:00 SAST. No exceptions so far: every contact got the right result.
+    The full-day report for 20 Nov replaces this after 08:00 SAST on 21 Nov. This link stays the same.
   </section>
+
+  <section class="tiles">
+    <div class="tile"><span class="n">5</span><span class="l">Contacts checked</span></div>
+    <div class="tile"><span class="n ok">5</span><span class="l">Correct</span></div>
+    <div class="tile"><span class="n">0</span><span class="l">Missed tickets</span></div>
+    <div class="tile"><span class="n">0</span><span class="l">Created incorrectly</span></div>
+    <div class="tile"><span class="n">0</span><span class="l">Duplicates</span></div>
+  </section>
+
+  <section>
+    <h2>Exceptions</h2>
+    <p class="meta">None. No missed tickets, no incorrect tickets, no duplicate Tenant Leads tickets, no blank sources.</p>
+  </section>
+
+  <section>
+    <h2>Criteria changed since creation</h2>
+    <p class="meta">These no longer match the list filter (Lead status has moved on from New) but were still checked against the rule. Both are correct.</p>
+    <div class="scroll"><table>
+      <thead><tr><th>Contact</th><th>Facility tag</th><th>Source</th><th>Created (SAST)</th><th>Lead status now</th><th>Tenant Leads ticket</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264346972037">Noel Benson</a></td><td>f__space_station_storage</td><td>Internet Website</td><td>20 Nov 20:00</td><td>Attempted to Contact</td><td>None (has a Support ticket, which doesn't count)</td><td><span class="pill ok">Correct</span></td></tr>
+        <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264274772080">test test</a></td><td>f__hillside_storage</td><td>Internet Website</td><td>20 Nov 15:30</td><td>Unqualified</td><td>None</td><td><span class="pill ok">Correct</span></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>Breakdown by facility</h2>
+    <div class="scroll"><table>
+      <thead><tr><th>Facility tag</th><th>Contacts</th><th>Internet Website</th><th>Other source</th><th>Tenant Leads tickets</th></tr></thead>
+      <tbody>
+        <tr><td>f__space_station_storage</td><td>3</td><td>1</td><td>2</td><td>2</td></tr>
+        <tr><td>f__honeycrisp_self_storage_lawrence</td><td>1</td><td>0</td><td>1</td><td>1</td></tr>
+        <tr><td>f__hillside_storage</td><td>1</td><td>1</td><td>0</td><td>0</td></tr>
+        <tr><td colspan="5" class="meta">The other 15 facilities had no new tenant contacts.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <details>
+    <summary>All contacts checked (5)</summary>
+    <div class="scroll"><table>
+      <thead><tr><th>Contact</th><th>Facility tag</th><th>Source</th><th>Created (SAST)</th><th>Tenant Leads ticket</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264222192168">Nadine Kelley</a></td><td>f__space_station_storage</td><td>Internet Online Marketing Service - Sparefoot</td><td>20 Nov 14:00</td><td><a href="https://app.hubspot.com/contacts/45059701/record/0-5/51563162929">51563162929</a></td><td><span class="pill ok">Ticket created</span></td></tr>
+        <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264256628116">Francis Smith</a></td><td>f__space_station_storage</td><td>Internet Online Marketing Service - Sparefoot</td><td>20 Nov 14:00</td><td><a href="https://app.hubspot.com/contacts/45059701/record/0-5/51642318202">51642318202</a></td><td><span class="pill ok">Ticket created</span></td></tr>
+        <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264274772080">test test</a></td><td>f__hillside_storage</td><td>Internet Website</td><td>20 Nov 15:30</td><td>None</td><td><span class="pill ok">No ticket</span></td></tr>
+        <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264339225862">Duwaun Maxie</a></td><td>f__honeycrisp_self_storage_lawrence</td><td>Phone Call Call Center</td><td>20 Nov 19:24</td><td><a href="https://app.hubspot.com/contacts/45059701/record/0-5/51574539562">51574539562</a></td><td><span class="pill ok">Ticket created</span></td></tr>
+        <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264346972037">Noel Benson</a></td><td>f__space_station_storage</td><td>Internet Website</td><td>20 Nov 20:00</td><td>None</td><td><span class="pill ok">No ticket</span></td></tr>
+      </tbody>
+    </table></div>
+  </details>
 
   <section>
     <h2>Rule being checked</h2>
@@ -61,7 +122,7 @@ a{color:var(--accent)}
     <h2>Run history</h2>
     <div class="scroll"><table id="history">
       <thead><tr><th>Day audited (SAST)</th><th>Contacts</th><th>Correct</th><th>Missed</th><th>Incorrect</th><th>Duplicates</th></tr></thead>
-      <tbody><tr><td colspan="6" class="meta">No runs yet.</td></tr></tbody>
+      <tbody><tr><td>20 Nov 2026 (preliminary, partial day)</td><td>5</td><td>5</td><td>0</td><td>0</td><td>0</td></tr></tbody>
     </table></div>
   </section>
 </div>
