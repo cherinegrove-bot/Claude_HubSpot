@@ -52,7 +52,7 @@ details[open] summary{margin-bottom:8px}
   <section class="banner">
     <strong>Latest: Sunday 22 Nov 2026 (full day, SAST).</strong>
     3 new tenant contacts, all correct. No exceptions for this day.
-    One exception is still open from 20 Nov (see below). Updated 23 Nov 2026 after 08:00 SAST.
+    No open exceptions from earlier days. Updated 23 Nov 2026 after 08:00 SAST.
   </section>
 
   <section class="tiles">
@@ -68,15 +68,15 @@ details[open] summary{margin-bottom:8px}
     <p class="meta">None. No missed tickets, no incorrect tickets, no duplicate Tenant Leads tickets, no blank sources.</p>
   </section>
 
-  <section class="flag">
-    <h2>Open exception from an earlier day</h2>
+  <section>
+    <h2>Other Tenant Leads tickets (not from the workflow)</h2>
+    <p class="meta">For information only. These were not created by the ticket workflow, so they don't count as exceptions.</p>
     <div class="scroll"><table>
-      <thead><tr><th>Day</th><th>Contact</th><th>Facility tag</th><th>Source</th><th>Created (SAST)</th><th>Tenant Leads ticket</th><th>Result</th></tr></thead>
+      <thead><tr><th>Day</th><th>Contact</th><th>Facility tag</th><th>Source</th><th>Ticket</th><th>Created from</th></tr></thead>
       <tbody>
-        <tr><td>20 Nov</td><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264353974100">Lauren Kane</a></td><td>f__mendon_secure_storage</td><td>Internet Website</td><td>20 Nov 21:15</td><td><a href="https://app.hubspot.com/contacts/45059701/record/0-5/51679617811">51679617811</a></td><td><span class="pill bad">Created incorrectly</span></td></tr>
+        <tr><td>20 Nov</td><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264353974100">Lauren Kane</a></td><td>f__mendon_secure_storage</td><td>Internet Website</td><td><a href="https://app.hubspot.com/contacts/45059701/record/0-5/51679617811">51679617811</a></td><td>Chat conversation, 1 minute after the workflow ran. The workflow correctly took the "Contact Source is Website" branch and created no ticket.</td></tr>
       </tbody>
     </table></div>
-    <p class="meta">The workflow did not create this ticket. HubSpot records its source as Conversations: it was created from an inbox conversation about 2 minutes after the contact and placed in the Tenant Leads pipeline. The ticket-creation workflow itself handled this contact correctly. Check whether the inbox should route Internet Website leads to Tenant Leads.</p>
   </section>
 
   <section>
@@ -116,7 +116,7 @@ details[open] summary{margin-bottom:8px}
         <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264274772080">test test</a></td><td>f__hillside_storage</td><td>Internet Website</td><td>20 Nov 15:30</td><td>Unqualified</td><td>None</td><td><span class="pill ok">No ticket</span></td></tr>
         <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264339225862">Duwaun Maxie</a></td><td>f__honeycrisp_self_storage_lawrence</td><td>Phone Call Call Center</td><td>20 Nov 19:24</td><td>New</td><td><a href="https://app.hubspot.com/contacts/45059701/record/0-5/51574539562">51574539562</a></td><td><span class="pill ok">Ticket created</span></td></tr>
         <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264346972037">Noel Benson</a></td><td>f__space_station_storage</td><td>Internet Website</td><td>20 Nov 20:00</td><td>Attempted to Contact</td><td>None</td><td><span class="pill ok">No ticket</span></td></tr>
-        <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264353974100">Lauren Kane</a></td><td>f__mendon_secure_storage</td><td>Internet Website</td><td>20 Nov 21:15</td><td>Unqualified</td><td><a href="https://app.hubspot.com/contacts/45059701/record/0-5/51679617811">51679617811</a> (from Conversations)</td><td><span class="pill bad">Created incorrectly</span></td></tr>
+        <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264353974100">Lauren Kane</a></td><td>f__mendon_secure_storage</td><td>Internet Website</td><td>20 Nov 21:15</td><td>Unqualified</td><td>None from the workflow (chat ticket <a href="https://app.hubspot.com/contacts/45059701/record/0-5/51679617811">51679617811</a>, not counted)</td><td><span class="pill ok">No ticket</span></td></tr>
         <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264355241776">Thomas Wrenn</a></td><td>f__nobull_storage_arrow_way</td><td>Internet Online Marketing Service - Sparefoot</td><td>20 Nov 21:15</td><td>New</td><td><a href="https://app.hubspot.com/contacts/45059701/record/0-5/51672254580">51672254580</a></td><td><span class="pill ok">Ticket created</span></td></tr>
         <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264364783138">Maria Dominguez</a></td><td>f__patriot_state_storage</td><td>Walk In Call Center</td><td>20 Nov 23:30</td><td>New</td><td><a href="https://app.hubspot.com/contacts/45059701/record/0-5/51668136707">51668136707</a></td><td><span class="pill ok">Ticket created</span></td></tr>
       </tbody>
@@ -144,7 +144,7 @@ details[open] summary{margin-bottom:8px}
       <tbody>
         <tr><td>22 Nov 2026</td><td>3</td><td>3</td><td>0</td><td>0</td><td>0</td></tr>
         <tr><td>21 Nov 2026</td><td>2</td><td>2</td><td>0</td><td>0</td><td>0</td></tr>
-        <tr><td>20 Nov 2026</td><td>8</td><td>7</td><td>0</td><td>1</td><td>0</td></tr>
+        <tr><td>20 Nov 2026</td><td>8</td><td>8</td><td>0</td><td>0</td><td>0</td></tr>
       </tbody>
     </table></div>
   </section>

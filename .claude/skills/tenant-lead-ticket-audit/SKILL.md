@@ -78,11 +78,14 @@ For each contact, find associated tickets with `hs_pipeline = '753749611'`
 (**Tenant Leads**) and `createdate >= contact createdate - 5 minutes`.
 Tickets in other pipelines (e.g. Support Pipeline `0`) do not count.
 
-For every Tenant Leads ticket found, also read `hs_object_source_label` and
-`hs_object_source_detail_1`. Workflow-made tickets show `AUTOMATION_PLATFORM`
-and the workflow name ("CS - When a Tenant Lead Comes in Create a Ticket ...").
-A ticket from `CONVERSATIONS` (inbox) still counts for the rule, but say in the
-report that the workflow did not create it, so the fix goes to inbox routing.
+Only tickets **created by the workflow** count for the rule. For every Tenant
+Leads ticket found, read `hs_object_source_label` and `hs_object_source_detail_1`.
+Workflow tickets have `hs_object_source_label = AUTOMATION_PLATFORM` and
+`hs_object_source_detail_1` starting "CS - When a Tenant Lead Comes in Create a
+Ticket", with subject "New Tenant Lead: <name> - <facility>".
+Tenant Leads tickets from any other source (e.g. `CONVERSATIONS` chat/inbox,
+`CRM_UI`) do NOT count as created or incorrect. List them in an informational
+"Other Tenant Leads tickets (not from the workflow)" section only.
 
 Working query shape (HubSpot SQL via `query_crm_data`):
 ```sql
@@ -104,7 +107,7 @@ and `hs_pipeline = 753749611`) before being called "no ticket".
 (exact; "Internet StorEdge Website", "Web - Company Website" etc. are NOT website).
 Blank source → not website (ticket expected), but flag it.
 
-| isWebsite | Tenant Leads ticket? | Result |
+| isWebsite | Workflow ticket in Tenant Leads? | Result |
 |---|---|---|
 | yes | none | ✅ CORRECT – no ticket |
 | no | ≥1 | ✅ CORRECT – ticket created |
