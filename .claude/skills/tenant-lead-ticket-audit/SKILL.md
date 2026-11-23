@@ -78,6 +78,12 @@ For each contact, find associated tickets with `hs_pipeline = '753749611'`
 (**Tenant Leads**) and `createdate >= contact createdate - 5 minutes`.
 Tickets in other pipelines (e.g. Support Pipeline `0`) do not count.
 
+For every Tenant Leads ticket found, also read `hs_object_source_label` and
+`hs_object_source_detail_1`. Workflow-made tickets show `AUTOMATION_PLATFORM`
+and the workflow name ("CS - When a Tenant Lead Comes in Create a Ticket ...").
+A ticket from `CONVERSATIONS` (inbox) still counts for the rule, but say in the
+report that the workflow did not create it, so the fix goes to inbox routing.
+
 Working query shape (HubSpot SQL via `query_crm_data`):
 ```sql
 SELECT hs_object_id, firstname, lastname, facility_tag, source, createdate,
@@ -118,6 +124,10 @@ Fixed report URL: https://claude.ai/artifact/XA7aoyFKu2RQHPs8VnemWK
 3. Publish with `url` set to that same link (no `icon`). If the publish is
    refused with a newer version, merge into that version and publish again.
    Never publish without `url`, as that creates a new link.
+
+Keep exceptions from earlier days listed in an "Open exception from an earlier day"
+section until the user says they are resolved, and move the previous latest
+day's contacts into the collapsed "Earlier days" list.
 
 The report body contains:
 - Summary tiles: contacts audited, correct, missed tickets, incorrect tickets, duplicates.

@@ -37,6 +37,8 @@ a{color:var(--accent)}
 .tile .l{color:var(--muted);font-size:.85rem}
 .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.78rem;font-weight:500;border:1px solid currentColor;white-space:nowrap}
 .pill.ok{color:var(--ok)}
+.pill.bad{color:var(--bad)}
+.flag{border-left:3px solid var(--bad);padding-left:14px;display:flex;flex-direction:column;gap:8px}
 details summary{cursor:pointer;font-family:var(--font-head);font-size:1.15rem;font-weight:600;padding-block:4px}
 details[open] summary{margin-bottom:8px}
 </style>
@@ -48,61 +50,78 @@ details[open] summary{margin-bottom:8px}
   </header>
 
   <section class="banner">
-    <strong>Preliminary view: 20 Nov 2026, partial day.</strong>
-    Covers contacts created from 00:00 SAST on 20 Nov up to the latest contact at 20:00 SAST. No exceptions so far: every contact got the right result.
-    The full-day report for 20 Nov replaces this after 08:00 SAST on 21 Nov. This link stays the same.
+    <strong>Latest: Sunday 22 Nov 2026 (full day, SAST).</strong>
+    3 new tenant contacts, all correct. No exceptions for this day.
+    One exception is still open from 20 Nov (see below). Updated 23 Nov 2026 after 08:00 SAST.
   </section>
 
   <section class="tiles">
-    <div class="tile"><span class="n">5</span><span class="l">Contacts checked</span></div>
-    <div class="tile"><span class="n ok">5</span><span class="l">Correct</span></div>
+    <div class="tile"><span class="n">3</span><span class="l">Contacts checked</span></div>
+    <div class="tile"><span class="n ok">3</span><span class="l">Correct</span></div>
     <div class="tile"><span class="n">0</span><span class="l">Missed tickets</span></div>
     <div class="tile"><span class="n">0</span><span class="l">Created incorrectly</span></div>
     <div class="tile"><span class="n">0</span><span class="l">Duplicates</span></div>
   </section>
 
   <section>
-    <h2>Exceptions</h2>
+    <h2>Exceptions on 22 Nov</h2>
     <p class="meta">None. No missed tickets, no incorrect tickets, no duplicate Tenant Leads tickets, no blank sources.</p>
   </section>
 
-  <section>
-    <h2>Criteria changed since creation</h2>
-    <p class="meta">These no longer match the list filter (Lead status has moved on from New) but were still checked against the rule. Both are correct.</p>
+  <section class="flag">
+    <h2>Open exception from an earlier day</h2>
     <div class="scroll"><table>
-      <thead><tr><th>Contact</th><th>Facility tag</th><th>Source</th><th>Created (SAST)</th><th>Lead status now</th><th>Tenant Leads ticket</th><th>Result</th></tr></thead>
+      <thead><tr><th>Day</th><th>Contact</th><th>Facility tag</th><th>Source</th><th>Created (SAST)</th><th>Tenant Leads ticket</th><th>Result</th></tr></thead>
       <tbody>
-        <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264346972037">Noel Benson</a></td><td>f__space_station_storage</td><td>Internet Website</td><td>20 Nov 20:00</td><td>Attempted to Contact</td><td>None (has a Support ticket, which doesn't count)</td><td><span class="pill ok">Correct</span></td></tr>
-        <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264274772080">test test</a></td><td>f__hillside_storage</td><td>Internet Website</td><td>20 Nov 15:30</td><td>Unqualified</td><td>None</td><td><span class="pill ok">Correct</span></td></tr>
+        <tr><td>20 Nov</td><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264353974100">Lauren Kane</a></td><td>f__mendon_secure_storage</td><td>Internet Website</td><td>20 Nov 21:15</td><td><a href="https://app.hubspot.com/contacts/45059701/record/0-5/51679617811">51679617811</a></td><td><span class="pill bad">Created incorrectly</span></td></tr>
       </tbody>
     </table></div>
+    <p class="meta">The workflow did not create this ticket. HubSpot records its source as Conversations: it was created from an inbox conversation about 2 minutes after the contact and placed in the Tenant Leads pipeline. The ticket-creation workflow itself handled this contact correctly. Check whether the inbox should route Internet Website leads to Tenant Leads.</p>
   </section>
 
   <section>
-    <h2>Breakdown by facility</h2>
+    <h2>Breakdown by facility, 22 Nov</h2>
     <div class="scroll"><table>
       <thead><tr><th>Facility tag</th><th>Contacts</th><th>Internet Website</th><th>Other source</th><th>Tenant Leads tickets</th></tr></thead>
       <tbody>
-        <tr><td>f__space_station_storage</td><td>3</td><td>1</td><td>2</td><td>2</td></tr>
-        <tr><td>f__honeycrisp_self_storage_lawrence</td><td>1</td><td>0</td><td>1</td><td>1</td></tr>
-        <tr><td>f__hillside_storage</td><td>1</td><td>1</td><td>0</td><td>0</td></tr>
+        <tr><td>f__securely_storage</td><td>1</td><td>1</td><td>0</td><td>0</td></tr>
+        <tr><td>f__secureloc_self_storage</td><td>1</td><td>1</td><td>0</td><td>0</td></tr>
+        <tr><td>f__big_brown_storage_llc</td><td>1</td><td>0</td><td>1</td><td>1</td></tr>
         <tr><td colspan="5" class="meta">The other 15 facilities had no new tenant contacts.</td></tr>
       </tbody>
     </table></div>
   </section>
 
-  <details>
-    <summary>All contacts checked (5)</summary>
+  <details open>
+    <summary>All contacts checked, 22 Nov (3)</summary>
     <div class="scroll"><table>
-      <thead><tr><th>Contact</th><th>Facility tag</th><th>Source</th><th>Created (SAST)</th><th>Tenant Leads ticket</th><th>Result</th></tr></thead>
+      <thead><tr><th>Contact</th><th>Facility tag</th><th>Source</th><th>Created (SAST)</th><th>Lead status now</th><th>Tenant Leads ticket</th><th>Result</th></tr></thead>
       <tbody>
-        <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264222192168">Nadine Kelley</a></td><td>f__space_station_storage</td><td>Internet Online Marketing Service - Sparefoot</td><td>20 Nov 14:00</td><td><a href="https://app.hubspot.com/contacts/45059701/record/0-5/51563162929">51563162929</a></td><td><span class="pill ok">Ticket created</span></td></tr>
-        <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264256628116">Francis Smith</a></td><td>f__space_station_storage</td><td>Internet Online Marketing Service - Sparefoot</td><td>20 Nov 14:00</td><td><a href="https://app.hubspot.com/contacts/45059701/record/0-5/51642318202">51642318202</a></td><td><span class="pill ok">Ticket created</span></td></tr>
-        <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264274772080">test test</a></td><td>f__hillside_storage</td><td>Internet Website</td><td>20 Nov 15:30</td><td>None</td><td><span class="pill ok">No ticket</span></td></tr>
-        <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264339225862">Duwaun Maxie</a></td><td>f__honeycrisp_self_storage_lawrence</td><td>Phone Call Call Center</td><td>20 Nov 19:24</td><td><a href="https://app.hubspot.com/contacts/45059701/record/0-5/51574539562">51574539562</a></td><td><span class="pill ok">Ticket created</span></td></tr>
-        <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264346972037">Noel Benson</a></td><td>f__space_station_storage</td><td>Internet Website</td><td>20 Nov 20:00</td><td>None</td><td><span class="pill ok">No ticket</span></td></tr>
+        <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264687577751">darlene vinicky</a></td><td>f__securely_storage</td><td>Internet Website</td><td>22 Nov 14:00</td><td>Attempted to Contact</td><td>None</td><td><span class="pill ok">No ticket</span></td></tr>
+        <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264701190183">Earl Thompson Sr</a></td><td>f__secureloc_self_storage</td><td>Internet Website</td><td>22 Nov 16:16</td><td>Attempted to Contact</td><td>None</td><td><span class="pill ok">No ticket</span></td></tr>
+        <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264733425516">Joshua Samuels</a></td><td>f__big_brown_storage_llc</td><td>Internet Online Marketing Service - Sparefoot</td><td>22 Nov 20:15</td><td>New</td><td><a href="https://app.hubspot.com/contacts/45059701/record/0-5/51728623702">51728623702</a></td><td><span class="pill ok">Ticket created</span></td></tr>
       </tbody>
     </table></div>
+  </details>
+
+  <details>
+    <summary>Earlier days: 21 Nov (2) and 20 Nov (8)</summary>
+    <div class="scroll"><table>
+      <thead><tr><th>Contact</th><th>Facility tag</th><th>Source</th><th>Created (SAST)</th><th>Lead status now</th><th>Tenant Leads ticket</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264367656264">Larry Smith</a></td><td>f__prime_vault_self_storage</td><td>Internet Website</td><td>21 Nov 00:30</td><td>Attempted to Contact</td><td>None</td><td><span class="pill ok">No ticket</span></td></tr>
+        <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264584318833">Ristoria Perry</a></td><td>f__honeycrisp_self_storage_lawrence</td><td>Internet Website</td><td>21 Nov 21:15</td><td>Unqualified</td><td>None</td><td><span class="pill ok">No ticket</span></td></tr>
+        <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264256628116">Francis Smith</a></td><td>f__space_station_storage</td><td>Internet Online Marketing Service - Sparefoot</td><td>20 Nov 14:00</td><td>New</td><td><a href="https://app.hubspot.com/contacts/45059701/record/0-5/51642318202">51642318202</a></td><td><span class="pill ok">Ticket created</span></td></tr>
+        <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264222192168">Nadine Kelley</a></td><td>f__space_station_storage</td><td>Internet Online Marketing Service - Sparefoot</td><td>20 Nov 14:00</td><td>New</td><td><a href="https://app.hubspot.com/contacts/45059701/record/0-5/51563162929">51563162929</a></td><td><span class="pill ok">Ticket created</span></td></tr>
+        <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264274772080">test test</a></td><td>f__hillside_storage</td><td>Internet Website</td><td>20 Nov 15:30</td><td>Unqualified</td><td>None</td><td><span class="pill ok">No ticket</span></td></tr>
+        <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264339225862">Duwaun Maxie</a></td><td>f__honeycrisp_self_storage_lawrence</td><td>Phone Call Call Center</td><td>20 Nov 19:24</td><td>New</td><td><a href="https://app.hubspot.com/contacts/45059701/record/0-5/51574539562">51574539562</a></td><td><span class="pill ok">Ticket created</span></td></tr>
+        <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264346972037">Noel Benson</a></td><td>f__space_station_storage</td><td>Internet Website</td><td>20 Nov 20:00</td><td>Attempted to Contact</td><td>None</td><td><span class="pill ok">No ticket</span></td></tr>
+        <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264353974100">Lauren Kane</a></td><td>f__mendon_secure_storage</td><td>Internet Website</td><td>20 Nov 21:15</td><td>Unqualified</td><td><a href="https://app.hubspot.com/contacts/45059701/record/0-5/51679617811">51679617811</a> (from Conversations)</td><td><span class="pill bad">Created incorrectly</span></td></tr>
+        <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264355241776">Thomas Wrenn</a></td><td>f__nobull_storage_arrow_way</td><td>Internet Online Marketing Service - Sparefoot</td><td>20 Nov 21:15</td><td>New</td><td><a href="https://app.hubspot.com/contacts/45059701/record/0-5/51672254580">51672254580</a></td><td><span class="pill ok">Ticket created</span></td></tr>
+        <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/264364783138">Maria Dominguez</a></td><td>f__patriot_state_storage</td><td>Walk In Call Center</td><td>20 Nov 23:30</td><td>New</td><td><a href="https://app.hubspot.com/contacts/45059701/record/0-5/51668136707">51668136707</a></td><td><span class="pill ok">Ticket created</span></td></tr>
+      </tbody>
+    </table></div>
+    <p class="meta">Support Pipeline tickets on some of these contacts don't count toward the rule.</p>
   </details>
 
   <section>
@@ -122,7 +141,11 @@ details[open] summary{margin-bottom:8px}
     <h2>Run history</h2>
     <div class="scroll"><table id="history">
       <thead><tr><th>Day audited (SAST)</th><th>Contacts</th><th>Correct</th><th>Missed</th><th>Incorrect</th><th>Duplicates</th></tr></thead>
-      <tbody><tr><td>20 Nov 2026 (preliminary, partial day)</td><td>5</td><td>5</td><td>0</td><td>0</td><td>0</td></tr></tbody>
+      <tbody>
+        <tr><td>22 Nov 2026</td><td>3</td><td>3</td><td>0</td><td>0</td><td>0</td></tr>
+        <tr><td>21 Nov 2026</td><td>2</td><td>2</td><td>0</td><td>0</td><td>0</td></tr>
+        <tr><td>20 Nov 2026</td><td>8</td><td>7</td><td>0</td><td>1</td><td>0</td></tr>
+      </tbody>
     </table></div>
   </section>
 </div>
