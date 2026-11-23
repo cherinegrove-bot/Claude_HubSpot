@@ -55,6 +55,10 @@ section { display: grid; gap: 14px; }
 .stat span { color: var(--muted); font-size: 0.85rem; }
 .stat.bad b { color: var(--bad); }
 .stat.ok b { color: var(--ok); }
+.stat.warn b { color: var(--warn); }
+.fixed { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.fixed li { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.fixed li span:last-child { flex: 1 1 280px; min-width: 0; }
 @media (max-width: 640px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
 .issues { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
@@ -107,7 +111,7 @@ details.company .sum-counts { display: flex; gap: 6px; flex-wrap: wrap; margin-l
     <h1>New Company Intake Audit</h1>
     <div class="meta">
       <span>Window: Nov 16 – Nov 23, 2026</span>
-      <span>Run: Nov 23, 2026</span>
+      <span>Run: Nov 23, 2026 (rerun)</span>
       <span>Approved workflow: Create Facility from Intake form submission (ID 1852542804)</span>
     </div>
     <p>Two checks for every company created in the window. First, was it created by the approved workflow? Second, does the company hold the details from the associated contact's intake form?</p>
@@ -117,8 +121,8 @@ details.company .sum-counts { display: flex; gap: 6px; flex-wrap: wrap; margin-l
     <div class="stats">
       <div class="stat"><b>5</b><span>Companies created</span></div>
       <div class="stat ok"><b>5 / 5</b><span>Created by approved workflow</span></div>
-      <div class="stat ok"><b>1</b><span>Intake data fully on company</span></div>
-      <div class="stat bad"><b>4</b><span>Companies with data issues</span></div>
+      <div class="stat ok"><b>2</b><span>Intake data fully on company</span></div>
+      <div class="stat warn"><b>3</b><span>Companies with items to verify</span></div>
     </div>
   </section>
 
@@ -140,22 +144,21 @@ details.company .sum-counts { display: flex; gap: 6px; flex-wrap: wrap; margin-l
   </section>
 
   <section>
-    <h2>Issues to review</h2>
-    <p>Most serious first.</p>
+    <h2>Fixed since the first run</h2>
+    <ul class="fixed">
+      <li><span class="pill p-ok">Fixed</span><span><strong>Routing numbers now have 9 digits.</strong> Williston is now 091305031 and matches the ACH form. Devils Lake and Midtown Grand Forks are now 091310864.</span></li>
+      <li><span class="pill p-ok">Fixed</span><span><strong>Prior Software is now "StorEDGE"</strong> on all four Lifestyle Storage companies and matches the forms.</span></li>
+    </ul>
+    <p>The workflow may still drop the leading zero and leave Prior Software blank on new companies, so check its field mapping too.</p>
+  </section>
+
+  <section>
+    <h2>Still to review</h2>
+    <p>No field mismatches remain. These items need a decision or a check against the original submission.</p>
     <ul class="issues">
-      <li class="issue sev-high">
-        <div class="issue-head"><span class="pill p-bad">High</span><strong>Bank routing numbers are missing their leading zero</strong></div>
-        <p>Routing numbers are always 9 digits. These companies store 8, so ACH payments will fail. The intake/ACH form shows <code>091305031</code>; the company shows <code>91305031</code>. The leading zero is likely being dropped when the workflow copies the value.</p>
-        <div class="who">Williston (91305031), Devils Lake (91310864), Midtown Grand Forks (91310864)</div>
-      </li>
-      <li class="issue sev-med">
-        <div class="issue-head"><span class="pill p-warn">Medium</span><strong>Prior Software is blank on the company</strong></div>
-        <p>Every Lifestyle Storage form answered "StorEDGE", but the company's Prior Software field is empty. "Current Software (at onboarding)" is filled in as "Storable Edge", so the form answer may be going to that field instead of Prior Software. Merchants is filled in correctly ("None").</p>
-        <div class="who">South Grand Forks, Midtown Grand Forks, Devils Lake, Williston</div>
-      </li>
       <li class="issue sev-med">
         <div class="issue-head"><span class="pill p-warn">Medium</span><strong>Midtown Grand Forks has the same bank details as Devils Lake</strong></div>
-        <p>Both companies show BANK FORWARD, account ending 1589, and routing 91310864. This can be right if both facilities pay from one account, but confirm it with the customer. The contact's most recent ACH form was for a different bank (1st International, ending 3176), and those details went to Williston.</p>
+        <p>Both companies show BANK FORWARD, account ending 1589, and routing 091310864. This can be right if both facilities pay from one account, but confirm it with the customer. The contact's most recent ACH form was for a different bank (1st International, ending 3176), and those details went to Williston.</p>
         <div class="who">Midtown Grand Forks, Devils Lake</div>
       </li>
       <li class="issue sev-med">
@@ -189,7 +192,7 @@ details.company .sum-counts { display: flex; gap: 6px; flex-wrap: wrap; margin-l
     <details class="company" open>
       <summary>
         <span class="sum-title">Lifestyle Storage - Williston</span>
-        <span class="sum-counts"><span class="pill p-ok">14 match</span><span class="pill p-bad">2 issues</span></span>
+        <span class="sum-counts"><span class="pill p-ok">All 16 match</span></span>
       </summary>
       <div class="company-body">
         <div class="kv">
@@ -211,13 +214,13 @@ Grand Forks, ND 58201</td><td class="v">4551 S WASHINGTON ST SUITE G
 Grand Forks, ND 58201</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
             <tr><td class="field">Entity EIN</td><td class="v">85-2412899</td><td class="v">85-2412899</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
             <tr><td class="field">Legal entity</td><td class="v">MIDTOWN VENTURES LLC</td><td class="v">MIDTOWN VENTURES LLC</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
-            <tr class="row-bad"><td class="field">Prior software</td><td class="v">StorEDGE</td><td class="v">(blank)</td><td><span class="pill p-bad">Missing</span></td><td class="note">Company has Current Software = "Storable Edge" instead.</td></tr>
+            <tr><td class="field">Prior software</td><td class="v">StorEDGE</td><td class="v">StorEDGE</td><td><span class="pill p-ok">Match</span></td><td class="note">Fixed since first run.</td></tr>
             <tr><td class="field">Tenant insurance</td><td class="v">Same</td><td class="v">Same</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
             <tr><td class="field">Mgmt software login</td><td class="v">Same</td><td class="v">Same</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
             <tr><td class="field">Status</td><td class="v">Onboarding</td><td class="v">Onboarding</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
             <tr><td class="field">Bank name</td><td class="v">1st International Bank &amp; Trust *</td><td class="v">1st International Bank &amp; Trust</td><td><span class="pill p-ok">Match</span></td><td class="note">* From the ACH Capture form submitted by Tom Haug for Williston.</td></tr>
             <tr><td class="field">Account holder / type / no.</td><td class="v">MIDTOWN VENTURES LLC · Checking · ••••3176 *</td><td class="v">MIDTOWN VENTURES LLC · Checking · ••••3176</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
-            <tr class="row-bad"><td class="field">Routing number</td><td class="v">091305031 *</td><td class="v">91305031</td><td><span class="pill p-bad">Mismatch</span></td><td class="note">Leading zero dropped; only 8 digits.</td></tr>
+            <tr><td class="field">Routing number</td><td class="v">091305031 *</td><td class="v">091305031</td><td><span class="pill p-ok">Match</span></td><td class="note">Fixed since first run.</td></tr>
           </tbody>
         </table></div>
       </div>
@@ -226,7 +229,7 @@ Grand Forks, ND 58201</td><td><span class="pill p-ok">Match</span></td><td class
     <details class="company" open>
       <summary>
         <span class="sum-title">Lifestyle Storage - Devils Lake</span>
-        <span class="sum-counts"><span class="pill p-ok">12 match</span><span class="pill p-bad">2 issues</span><span class="pill p-warn">1 can't verify</span></span>
+        <span class="sum-counts"><span class="pill p-ok">13 match</span><span class="pill p-warn">1 can't verify</span><span class="pill p-info">1 not on form</span></span>
       </summary>
       <div class="company-body">
         <div class="kv">
@@ -248,12 +251,12 @@ Grand Forks, ND 58201</td><td class="v">4551 S WASHINGTON ST SUITE G
 Grand Forks, ND 58201</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
             <tr><td class="field">Entity EIN</td><td class="v">85-2412899</td><td class="v">85-2412899</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
             <tr><td class="field">Legal entity</td><td class="v">MIDTOWN VENTURES LLC</td><td class="v">MIDTOWN VENTURES LLC</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
-            <tr class="row-bad"><td class="field">Prior software</td><td class="v">StorEDGE</td><td class="v">(blank)</td><td><span class="pill p-bad">Missing</span></td><td class="note">Company has Current Software = "Storable Edge" instead.</td></tr>
+            <tr><td class="field">Prior software</td><td class="v">StorEDGE</td><td class="v">StorEDGE</td><td><span class="pill p-ok">Match</span></td><td class="note">Fixed since first run.</td></tr>
             <tr><td class="field">Tenant insurance</td><td class="v">Same</td><td class="v">Same</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
             <tr><td class="field">Mgmt software login</td><td class="v">Same</td><td class="v">Same</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
             <tr><td class="field">Status</td><td class="v">Onboarding</td><td class="v">Onboarding</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
             <tr class="row-warn"><td class="field">Bank name / holder / no.</td><td class="v">(not on contact)</td><td class="v">BANK FORWARD · MIDTOWN VENTURES LLC · Checking · ••••1589</td><td><span class="pill p-warn">Can't verify</span></td><td class="note">Same account as Midtown Grand Forks.</td></tr>
-            <tr class="row-bad"><td class="field">Routing number</td><td class="v">(not on contact)</td><td class="v">91310864</td><td><span class="pill p-bad">Invalid</span></td><td class="note">Only 8 digits; likely 091310864.</td></tr>
+            <tr><td class="field">Routing number</td><td class="v">(not on contact)</td><td class="v">091310864</td><td><span class="pill p-info">Not on form</span></td><td class="note">Fixed to 9 digits since first run.</td></tr>
           </tbody>
         </table></div>
       </div>
@@ -262,7 +265,7 @@ Grand Forks, ND 58201</td><td><span class="pill p-ok">Match</span></td><td class
     <details class="company" open>
       <summary>
         <span class="sum-title">Lifestyle Storage - Midtown Grand Forks</span>
-        <span class="sum-counts"><span class="pill p-ok">12 match</span><span class="pill p-bad">2 issues</span><span class="pill p-warn">1 can't verify</span></span>
+        <span class="sum-counts"><span class="pill p-ok">13 match</span><span class="pill p-warn">2 can't verify</span></span>
       </summary>
       <div class="company-body">
         <div class="kv">
@@ -284,12 +287,12 @@ Grand Forks, ND 58201</td><td class="v">4551 S WASHINGTON ST SUITE G
 Grand Forks, ND 58201</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
             <tr><td class="field">Entity EIN</td><td class="v">85-2412899</td><td class="v">85-2412899</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
             <tr><td class="field">Legal entity</td><td class="v">MIDTOWN VENTURES LLC</td><td class="v">MIDTOWN VENTURES LLC</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
-            <tr class="row-bad"><td class="field">Prior software</td><td class="v">StorEDGE</td><td class="v">(blank)</td><td><span class="pill p-bad">Missing</span></td><td class="note">Company has Current Software = "Storable Edge" instead.</td></tr>
+            <tr><td class="field">Prior software</td><td class="v">StorEDGE</td><td class="v">StorEDGE</td><td><span class="pill p-ok">Match</span></td><td class="note">Fixed since first run.</td></tr>
             <tr><td class="field">Tenant insurance</td><td class="v">Same</td><td class="v">Same</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
             <tr><td class="field">Mgmt software login</td><td class="v">Same</td><td class="v">Same</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
             <tr><td class="field">Status</td><td class="v">Onboarding</td><td class="v">Onboarding</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
             <tr class="row-warn"><td class="field">Bank name / holder / no.</td><td class="v">1st International · MIDTOWN VENTURES LLC · ••••3176</td><td class="v">BANK FORWARD · MIDTOWN VENTURES LLC · Checking · ••••1589</td><td><span class="pill p-warn">Can't verify</span></td><td class="note">The contact's latest ACH form is Williston's. The company has the same account as Devils Lake.</td></tr>
-            <tr class="row-bad"><td class="field">Routing number</td><td class="v">(see above)</td><td class="v">91310864</td><td><span class="pill p-bad">Invalid</span></td><td class="note">Only 8 digits; likely 091310864.</td></tr>
+            <tr class="row-warn"><td class="field">Routing number</td><td class="v">091305031 (Williston's ACH form)</td><td class="v">091310864</td><td><span class="pill p-warn">Can't verify</span></td><td class="note">Fixed to 9 digits since first run. Goes with the bank question above.</td></tr>
           </tbody>
         </table></div>
       </div>
@@ -298,7 +301,7 @@ Grand Forks, ND 58201</td><td><span class="pill p-ok">Match</span></td><td class
     <details class="company" open>
       <summary>
         <span class="sum-title">Lifestyle Storage - South Grand Forks</span>
-        <span class="sum-counts"><span class="pill p-ok">6 match</span><span class="pill p-bad">1 issue</span><span class="pill p-warn">7 can't verify</span></span>
+        <span class="sum-counts"><span class="pill p-ok">7 match</span><span class="pill p-warn">7 can't verify</span><span class="pill p-info">1 not on form</span></span>
       </summary>
       <div class="company-body">
         <div class="kv">
@@ -323,7 +326,7 @@ Grand Forks, ND 58201</td><td class="v">4551 S WASHINGTON ST SUITE G
 Grand Forks, ND 58201</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
             <tr><td class="field">Entity EIN</td><td class="v">85-2412899</td><td class="v">85-2412899</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
             <tr><td class="field">Legal entity</td><td class="v">MIDTOWN VENTURES LLC</td><td class="v">MIDTOWN VENTURES LLC</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
-            <tr class="row-bad"><td class="field">Prior software</td><td class="v">StorEDGE</td><td class="v">(blank)</td><td><span class="pill p-bad">Missing</span></td><td class="note">Company has Current Software = "Storable Edge" instead.</td></tr>
+            <tr><td class="field">Prior software</td><td class="v">StorEDGE</td><td class="v">StorEDGE</td><td><span class="pill p-ok">Match</span></td><td class="note">Fixed since first run.</td></tr>
             <tr class="row-warn"><td class="field">Tenant insurance</td><td class="v">Same</td><td class="v">Safelease
 $12/$2,000 · $15/$3,000 · $27/$5,000</td><td><span class="pill p-warn">Can't verify</span></td><td class="note">This is likely the original answer that "Same" on the later forms refers to.</td></tr>
             <tr class="row-warn"><td class="field">Mgmt software login</td><td class="v">Same</td><td class="v">[email + password, hidden]</td><td><span class="pill p-warn">Can't verify</span></td><td class="note">Plain-text password. Move it to a password manager.</td></tr>
