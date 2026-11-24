@@ -132,6 +132,9 @@ Keep exceptions from earlier days listed in an "Open exception from an earlier d
 section until the user says they are resolved, and move the previous latest
 day's contacts into the collapsed "Earlier days" list.
 
+If the page has a `<section id="today-prelim">` (an on-demand partial-day check),
+remove it on the next scheduled run; the full-day result replaces it.
+
 The report body contains:
 - Summary tiles: contacts audited, correct, missed tickets, incorrect tickets, duplicates.
 - **Exceptions first**: Missed tickets, Incorrect tickets, Duplicates, Criteria
