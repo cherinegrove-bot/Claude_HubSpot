@@ -1,0 +1,318 @@
+<title>Marketing Service Task Audit</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: single reading column, run banner on top, findings as a severity-striped ledger, data appendix in disclosures */
+:root{
+  --bg:#f6f7f9; --surface:#ffffff; --fg:#1b2230; --muted:#5d6779; --line:#dde1e8; --accent:#1f5f8b; --accent-soft:#e6eff6;
+  --crit:#b42318; --crit-bg:#fdecea; --high:#b54708; --high-bg:#fef3e6; --med:#8a6d00; --med-bg:#fbf6dc; --low:#475467; --low-bg:#eef0f3; --ok:#18794e; --ok-bg:#e7f5ee;
+  --f-display:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif; --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12161d; --surface:#1a2029; --fg:#e4e8ef; --muted:#9aa4b5; --line:#2c3440; --accent:#7db4dc; --accent-soft:#1c2d3c;
+  --crit:#f97066; --crit-bg:#3a1a18; --high:#f5a35c; --high-bg:#3a2614; --med:#e3c44a; --med-bg:#332c12; --low:#aab3c2; --low-bg:#242b35; --ok:#4fc28a; --ok-bg:#16301f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12161d; --surface:#1a2029; --fg:#e4e8ef; --muted:#9aa4b5; --line:#2c3440; --accent:#7db4dc; --accent-soft:#1c2d3c;
+  --crit:#f97066; --crit-bg:#3a1a18; --high:#f5a35c; --high-bg:#3a2614; --med:#e3c44a; --med-bg:#332c12; --low:#aab3c2; --low-bg:#242b35; --ok:#4fc28a; --ok-bg:#16301f; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.55}
+.wrap{max-width:1040px;margin:0 auto;padding-block:32px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:40px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:2.1rem;font-weight:700;letter-spacing:-.01em}
+h2{font-size:1.45rem;font-weight:700;padding-bottom:8px;border-bottom:2px solid var(--fg)}
+h3{font-size:1.08rem;font-weight:600}
+p{margin:0}
+a{color:var(--accent)}
+a:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.eyebrow{font-family:var(--f-mono);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.mono{font-family:var(--f-mono);font-size:.86em}
+.muted{color:var(--muted)}
+section{display:grid;gap:16px;min-width:0}
+header.top{display:grid;gap:14px}
+.verdict{display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:14px 16px;border:1px solid var(--crit);background:var(--crit-bg);border-radius:6px}
+.verdict strong{font-family:var(--f-display);font-size:1.15rem;color:var(--crit);letter-spacing:.02em}
+.meta{display:flex;flex-wrap:wrap;gap:6px 24px;color:var(--muted);font-size:.9rem}
+.tally{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.tally div{background:var(--surface);padding:12px 14px;display:grid;gap:2px}
+.tally b{font-family:var(--f-display);font-size:1.7rem;font-variant-numeric:tabular-nums;line-height:1}
+.tally span{font-size:.8rem;color:var(--muted)}
+.tally .c b{color:var(--crit)} .tally .h b{color:var(--high)} .tally .m b{color:var(--med)} .tally .o b{color:var(--ok)}
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+.flow div{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px;display:grid;gap:4px;min-width:0}
+.flow .id{font-family:var(--f-mono);font-size:.75rem;color:var(--muted)}
+.pill{display:inline-block;font-family:var(--f-mono);font-size:.7rem;padding:1px 7px;border-radius:99px;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.p-on{background:var(--ok-bg);color:var(--ok)} .p-off{background:var(--low-bg);color:var(--low)}
+.p-crit{background:var(--crit-bg);color:var(--crit)} .p-high{background:var(--high-bg);color:var(--high)} .p-med{background:var(--med-bg);color:var(--med)} .p-low{background:var(--low-bg);color:var(--low)} .p-ok{background:var(--ok-bg);color:var(--ok)}
+.finding{background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--sev);border-radius:4px;padding:16px 18px;display:grid;gap:10px;min-width:0}
+.finding.crit{--sev:var(--crit)} .finding.high{--sev:var(--high)} .finding.med{--sev:var(--med)} .finding.low{--sev:var(--low)}
+.fhead{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:baseline}
+.fid{font-family:var(--f-mono);font-size:.8rem;color:var(--sev);font-weight:500}
+.finding dl{display:grid;grid-template-columns:110px 1fr;gap:6px 14px;margin:0}
+.finding dt{font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding-top:2px}
+.finding dd{margin:0;min-width:0}
+.finding ul{margin:0;padding-left:18px}
+@media (max-width:560px){.finding dl{grid-template-columns:1fr}.finding dt{padding-top:6px}}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.88rem;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;font-size:.76rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);background:var(--bg)}
+tbody tr:last-child td{border-bottom:0}
+details{background:var(--surface);border:1px solid var(--line);border-radius:6px}
+details>summary{cursor:pointer;padding:10px 14px;font-weight:500;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+details>summary .n{font-family:var(--f-mono);font-size:.8rem;color:var(--muted)}
+details>.inner{padding:0 14px 14px;display:grid;gap:10px}
+details .tw{border-radius:4px}
+.empty{color:var(--muted);font-style:italic}
+ol.steps{margin:0;padding-left:22px;display:grid;gap:8px}
+ol.steps li::marker{font-family:var(--f-mono);color:var(--accent)}
+.note{background:var(--accent-soft);border-radius:6px;padding:12px 14px;font-size:.92rem}
+.align td:nth-child(4){white-space:nowrap}
+footer{color:var(--muted);font-size:.85rem;border-top:1px solid var(--line);padding-top:14px}
+</style>
+
+<div class="wrap">
+
+<header class="top">
+  <p class="eyebrow">White Label Storage · HubSpot portal 45059701 · Marketing Services</p>
+  <h1>Marketing Service Task Audit</h1>
+  <div class="meta">
+    <span>Run 1 · Pre-launch check</span>
+    <span>Audited Tue 24 Nov 2026</span>
+    <span>Planned task creation: Sat 5 Dec 2026</span>
+  </div>
+  <div class="verdict"><strong>NOT READY</strong><span>Four issues would cause missing, wrongly assigned or unlinked tasks on 5 December. Fix the critical items, then re-run this audit.</span></div>
+  <div class="tally">
+    <div class="c"><b>4</b><span>Critical</span></div>
+    <div class="h"><b>6</b><span>High</span></div>
+    <div class="m"><b>6</b><span>Medium / Low</span></div>
+    <div class="o"><b>9</b><span>Checks passed</span></div>
+  </div>
+  <p class="muted">Read-only audit. Nothing was changed in HubSpot or in the Google Sheet. Company counts are a snapshot of live data on 24 Nov and will move when Trend to Goal is refreshed.</p>
+</header>
+
+<section>
+  <h2>What was audited</h2>
+  <div class="flow">
+    <div><span class="id">1892165928</span><b>At Risk</b><span>Manual enrollment</span><span class="pill p-off">Off</span></div>
+    <div><span class="id">1892196753</span><b>Improving</b><span>Manual enrollment</span><span class="pill p-off">Off</span></div>
+    <div><span class="id">1892197644</span><b>Standalone Marketing</b><span>Manual enrollment</span><span class="pill p-off">Off</span></div>
+    <div><span class="id">1892197744</span><b>Google Ads (PPC)</b><span>List-based, waiting until Sat 5 Dec 10:00</span><span class="pill p-on">On</span></div>
+    <div><span class="id">1934717342</span><b>Suppression</b><span>Joins list 5466 → wait 45 days → remove</span><span class="pill p-on">On</span></div>
+  </div>
+  <p>Compared against the approved sheet <a href="https://docs.google.com/spreadsheets/d/1cy2Gme0RNjxOqB4d-a2HZRSWu_rd7R-C4gaYyIsn5Es/edit" target="_blank" rel="noopener">Marketing HubSpot Task Management</a> (Task Matrix, Master &amp; Subtasks, Checklist Detail, Legend &amp; Ownership), the suppression list <span class="mono">5466</span>, the {{N.cand}} companies that currently qualify for a review, and the tasks these workflows created on 5 Nov 2026.</p>
+  <div class="note">The HubSpot workflow API does not return subtask settings inside a "Create task" action. Subtask checks below use the 5 Nov tasks as evidence. Confirm the current subtask setup in the workflow editor.</div>
+</section>
+
+<section>
+  <h2>Expected volume on 5 December</h2>
+  <div class="tally">
+    <div><b>{{N.atrisk}}</b><span>At Risk (all tiers)</span></div>
+    <div><b>{{N.impr}}</b><span>Improving (Ent, Tier 1, Tier 2.1)</span></div>
+    <div><b>{{N.sa}}</b><span>Standalone - Marketing</span></div>
+    <div class="c"><b>{{N.supp}}</b><span>Already in suppression list</span></div>
+    <div><b>{{N.live}}</b><span>Review tasks that would be created today</span></div>
+    <div><b>{{N.ppc}}</b><span>Meet PPC task criteria ({{N.ppclive}} not suppressed)</span></div>
+  </div>
+</section>
+
+<section>
+  <h2>Findings</h2>
+
+  <article class="finding crit">
+    <div class="fhead"><span class="fid">C1</span><h3>PPC and review workflows share one suppression list, so each company gets only one of its two tasks</h3><span class="pill p-crit">Critical</span></div>
+    <dl>
+      <dt>What</dt><dd>All four task workflows use list <span class="mono">5466</span> as their suppression list and as a "remove from workflow" first step, and all four add the company to <span class="mono">5466</span> after creating the task. All {{N.ppc}} PPC-eligible companies are also review candidates.</dd>
+      <dt>Impact</dt><dd><ul><li>If the manual review workflows run before 10:00 on 5 Dec, every PPC company is pulled out of the PPC workflow and Mohammad gets no tasks.</li><li>If the PPC workflow fires first, those companies are suppressed and cannot be enrolled in the review workflows, so the MPM gets no review task.</li><li>The sheet says PPC runs monthly. The 45-day suppression would also block the January PPC task.</li></ul></dd>
+      <dt>Sheet says</dt><dd>PPC is "Mohammad's own task… runs alongside the master review, on the same facility ticket &amp; cycle", monthly.</dd>
+      <dt>Suggested fix</dt><dd>Give the review workflows their own suppression list. Take list <span class="mono">5466</span> out of the PPC workflow (suppression, first branch and the add-to-list step), or give PPC a separate list with a shorter release if it needs one.</dd>
+    </dl>
+  </article>
+
+  <article class="finding crit">
+    <div class="fhead"><span class="fid">C2</span><h3>{{N.supp}} companies are already in the suppression list and will be skipped on 5 December</h3><span class="pill p-crit">Critical</span></div>
+    <dl>
+      <dt>What</dt><dd>List <span class="mono">5466</span> already has {{N.supp}} members, all added on 23 Nov between 19:17 and 19:31 UTC. All of them qualify today (At Risk or Improving). Only {{N.supp_nov5m}} received a review task on 5 Nov; the other {{N.supp_not_nov5m}} received only a PPC task, or nothing.</dd>
+      <dt>Impact</dt><dd><ul><li>None of the {{N.supp}} gets a review or PPC task on 5 Dec.</li><li>If the suppression workflow enrolled them on 23 Nov, they leave the list about 7 Jan, after the 5 Jan run.</li><li>If the suppression workflow was switched on after 23 Nov, they were never enrolled (it triggers on joining the list) and will stay suppressed until removed by hand.</li></ul></dd>
+      <dt>Check</dt><dd>Decide whether these companies should be skipped this cycle. Check the suppression workflow's enrollment history for them. Empty the list before 5 Dec if they are meant to get tasks.</dd>
+    </dl>
+  </article>
+
+  <article class="finding crit">
+    <div class="fhead"><span class="fid">C3</span><h3>Berat's subtasks were not assigned to Berat</h3><span class="pill p-crit">Critical</span></div>
+    <dl>
+      <dt>What</dt><dd>On the 5 Nov review tasks, all subtasks had no owner, including Google Business Profile and SpareFoot (if active), which the sheet assigns to Berat (owner ID <span class="mono">78394500</span>).</dd>
+      <dt>Rule</dt><dd>A subtask with a different owner from the master task is assigned to that person. A subtask with the same owner as the master is left unassigned.</dd>
+      <dt>Expected</dt><dd><ul><li>Google Business Profile: Berat</li><li>SpareFoot (if active): Berat (SpareFoot = Yes branch only)</li><li>Website Health &amp; Optimization, Website Performance, HubSpot Marketing Card: unassigned</li></ul>This applies to all 8 owner branches in each of the 3 review workflows (24 task actions).</dd>
+      <dt>Sheet gap</dt><dd>Website Health &amp; Optimization is "MPM (+ Berat on content items)". A subtask can only have one owner. Either split Berat's three content checks into their own subtask, or leave the whole subtask with the MPM and say so in the sheet.</dd>
+    </dl>
+  </article>
+
+  <article class="finding crit">
+    <div class="fhead"><span class="fid">C4</span><h3>Review workflows have no enrollment rules, so the right companies depend on who is picked by hand</h3><span class="pill p-crit">Critical</span></div>
+    <dl>
+      <dt>What</dt><dd>At Risk, Improving and Standalone are manual-only. Nothing in them checks Trend to Goal, Customer Tier, Company Status or the ticket lane. Any company enrolled gets a task.</dd>
+      <dt>Risk</dt><dd>{{C.imprinel}} live companies are Improving but are Tier 2.2, Tier 3 or N/A and must not go into the Improving workflow. Offboarding, Lost or On Hold companies would also get tasks if selected.</dd>
+      <dt>Suggested fix</dt><dd>Enroll from saved lists that match the sheet exactly, or add a guard branch at the start of each workflow that exits companies outside its rule. The three review workflows are switched off and must be switched on before manual enrollment works.</dd>
+    </dl>
+  </article>
+
+  <article class="finding high">
+    <div class="fhead"><span class="fid">H1</span><h3>{{C.noticket}} candidates have no Marketing ticket, so their task attaches to the company only</h3><span class="pill p-high">High</span></div>
+    <dl>
+      <dt>What</dt><dd>The ticket association copies the company's ticket with the "Marketing" label (type 64). With no such ticket, HubSpot creates the task without a ticket link and does not report an error.</dd>
+      <dt>Also</dt><dd>{{C.closed}} candidates' only Marketing ticket sits in the closed stage "PPC Enrolled No". Their task would land on a closed ticket. Decide whether these companies should get a review at all.</dd>
+      <dt>Lists</dt><dd>See appendix A and B.</dd>
+    </dl>
+  </article>
+
+  <article class="finding high">
+    <div class="fhead"><span class="fid">H2</span><h3>Task owner comes from the Marketing Portfolio Mgr field, which disagrees with the sheet's tier ownership</h3><span class="pill p-high">High</span></div>
+    <dl>
+      <dt>What</dt><dd>The workflows assign by Marketing Portfolio Mgr only, not by tier. Data issues found:</dd>
+      <dd><ul><li>{{C.entsarah}} Enterprise / Tier 1 candidates have Sarah as MPM. The sheet says Brock owns all Enterprise and Tier 1.</li><li>{{C.blankmpm}} non-Tier-3 candidates have no MPM, so their task goes to the queue unassigned.</li><li>{{C.t3named}} Tier 3 candidates have a named MPM, so they get a named owner instead of the pooled queue.</li><li>The workflows include a "Mohammad Abudahab" branch that would give him the review task. The sheet never makes Mohammad an MPM. No company uses it today.</li><li>Standalone: the sheet defaults the owner to Brock. The workflow leaves the task unassigned when MPM is blank.</li></ul></dd>
+      <dt>Lists</dt><dd>See appendix C, D and E.</dd>
+    </dl>
+  </article>
+
+  <article class="finding high">
+    <div class="fhead"><span class="fid">H3</span><h3>Completing the review will not stamp "Last Performance Review", and nothing sets "Next Review Due"</h3><span class="pill p-high">High</span></div>
+    <dl>
+      <dt>What</dt><dd>Workflow <span class="mono">1855066380</span> "Update Marketing Ticket Last Performance Date" fires only when a completed task is titled <i>Monthly Marketing Performance Review Checklist</i> or <i>Marketing Sentiment</i>. The new task is titled <i>Marketing Performance Review</i>. No workflow found sets <span class="mono">next_review_due</span> on the ticket.</dd>
+      <dt>Sheet says</dt><dd>"Completing the master task auto-stamps Last Performance Review and schedules Next Review Due."</dd>
+      <dt>Also</dt><dd>The sheet itself uses two titles: Task Matrix says "Marketing Performance Review", Master &amp; Subtasks says "Monthly Marketing Performance Review Checklist". Pick one and use it in the sheet, the task action and the stamping trigger.</dd>
+    </dl>
+  </article>
+
+  <article class="finding high">
+    <div class="fhead"><span class="fid">H4</span><h3>Task Category is not set on the review task or the PPC task</h3><span class="pill p-high">High</span></div>
+    <dl>
+      <dt>What</dt><dd>None of the "Create task" actions set <span class="mono">task_catagory</span>. On 5 Nov the review subtasks had categories (GBP, Website, Website, SpareFoot Review, Other, matching the sheet), but the parent review task and the PPC task and its subtasks had none.</dd>
+      <dt>Sheet says</dt><dd>Review master: Monthly Analytics Report. PPC task: PPC / Paid Search.</dd>
+    </dl>
+  </article>
+
+  <article class="finding high">
+    <div class="fhead"><span class="fid">H5</span><h3>5 December 2026 is a Saturday</h3><span class="pill p-high">High</span></div>
+    <dl>
+      <dt>What</dt><dd>The PPC workflow will fire on its own at 10:00 on Saturday. The review workflows need someone to enroll companies by hand that day. Run order matters until C1 is fixed.</dd>
+      <dt>Decide</dt><dd>Who runs the manual enrollment and when, and whether the PPC delay date should move to the same day.</dd>
+    </dl>
+  </article>
+
+  <article class="finding high">
+    <div class="fhead"><span class="fid">H6</span><h3>PPC workflow enrolls now from today's data and needs hand edits every month</h3><span class="pill p-high">High</span></div>
+    <dl>
+      <dt>What</dt><dd><ul><li>It is on and list-based, so eligible companies are enrolled today and wait for a fixed date (5 Dec 10:00). "Unenroll if criteria no longer met" is off: a company whose Trend to Goal changes before 5 Dec still gets the task.</li><li>A company that becomes eligible after 10:00 on 5 Dec exits with no task (the delay branch only continues on "date met as planned").</li><li>No re-enrollment triggers are set, so the same companies will not re-enroll for January, and the fixed date must be edited monthly.</li><li>The PPC task has no queue and an empty description. Its checklist lives only in subtasks.</li></ul></dd>
+      <dt>Checklist drift</dt><dd>On 5 Nov the PPC subtasks still included "PPC budget in line with suggested budget — recommend if not". The sheet moved that item to the HubSpot Marketing Card subtask. Confirm the current PPC subtasks.</dd>
+    </dl>
+  </article>
+
+  <article class="finding med">
+    <div class="fhead"><span class="fid">M1</span><h3>Review due date lands on the next cycle day</h3><span class="pill p-med">Medium</span></div>
+    <dl><dt>What</dt><dd>Due is 45 business days at 08:00. From 5 Dec that is Fri 5 Feb 2027, the next cycle date. The sheet says to complete the review before the next cycle. About 40 business days would land in late January.</dd></dl>
+  </article>
+
+  <article class="finding med">
+    <div class="fhead"><span class="fid">M2</span><h3>Marketing Sentiment tasks are not automated</h3><span class="pill p-med">Medium</span></div>
+    <dl><dt>What</dt><dd>The sheet marks Marketing Sentiment Update as auto-created every 2 months. Its workflows (<span class="mono">1854996367</span>, <span class="mono">1854997274</span>) are switched off and are not part of this rollout. Confirm whether that is intended.</dd></dl>
+  </article>
+
+  <article class="finding med">
+    <div class="fhead"><span class="fid">M3</span><h3>A blank SpareFoot value means no task and no suppression</h3><span class="pill p-low">Low</span></div>
+    <dl><dt>What</dt><dd>The first branch splits on SpareFoot (Y/N) with no "none matched" path. A company with SpareFoot blank leaves the workflow with no task. No current candidates are blank; one live company is.</dd></dl>
+  </article>
+
+  <article class="finding low">
+    <div class="fhead"><span class="fid">L1</span><h3>Sheet wording is out of date or inconsistent</h3><span class="pill p-low">Low</span></div>
+    <dl><dt>What</dt><dd><ul><li>Frequency column says "Trigger again 10/05" (review) and "11/05" (PPC). Next run is 12/05.</li><li>Checklist Detail numbers six areas (Google Ads as #4). Master &amp; Subtasks has five subtasks, with Google Ads as a separate task.</li><li>The subtask in HubSpot is "Sparefoot (if active)". The sheet says "SpareFoot (if active)".</li><li>"Links / Workflow Ref" column still shows placeholders. The five workflow IDs above can go there.</li></ul></dd></dl>
+  </article>
+
+  <article class="finding low">
+    <div class="fhead"><span class="fid">L2</span><h3>Leftover test tasks and old workflows</h3><span class="pill p-low">Low</span></div>
+    <dl><dt>What</dt><dd><ul><li>Two completed "Marketing Performance Review" tasks from 19 Nov are each linked to 21 companies and no ticket. They will show in those company timelines.</li><li>Older copies "Improving Monthly Performance Reviews" (<span class="mono">1854867276</span>) and "Google Ads (PPC| Marketing Services" (<span class="mono">1897042192</span>) are off. Keep them off.</li></ul></dd></dl>
+  </article>
+
+  <article class="finding low">
+    <div class="fhead"><span class="fid">L3</span><h3>Suppression workflow has an unused branch</h3><span class="pill p-low">Low</span></div>
+    <dl><dt>What</dt><dd>When a company is not in the list at the check, it waits 25 days and then removes it from the list anyway. This has no effect but can be removed.</dd></dl>
+  </article>
+</section>
+
+<section>
+  <h2>Sheet vs workflows</h2>
+  <div class="tw"><table class="align">
+    <thead><tr><th>Rule in sheet</th><th>Workflow setup</th><th>Where</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>Created on the 5th of the month</td><td>Manual run; PPC delay fixed to 5 Dec 10:00</td><td>All</td><td><span class="pill p-high">Partly</span></td></tr>
+      <tr><td>Review every 2 months</td><td>Suppression list held 45 days, released before the next cycle</td><td>Suppression</td><td><span class="pill p-ok">Aligned</span></td></tr>
+      <tr><td>PPC monthly, alongside the review</td><td>Same 45-day list as reviews</td><td>PPC</td><td><span class="pill p-crit">Conflict</span></td></tr>
+      <tr><td>At Risk: all tiers (Tier 3 to pool)</td><td>No criteria; manual pick</td><td>At Risk</td><td><span class="pill p-high">Unenforced</span></td></tr>
+      <tr><td>Improving: Ent, Tier 1, Tier 2.1 only</td><td>No criteria; manual pick</td><td>Improving</td><td><span class="pill p-high">Unenforced</span></td></tr>
+      <tr><td>Standalone: every cycle</td><td>No criteria; manual pick</td><td>Standalone</td><td><span class="pill p-high">Unenforced</span></td></tr>
+      <tr><td>PPC: At Risk all tiers, Improving Ent / T1 / T2.1</td><td>Matches (TIER 2 = Tier 2.1; Tier 2 - L2 excluded)</td><td>PPC</td><td><span class="pill p-ok">Aligned</span></td></tr>
+      <tr><td>Owner by tier (Brock Ent/T1, Sarah T2.2, split T2.1, pool T3)</td><td>Owner by Marketing Portfolio Mgr</td><td>Reviews</td><td><span class="pill p-high">Data gaps</span></td></tr>
+      <tr><td>Berat owns GBP + SpareFoot subtasks</td><td>Unassigned on 5 Nov</td><td>Reviews</td><td><span class="pill p-crit">Missing</span></td></tr>
+      <tr><td>Same-owner subtasks left unassigned</td><td>Unassigned on 5 Nov</td><td>Reviews</td><td><span class="pill p-ok">Aligned</span></td></tr>
+      <tr><td>Linked to company and Marketing ticket</td><td>Company (enrolled) + ticket copied from "Marketing" label</td><td>All</td><td><span class="pill p-ok">Aligned</span></td></tr>
+      <tr><td>Task Category set</td><td>Not set on master or PPC task</td><td>All</td><td><span class="pill p-high">Missing</span></td></tr>
+      <tr><td>Master title</td><td>"Marketing Performance Review"</td><td>Reviews</td><td><span class="pill p-med">Sheet differs</span></td></tr>
+      <tr><td>Completion stamps Last Review / Next Review Due</td><td>Stamping workflow looks for the old title</td><td>Ticket</td><td><span class="pill p-high">Broken</span></td></tr>
+      <tr><td>Master body: how to complete, who does what</td><td>Matches sheet</td><td>Reviews</td><td><span class="pill p-ok">Aligned</span></td></tr>
+      <tr><td>SpareFoot subtask only if SpareFoot active</td><td>4 subtasks when SpareFoot = No, 5 when Yes (5 Nov)</td><td>Reviews</td><td><span class="pill p-ok">Aligned</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>Checks passed</h2>
+  <ul>
+    <li>Owner IDs in the workflows are correct and active: Brock <span class="mono">87928198</span>, Sarah <span class="mono">88093745</span>, Mohammad <span class="mono">81311893</span>.</li>
+    <li>The three review workflows are identical apart from name: same title, description, owners, queue (<span class="mono">13519272</span>), due rule and associations in every branch.</li>
+    <li>Every task action is followed by "add to list 5466".</li>
+    <li>Task links: company (type 192) and the company's "Marketing" ticket (type 230 from label 64).</li>
+    <li>No candidate has more than one Marketing ticket, so no task would link to two tickets.</li>
+    <li>List 5466 is a static list, so add and remove actions work.</li>
+    <li>Suppression timing: joined 5 Dec, released 19 Jan, free again for 5 Feb.</li>
+    <li>PPC enrollment tiers match the sheet.</li>
+    <li>No current candidate has a blank SpareFoot value or Mohammad as MPM.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Before 5 December</h2>
+  <ol class="steps">
+    <li>Split the suppression lists so PPC and review tasks do not block each other (C1).</li>
+    <li>Decide what happens to the {{N.supp}} companies already in list 5466 and clear it if they should get tasks (C2).</li>
+    <li>Assign Berat on the GBP and SpareFoot subtasks in all 24 review task actions (C3).</li>
+    <li>Build saved lists or guard branches for At Risk, Improving and Standalone, then switch the three review workflows on (C4).</li>
+    <li>Fix the Marketing ticket and Marketing Portfolio Mgr gaps in the appendix (H1, H2).</li>
+    <li>Align the task title with the stamping workflow and add a Next Review Due step (H3).</li>
+    <li>Set Task Category on the review and PPC tasks (H4).</li>
+    <li>Agree who runs the Saturday enrollment and in what order (H5).</li>
+    <li>Re-run this audit.</li>
+  </ol>
+  <div class="note"><b>After 5 December:</b> the follow-up audit will count tasks created against the expected list, check each task's owner, subtask owners, category, company and ticket links, confirm every enrolled company joined list 5466 and the suppression workflow, and list any company that should have had a task and did not.</div>
+</section>
+
+<section>
+  <h2>Appendix: affected companies</h2>
+  <details><summary>A. Candidates with no Marketing ticket <span class="n">{{C.noticket}}</span></summary><div class="inner">{{T.noticket}}</div></details>
+  <details><summary>B. Candidates whose Marketing ticket is closed ("PPC Enrolled No") <span class="n">{{C.closed}}</span></summary><div class="inner">{{T.closed}}</div></details>
+  <details><summary>C. Enterprise / Tier 1 candidates not owned by Brock <span class="n">{{C.entsarah}}</span></summary><div class="inner">{{T.entsarah}}</div></details>
+  <details><summary>D. Non-Tier-3 candidates with no MPM (task goes unassigned) <span class="n">{{C.blankmpm}}</span></summary><div class="inner">{{T.blankmpm}}</div></details>
+  <details><summary>E. Tier 3 candidates with a named MPM (not pooled) <span class="n">{{C.t3named}}</span></summary><div class="inner">{{T.t3named}}</div></details>
+  <details><summary>F. Improving companies that must not go into the Improving workflow <span class="n">{{C.imprinel}}</span></summary><div class="inner">{{T.imprinel}}</div></details>
+  <details><summary>G. Companies already in suppression list 5466 <span class="n">{{C.supp}}</span></summary><div class="inner">{{T.supp}}</div></details>
+</section>
+
+<section>
+  <h2>Run history</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Run</th><th>Date</th><th>Type</th><th>Result</th></tr></thead>
+    <tbody><tr><td>1</td><td>24 Nov 2026</td><td>Pre-launch</td><td><span class="pill p-crit">Not ready</span> 4 critical, 6 high, 6 medium/low</td></tr></tbody>
+  </table></div>
+</section>
+
+<footer>Sources: HubSpot workflow definitions (automation v4), CRM companies, tickets, tasks and list 5466; Google Sheet "Marketing HubSpot Task Management". Candidates are live companies (Status = Yes) that are At Risk, Improving at Ent / Tier 1 / Tier 2.1, or in the Standalone - Marketing ticket stage.</footer>
+</div>
