@@ -187,6 +187,7 @@ button.cal-day.s-ok:hover,button.cal-day.s-bad:hover,button.cal-day.s-known:hove
  <section id="t-changes"></section>
  <section id="t-waiting"></section>
  <section id="t-off"></section>
+ <section id="t-log"></section>
  <div class="legend" id="legend"></div>
 </div></main>
 <script>
@@ -266,6 +267,7 @@ $('#sub').textContent=`${day(w0)} to ${day(w1)} ${w1.slice(0,4)}  ·  Report for
 const q1=items.filter(i=>i.q===1),q2=items.filter(i=>i.q===2),q3=items.filter(i=>i.q===3);
 const nBad=a=>a.filter(i=>i.kind==='bad').length;
 const TABS=[['overview','Overview',nBad(items),true],['tasks','Tasks created',nBad(q1),true],['links','Company associations',nBad(q2),true],['changes','Workflow changes',q3.length,false],['waiting',`Waiting on ${D.decision_owner}`,D.waiting_on.length,false],['off','Switched off',(D.switched_off||[]).length,(D.switched_off||[]).some(w=>w.status!=='off_expected')]];
+if(D.error_log_start)TABS.push(['log','Error log',(D.error_log||[]).filter(e=>e.status==='Open').length,true]);
 $('#nav').innerHTML=TABS.map(([id,l,n,red])=>`<button data-t="${id}">${l}${n?`<span class="badge${red?' red':''}">${n}</span>`:''}</button>`).join('');
 function show(id){document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===id));document.querySelectorAll('main section').forEach(s=>s.classList.toggle('on',s.id==='t-'+id));$('#facility').innerHTML='';window.scrollTo(0,0);}
 $('#nav').onclick=e=>{const b=e.target.closest('button');if(b)show(b.dataset.t);};
@@ -512,4 +514,39 @@ function openFacility(id){sg.style.display='none';inp.value='';const ts=byCompan
 /* ---------- legend ---------- */
 $('#legend').innerHTML=`<span><b>How we know:</b></span>${Object.entries(LABEL).map(([k,v])=>`<span><span class="chip">${v}</span> ${k}</span>`).join('')}<span>Who should get a task comes from the master rules file and each facility's details at the time the workflow ran.</span>`;
 show('overview');
+
+/* ---------- error log: every error from the start date on, kept in the page's database across weeks ---------- */
+if(D.error_log_start){
+ const LOG_ST=['Open','Fixed','Not a problem','Fixed by hand','Known issue','Process issue','Already dealt with','Waiting'];
+ let rows=(D.error_log||[]).slice(),fromDb=false,canWrite=false,dbRef=null,note='',filt='all';
+ const stClass=st=>st==='Open'?'badtxt':(st==='Fixed'||st==='Not a problem'||st==='Fixed by hand'||st==='Already dealt with')?'okg':'ok';
+ const group=st=>LOG_ST.find(x=>st&&st.startsWith(x))||st||'Open';
+ function drawLog(){
+  const open=rows.filter(r=>r.status==='Open').length;
+  const b=document.querySelector('nav button[data-t="log"]');if(b)b.innerHTML='Error log'+(open?`<span class="badge red">${open}</span>`:'');
+  const shown=rows.filter(r=>filt==='all'||group(r.status)===filt).sort((a,c)=>(c.date||'').localeCompare(a.date||'')||(a.id||'').localeCompare(c.id||''));
+  const counts={};rows.forEach(r=>{const g=group(r.status);counts[g]=(counts[g]||0)+1;});
+  $('#t-log').innerHTML=`<h2>Error log</h2>
+<p class="lead">Every error the weekly audit has found since ${esc(day(D.error_log_start))}, with why it is an error. Each Friday's run adds its new errors; nothing is removed. ${fromDb?(canWrite?'You can change a row\'s status and add a note; it saves for everyone.':'Read only for you.'):'Showing only this run\'s errors: the saved log could not be reached from this view.'}</p>
+${note?`<p class="ok">${esc(note)}</p>`:''}
+<div class="tool"><label>Show <select id="logf"><option value="all">All (${rows.length})</option>${Object.keys(counts).map(k=>`<option value="${esc(k)}"${filt===k?' selected':''}>${esc(k)} (${counts[k]})</option>`).join('')}</select></label></div>
+${shown.length?`<div class="tw"><table><tr><th>Date</th><th>Facility / ticket</th><th>Error</th><th>Why it is an error</th><th>Status</th></tr>${shown.map(r=>`<tr><td>${esc(day(r.date))}<br><small class="ok">found ${esc(day(r.found))}</small></td><td>${r.company_id?coLink(r.company_id):esc(r.facility)}${r.ticket?`<br><small class="ok">${ext(recUrl('0-5',r.ticket),esc(r.ticket_name||('Ticket '+r.ticket)))}</small>`:''}${r.type?`<br><small class="ok">${esc(r.type)}</small>`:''}</td><td>${r.task?taskLink(r.task,r.what):esc(r.what)}${r.workflow?`<br><small class="ok">${esc(r.workflow)}</small>`:''}</td><td>${esc(r.why)}<br><small class="ok">${esc(r.evidence)}</small></td><td>${canWrite?`<select data-id="${esc(r.id)}" class="logst">${[...new Set([r.status,...LOG_ST.slice(0,3)])].map(o=>`<option${o===r.status?' selected':''}>${esc(o)}</option>`).join('')}</select><br><input data-id="${esc(r.id)}" class="lognote" placeholder="Note" value="${esc(r.note||'')}" style="margin-top:6px;width:100%">`:`<span class="${stClass(r.status)}">${esc(r.status)}</span>${r.note?`<br><small class="ok">${esc(r.note)}</small>`:''}`}</td></tr>`).join('')}</table></div>`
+  :`<div class="empty">${rows.length?'No errors with this status.':'No errors logged since '+esc(day(D.error_log_start))+'.'}</div>`}`;
+  $('#logf').onchange=e=>{filt=e.target.value;drawLog();};
+  document.querySelectorAll('.logst').forEach(el=>el.onchange=()=>save(el.dataset.id,{status:el.value}));
+  document.querySelectorAll('.lognote').forEach(el=>el.onchange=()=>save(el.dataset.id,{note:el.value.slice(0,500)}));
+ }
+ async function save(id,patch){try{await dbRef.doc(id).update({...patch,updated:new Date().toISOString().slice(0,10)});note='';}catch(e){note='Could not save: '+(e&&e.code||'error')+'.';drawLog();}}
+ drawLog();
+ (async()=>{
+  const cl=window.claude;if(!cl||!cl.use)return;
+  const db=await cl.use('db');if(!db)return;
+  const user=await cl.use('user');canWrite=user?((await user.can('data.write'))!==false):false;
+  dbRef=db.collection('error_log');
+  const timer=setTimeout(()=>{note='The saved log can\'t be reached yet; showing this run\'s errors.';drawLog();},10000);
+  dbRef.onSnapshot(snap=>{if(!snap.metadata.fromCache)clearTimeout(timer);const saved=snap.docs.map(d=>({id:d.id,...d.data()}));
+   if(saved.length||!snap.metadata.fromCache){fromDb=true;note='';const ids=new Set(saved.map(r=>r.id));rows=[...saved,...(D.error_log||[]).filter(r=>!ids.has(r.id))];}drawLog();},
+   e=>{clearTimeout(timer);note='The saved log could not be read ('+(e&&e.code||'error')+'); showing this run\'s errors.';drawLog();});
+ })();
+}
 </script></body></html>

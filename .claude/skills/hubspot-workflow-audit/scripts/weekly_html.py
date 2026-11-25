@@ -44,6 +44,9 @@ data['ticket_days'] = R.get('ticket_days', [])
 data['process_issues'] = R.get('process_issues', [])
 data['process_heading'] = R.get('process_heading')
 data['by_design'] = R.get('by_design', [])
+data['handled'] = R.get('handled', [])
+data['error_log'] = R.get('error_log', [])
+data['error_log_start'] = R.get('error_log_start')
 data['process_stages_note'] = R.get('process_stages_note')      # ticket teams: tickets created / entering a stage, for the calendar
 data['before_start'] = R.get('before_start')      # test runs that look back past the start date
 data['portal'] = str(TEAM.get('portal_id') or R.get('portal') or '')      # HubSpot links use the portal ID from team-rules.md
@@ -55,7 +58,7 @@ for n in data['new_facilities']:                       # field names the templat
 blob = json.dumps(data, default=str).replace('</', '<\\/')
 
 page = page.replace('__DATA__', blob)
-page = re.sub(r'<title>.*?</title>', f'<title>{html.escape(R["team"])} weekly check {R["report_day"]}</title>', page, count=1, flags=re.S)
+page = re.sub(r'<title>.*?</title>', f'<title>{html.escape(R["team"])} Weekly Audit</title>', page, count=1, flags=re.S)
 col = TEAM.get('page_colours') or {}
 for key, var in (('navy', 'navy'), ('grey', 'grey'), ('red', 'red'), ('white', 'white'), ('background', 'bg')):
     if col.get(key):

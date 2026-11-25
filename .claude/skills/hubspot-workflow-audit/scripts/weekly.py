@@ -415,17 +415,17 @@ def ticket_type_results(tt, first, last, rows):
                 continue
             if have:
                 missing[fac] = {'reason': f'partial: ticket {tid} got {len(have)} of {len(e["titles"])} tasks; missing ' + ', '.join(f'"{x}"' for x in lack),
-                                'label': 'VERIFIED (records)', 'workflow': wid, 'run': fmt_dt(e['at']), 'ticket': tid}
+                                'label': 'VERIFIED (records)', 'workflow': wid, 'run': fmt_dt(e['at']), 'ticket': tid, 'at': local(e['at']).date().isoformat()}
             elif e.get('left_after') is not None and e['left_after'] < 60:
                 nxt_stage = (STAGES.get(rules.value_at(TICKETS[tid]['propertiesWithHistory'].get('hs_pipeline_stage'), e['at'] + dt.timedelta(seconds=e['left_after']))) or {}).get('label', 'the next stage')
                 missing[fac] = {'reason': f'passed through: ticket {tid} entered {e["stage"]} on {fmt_dt(e["at"])} and moved to {nxt_stage} {e["left_after"]:.0f} seconds later, '
                                           f'so the workflow probably never enrolled it (HubSpot checks the trigger a few seconds after a change); none of its {len(e["titles"])} tasks were created',
-                                'label': 'VERIFIED (records) + INFERENCE', 'workflow': wid, 'run': fmt_dt(e['at']), 'ticket': tid}
+                                'label': 'VERIFIED (records) + INFERENCE', 'workflow': wid, 'run': fmt_dt(e['at']), 'ticket': tid, 'at': local(e['at']).date().isoformat()}
             elif off_now:
-                missing[fac] = {'reason': 'workflow off', 'label': 'VERIFIED (config)', 'workflow': wid, 'run': fmt_dt(e['at']), 'ticket': tid}
+                missing[fac] = {'reason': 'workflow off', 'label': 'VERIFIED (config)', 'workflow': wid, 'run': fmt_dt(e['at']), 'ticket': tid, 'at': local(e['at']).date().isoformat()}
             else:
                 missing[fac] = {'reason': f'unknown: ticket {tid} entered {e["stage"]} on {fmt_dt(e["at"])} and got none of its {len(e["titles"])} tasks',
-                                'label': 'INFERENCE', 'workflow': wid, 'run': fmt_dt(e['at']), 'ticket': tid}
+                                'label': 'INFERENCE', 'workflow': wid, 'run': fmt_dt(e['at']), 'ticket': tid, 'at': local(e['at']).date().isoformat()}
     # tasks of this type that no ticket explains: judged per task, using ALL its tickets (a task can also carry an extra
     # ticket, e.g. a support ticket linked later, which is not a reason to flag it)
     pipes = set(TF.get('pipelines') or [])
@@ -451,7 +451,8 @@ def ticket_type_results(tt, first, last, rows):
         shouldnt[fac or tid] = {'reason': reason + f' (ticket {tid})', 'label': 'INFERENCE', 'task': r['id'], 'workflow': r['flow'], 'created': fmt_dt(r['created'])}
     for cid, m in missing.items():
         problem(1, 'missing', f'{cname(cid)} did not get "{name}" ({m["reason"]}).', m['label'], 'Potential Issue' if m['reason'].startswith('unknown') else 'Confirmed',
-                name, cid, None, m['workflow'], m['reason'].split(':')[0], group=f'missing:{name}:{m["reason"].split(":")[0]}')
+                name, cid, None, m['workflow'], m['reason'].split(':')[0], group=f'missing:{name}:{m["reason"].split(":")[0]}',
+                extra={'at': m.get('at'), 'ticket': m.get('ticket')})
     for cid, s in shouldnt.items():
         problem(1, 'shouldnt', f'{cname(cid)} got "{name}" but should not have ({s["reason"]}).', s['label'], 'Potential Issue', name, cid, s['task'], s['workflow'], s['reason'],
                 group=f'shouldnt:{name}')
@@ -996,7 +997,8 @@ for wid, e in sorted(M.items(), key=lambda x: wfname(x[0]).lower()):
         what = 'only the revision number changed (no change found in the compared settings)' if only_rev else ', '.join(d['column'] for d in diffs) + ' changed'
         known = f' Change, not yet confirmed (first seen {pend["first_seen"]}; {pend["status"]}).' if pend else ' Change, not yet confirmed.'
         problem(3, 'changed', f'{wfname(wid)}: {what}.{known}', 'VERIFIED (config)', 'Needs Verification', workflow=wid, group=f'changed:{wid}',
-                extra={'pending': bool(pend)})
+                extra={'pending': bool(pend), 'at': local(P(live['updatedAt'])).date().isoformat() if live.get('updatedAt') else None,
+                       'reason': ', '.join(d['column'] for d in diffs) + ' differ from the master rules file'})
     if rule2:
         problem(3, 'rule2', f'{wfname(wid)} {rule2}.', 'VERIFIED (config)', 'Confirmed', workflow=wid, group=f'rule2:{wid}')
 
@@ -1023,6 +1025,7 @@ def link_known(p):
     t = rules.norm((ROW_BY_ID.get(p.get('task_id')) or {}).get('title'))
     return next((k['id'] for k in TEAM.get('known_issues', []) if any(re.search(x, t, re.I) for x in k.get('link_titles', []))), None)
 wait_cos = {cid: wid for wid, w in WAIT.items() for cid in w.get('company_ids', [])}
+HANDLED_PS = []
 HANDLED = collections.OrderedDict()       # problems the team already dealt with (team-rules.md "handled"): listed once, not as problems
 
 
@@ -1045,6 +1048,7 @@ for p in PROBLEMS:
         e = HANDLED.setdefault(hd['ticket'], {'ticket': hd['ticket'], 'ticket_name': (TICKETS.get(hd['ticket']) or {}).get('properties', {}).get('subject') or f'ticket {hd["ticket"]}',
                                               'company_id': facility_of(hd['ticket']), 'handled': hd.get('handled'), 'note': hd.get('note'), 'findings': 0, 'types': []})
         e['findings'] += 1
+        HANDLED_PS.append((p, hd))
         if p['type'] not in e['types']:
             e['types'].append(p['type'])
         for tr in TYPE_RESULTS:
@@ -1394,6 +1398,63 @@ if TF:
                                                                     if (TEAM.get('process_issues') or {}).get('company_before_stage') else 'ticket created, no company linked now')})
     TICKET_DAYS.sort(key=lambda x: (x['date'], x['time']))
 
+# ------------------------------------------------------------------ error log (team-rules.md "error_log": {"start"})
+# One row per error found, with why, from the start date on. The weekly page keeps them in its database, so the log
+# grows week by week; a row's id is stable, so a re-run updates a row instead of adding a second one.
+LOG_START = (TEAM.get('error_log') or {}).get('start')
+WHY = {'missing': 'The ticket entered the stage, but the workflow did not create this task.',
+       'shouldnt': 'The task was created although its ticket did not enter the stage.',
+       'duplicate': 'The same task was created twice for one ticket on one day (rule 4).',
+       'link': 'A main task must be associated with its ticket and exactly one facility.',
+       'subtask_links': 'A checklist item must not have a different company or ticket from its main task.',
+       'not_in_queue': 'Every Transitions task belongs in the ' + str(TEAM.get('queue_name')) + ' queue (rule 2).',
+       'changed': 'The live workflow no longer matches the master rules file, and nobody has confirmed the change.',
+       'rule2': 'The workflow breaks a team rule.', 'record_missing': 'Every Closed won deal must get an onboarding ticket (rule 5).',
+       'deleted': 'The workflow created the task and a person deleted it later.', 'no_facility': 'The ticket has no company, so the tasks have no facility.',
+       'went_live': 'Status Live and the go-live date are more than 7 days apart.'}
+ERROR_LOG = []
+
+
+def log_add(p, status, why_extra=None):
+    r = ROW_BY_ID.get(p.get('task_id')) or {}
+    d = p.get('at') or (local(r['created']).date().isoformat() if r.get('created') else None)
+    if not LOG_START or not d or d < LOG_START:
+        return
+    tix = (r.get('tickets') or [None])[0] or p.get('ticket')
+    key = re.sub(r'[^A-Za-z0-9_-]', '-', f'{p["kind"]}-{p.get("task_id") or tix or p.get("company_id") or p.get("workflow") or "x"}-{p.get("type") or ""}')[:150]
+    why = ' '.join(x for x in [WHY.get(p['kind'], ''), (p.get('reason') or '') and f'Found: {p["reason"]}.', why_extra or ''] if x).strip()
+    ERROR_LOG.append({'id': key, 'date': d, 'found': LAST.isoformat(), 'week': f'{FIRST.isoformat()} to {LAST.isoformat()}',
+                      'question': p.get('q'), 'kind': p['kind'], 'type': p.get('type') or '', 'facility': cname(p.get('company_id') or (facility_of(tix) if tix else None)) if (p.get('company_id') or (tix and facility_of(tix))) else '',
+                      'company_id': p.get('company_id') or (facility_of(tix) if tix else '') or '', 'ticket': tix or '',
+                      'ticket_name': (TICKETS.get(tix) or {}).get('properties', {}).get('subject', '') if tix else '',
+                      'task': p.get('task_id') or '', 'workflow': wfname(p['workflow']) if p.get('workflow') else (p.get('source') or ''),
+                      'what': p['text'], 'why': why, 'evidence': p.get('label') or '', 'status': status})
+
+
+if LOG_START:
+    for p in PROBLEMS:
+        if p.get('section', 'main') == 'main':
+            log_add(p, 'Fixed by hand' if p.get('fixed') else 'Open')
+    for (kind, kid), ps in FOLDED.items():
+        k = next((x for x in TEAM.get('known_issues', []) if x['id'] == kid), {})
+        for p in ps:
+            log_add(p, f'Known issue {kid}' if kind == 'known' else f'Waiting on {OWNER} ({kid})',
+                    f'Known issue {kid}: {k.get("text", "")}' if kind == 'known' else '')
+    for p, hd in HANDLED_PS:
+        log_add(p, 'Already dealt with', hd.get('note'))
+    for x in PROC:
+        if x['section'] == 'main' and x['moved'][:10] >= LOG_START:
+            ERROR_LOG.append({'id': re.sub(r'[^A-Za-z0-9_-]', '-', f'process-{x["ticket"]}-{x["type"]}'), 'date': x['moved'][:10], 'found': LAST.isoformat(),
+                              'week': f'{FIRST.isoformat()} to {LAST.isoformat()}', 'question': 2, 'kind': 'process', 'type': x['type'],
+                              'facility': cname(x['company_id']) if x.get('company_id') else '', 'company_id': x.get('company_id') or '',
+                              'ticket': x['ticket'], 'ticket_name': x['ticket_name'], 'task': '', 'workflow': '',
+                              'what': f'Ticket "{x["ticket_name"]}" moved to {x["stage"] or x["type"]} on {x["moved"]}'
+                                      + (f' by {x["moved_by"]}' if x.get('moved_by') else '') + ' before its company was associated.',
+                              'why': 'The onboarding team associates the facility before Pre-Launch Setup; tasks created before that have no company (rule 6). Team process issue, not a workflow fault.',
+                              'evidence': x['label'], 'status': 'Process issue'})
+    _seen = set()
+    ERROR_LOG[:] = [e for e in sorted(ERROR_LOG, key=lambda e: (e['date'], e['id']), reverse=True) if not (e['id'] in _seen or _seen.add(e['id']))]
+
 RESULT = {
     'team': TEAM_NAME, 'team_slug': rules.team_slug(A.team), 'decision_owner': OWNER, 'portal': str(ACCT.get('portalId', '')), 'queue': TEAM.get('queue_name'), 'queue_ids': sorted(QIDS),
     'window': [FIRST.isoformat(), LAST.isoformat()], 'report_day': rules.report_day(TEAM, LAST).isoformat(), 'time_zone': ACCT.get('timeZone'),
@@ -1405,6 +1466,7 @@ RESULT = {
     'top': TOP, 'types': TYPE_RESULTS, 'record_checks': RECORD_CHECKS, 'ticket_days': TICKET_DAYS,
     'process_issues': [{k: v for k, v in x.items() if k != 'key'} for x in PROC], 'by_design': list(BY_DESIGN.values()), 'handled': list(HANDLED.values()), 'process_heading': f'Process issues for the {TEAM_NAME} team', 'process_stages_note': (TEAM.get('process_issues') or {}).get('stages_note'), 'new_facilities': NEW, 'links': LINK_ROWS, 'subtasks': SUB_ROWS, 'changes': CHANGES,
     'schedules': SCHEDULES, 'task_list': TASK_LIST, 'tier_columns': TIER_COLUMNS, 'switched_off': SWITCHED_OFF, 'before_start': BEFORE_START, 'known_days': [{'date': d, 'type': t, 'known_issue': k, 'tasks': n} for (d, t, k), n in sorted(KNOWN_DAYS.items())],
+    'error_log': ERROR_LOG, 'error_log_start': LOG_START,
     'waiting_on': waiting, 'known_issues': known, 'expected_off': off_state, 'problems': PROBLEMS,
     'companies': {cid: cname(cid) for cid in {x for tr in TYPE_RESULTS + PRE_TYPES for x in tr['should'] + tr['got'] + list(tr['missing']) + list(tr['shouldnt'])} | {c for r in MAIN + PRE_MAIN for c in r['companies']} | LIVE_NOW | {e['company_id'] for e in TICKET_DAYS if e['company_id']}},
     'tasks': [{'id': r['id'], 'title': r['title'], 'type': r['type'], 'workflow': wfname(r['flow']) if r['flow'] in M else r['source'],
@@ -1413,6 +1475,11 @@ RESULT = {
                'before_start': r['before_start']} for r in MAIN + PRE_MAIN],
 }
 json.dump(RESULT, open(os.path.join(A.work, 'results.json'), 'w'), indent=1, default=str)
+if LOG_START:                                  # one JSON file per log row, ready for the page's database (error_log collection)
+    _ld = os.path.join(A.work, 'error_log')
+    os.makedirs(_ld, exist_ok=True)
+    for _e in ERROR_LOG:
+        json.dump({k: v for k, v in _e.items() if k != 'id'}, open(os.path.join(_ld, _e['id'] + '.json'), 'w'), indent=1, default=str)
 
 line = lambda n, what: 'all good' if n == 0 else f'{n} problem{"s" if n > 1 else ""} found'
 print(f'## {TEAM_NAME} weekly audit — {FIRST} to {LAST}' + (' (window shortened by the start date)' if FIRST.isoformat() == TEAM.get('start_date') else ''))
@@ -1460,6 +1527,8 @@ if BEFORE_START:
             nf = collections.Counter(m['reason'] for m in t['missing'].values() if m.get('not_flagged'))
             print(f'- {t["name"]}: {len(t["got"])} of {len(t["should"])} got it' + (f'; {len(fl)} real problem(s)' if fl else '; no real problems')
                   + ''.join(f'; {n} {r}' for r, n in nf.items()))
+if LOG_START:
+    print(f'\n**Error log** (from {LOG_START}): {len(ERROR_LOG)} error(s) this run' + (': ' + '; '.join(f'{e["date"]} {e["facility"] or e["ticket_name"] or e["workflow"]}: {e["kind"]} ({e["status"]})' for e in ERROR_LOG[:10]) if ERROR_LOG else ''))
 print(f'\n**Waiting on {OWNER}**')
 if not waiting:
     print('- None')

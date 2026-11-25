@@ -3,7 +3,7 @@
 This file and `Transitions_Master_Rules.xlsx` hold everything specific to Transitions. The skill
 (`.claude/skills/hubspot-workflow-audit/SKILL.md`) is general and reads them with `--team transitions`.
 
-- **Last updated:** 2026-11-20
+- **Last updated:** 2026-11-25
 - **Edited by:** WLS (Cherine's team). Change this file only when a rule or decision changes.
 - **Based on:** the Transitions full map audit, v3 (`WLS_Transitions_Workflow_Audit_v3.xlsx`, 2026-10-06).
 
@@ -92,6 +92,7 @@ All agreed with Cherine on 2026-10-13:
 - **Owensville Storage, Pre-Launch tasks created late (20 Oct): already dealt with** (Cherine, 2026-10-30). The ticket passed through Pre-Launch Setup in 6 seconds on 14 Oct, so the workflow skipped it; the Pre-Launch tasks and the Marketing Proposal were created on 20 Oct to make up for it. Listed under "Already dealt with" (setting `handled`), not as problems.
 - **Pre-Launch Setup makes 6 tasks: the 6th is "Transition \| PRE LAUNCH SET UP \| Subtask - Hunter"** (Cherine, 2026-11-19; was W-8). Ilsa added it as step 2 of the workflow on 2026-10-23 (revision 74): assigned to Hunter Stoner, due in 3 business days, about whether BOGs/1099s are paid through Gusto. It was planned. At first it had the same title as step 1 (the main task, "Transition \| PRE LAUNCH SET UP \| Subtask"), no queue, and only the ticket. On 2026-11-19 Cherine renamed it to "... \| Subtask - Hunter", gave it the Transitions queue, and associated it with the ticket, Transition contacts and all associated companies, like the other "Subtask - [person]" tasks (revision 79, VERIFIED (config)). The master rules file holds revision 79. It's a main task under rule 3.
   - Duplicates of the old shared title created on or before 2026-11-19 are known issue F-16, not problems. From 2026-11-20 on, they are reported again under rule 4.
+- **Error log from 2026-11-25** (Cherine, 2026-11-25): the weekly page has an "Error log" tab that keeps every error found from 25 Nov 2026 on, with why, and its status. The log lives in the page's database, so it grows week by week; people can change a row's status (Open, Fixed, Not a problem) and add a note on the page (setting `error_log`).
 - **Excluded companies:** demo Facility (44541671248), the same as CS Ops.
 - **Closed Won adds no company, by design** (Cherine, 2026-10-20; was W-4): the facility doesn't exist yet when the deal closes. The 8 Oct edit was planned.
 - **The onboarding team links the company before the ticket moves to Pre-Launch Setup** (Cherine, 2026-10-20; was W-6): "By design. The company must be linked by the onboarding team before the ticket moves on. Cherine is raising it with Ilsa." The deadline is Pre-Launch Setup: a Kickoff ticket may not have its company yet (rule 7). A ticket that reaches Pre-Launch Setup or later without it is a process issue (rule 6), not a workflow problem.
@@ -302,6 +303,9 @@ The scripts read this block. Keep it in step with the text above.
   "branch_reasons": [],
   "waiting_on": [],
   "changes_not_confirmed": [],
+  "error_log": {
+    "start": "2026-11-25"
+  },
   "renamed_task_titles": [
     {
       "task_type": "Pre-Launch Setup",
