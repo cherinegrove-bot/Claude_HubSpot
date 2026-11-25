@@ -1,9 +1,10 @@
-"""Build the Marketing Service Task Audit HTML from rows.json (step3.py output).
-Usage: python3 -I build_report.py <rows.json> <out.html>
-Findings text is maintained below; data tables are generated."""
+"""Build the Marketing Service Task Audit HTML.
+Usage: python3 -I build_report.py <rows2.json from step2b.py> <out.html> <template.html>
+Template placeholders: {{N.x}} numbers, {{C.x}} table counts, {{T.x}} tables."""
 import json,sys,html
-rows=json.load(open(sys.argv[1])); OUT=sys.argv[2]
+rows=json.load(open(sys.argv[1])); OUT=sys.argv[2]; tpl=open(sys.argv[3]).read()
 PORTAL='45059701'
+LISTS={'5523':'At Risk','5525':'Improving','5527':'Standalone'}
 def link(r): return f'<a href="https://app.hubspot.com/contacts/{PORTAL}/record/0-2/{r["id"]}" target="_blank" rel="noopener">{html.escape(r["name"])}</a>'
 TIER={'Enterprise':'Enterprise','TIER 1':'Tier 1','TIER 2':'Tier 2.1','Tier 2 - L2':'Tier 2.2','TIER 3':'Tier 3','N/A':'N/A',None:'—'}
 def table(L,cols):
@@ -11,28 +12,30 @@ def table(L,cols):
     h='<div class="tw"><table><thead><tr>'+''.join(f'<th>{c}</th>' for c,_ in cols)+'</tr></thead><tbody>'
     for r in L: h+='<tr>'+''.join(f'<td>{f(r)}</td>' for _,f in cols)+'</tr>'
     return h+'</tbody></table></div>'
-C_STD=[('Company',link),('Tier',lambda r:TIER.get(r['tier'],r['tier'])),('Trend',lambda r:r['trend'] or '—'),('MPM',lambda r:r['mpm'] or '<span class="muted">blank</span>'),('Ticket lane',lambda r:', '.join(r['stages']) or '<span class="muted">no Marketing ticket</span>')]
-cand=[r for r in rows if r['wf_atrisk'] or r['wf_impr'] or r['wf_sa']]
-ppc=[r for r in rows if r['wf_ppc']]
-inlist=[r for r in rows if r['inlist']]
+def wf(r): return ', '.join(v for k,v in LISTS.items() if r['L'+k]) or '—'
+def exp_owner(r):
+    if r['L5527']: return r['mpm'] or 'Brock (default)'
+    if r['tier'] in('Enterprise','TIER 1'): return 'Brock Hegr'
+    if r['tier']=='Tier 2 - L2': return 'Sarah Schlosberg'
+    if r['tier']=='TIER 3': return 'Pool (unassigned)'
+    return r['mpm'] or '—'
+def wf_owner(r): return r['mpm'] if r['mpm'] in('Brock Hegr','Sarah Schlosberg','Mohammad Abudahab') else 'Unassigned (queue)'
+BASE=[('Company',link),('Tier',lambda r:TIER.get(r['tier'],r['tier'])),('Trend',lambda r:r['trend'] or '—'),('MPM',lambda r:r['mpm'] or '<span class="muted">blank</span>')]
+rev=[r for r in rows if r['L5523'] or r['L5525'] or r['L5527']]
+ppc=[r for r in rows if r['L5529']]; sup=[r for r in rows if r['L5466']]
+by=lambda L:sorted(L,key=lambda r:r['name'].lower())
 sets={
- 'supp':sorted(inlist,key=lambda r:r['name']),
- 'noticket':sorted([r for r in cand if r['ntk']==0],key=lambda r:r['name']),
- 'closed':sorted([r for r in cand if any('closed' in s or s=='Transitions' for s in r['stages'])],key=lambda r:r['name']),
- 'entsarah':sorted([r for r in cand if r['tier'] in('Enterprise','TIER 1') and r['mpm']!='Brock Hegr'],key=lambda r:r['name']),
- 't3named':sorted([r for r in cand if r['tier']=='TIER 3' and r['mpm'] not in(None,'','Not Assigned') and not r['wf_sa']],key=lambda r:r['name']),
- 'blankmpm':sorted([r for r in cand if r['mpm'] in(None,'','Not Assigned') and r['tier']!='TIER 3'],key=lambda r:r['name']),
- 'imprinel':sorted([r for r in rows if r['trend']=='Improving' and r['live']=='Yes' and not r['wf_impr'] and not r['wf_sa']],key=lambda r:r['name']),
+ 'noticket':(by([r for r in rows if (r in rev or r in ppc) and r['ntk']==0]),BASE+[('Review list',wf),('PPC list',lambda r:'Yes' if r['L5529'] else '—'),('Suppressed',lambda r:'Yes' if r['L5466'] else '—')]),
+ 'owner':(by([r for r in rev if (r['tier'] in('Enterprise','TIER 1') and r['mpm']!='Brock Hegr') or (r['tier']=='TIER 3' and not r['L5527'] and r['mpm'] not in(None,'','Not Assigned'))]),BASE+[('Sheet owner',exp_owner),('Workflow will assign',wf_owner)]),
+ 'ppcexcl':(by([r for r in rows if r['live']=='Yes' and not r['L5466'] and ((r['trend']=='At Risk' and r['tier'] in('Enterprise','TIER 1','TIER 2','Tier 2 - L2','TIER 3') and not r['L5523']) or (r['trend']=='Improving' and r['tier'] in('Enterprise','TIER 1','TIER 2') and not r['L5525'])) and not r['L5527']]),BASE+[('PPC Enrolled',lambda r:{'true':'Yes','false':'No'}.get(r['ppc_en'],r['ppc_en'] or 'blank'))]),
+ 'supp':(by(sup),BASE+[('Status',lambda r:r['live']),('In PPC list',lambda r:'Yes' if r['L5529'] else '—')]),
+ 'review':(by(rev),BASE+[('Workflow',wf),('Owner on task',wf_owner),('SpareFoot',lambda r:{'true':'Yes','false':'No'}.get(r['sf'],'blank')),('PPC task too',lambda r:'Yes' if r['L5529'] else '—')]),
 }
-live=[r for r in cand if not r['inlist']]
-N=dict(atrisk=sum(r['wf_atrisk'] for r in cand),impr=sum(r['wf_impr'] for r in cand),sa=sum(r['wf_sa'] for r in cand),cand=len(cand),
-       live=len(live),ppc=len(ppc),ppclive=sum(1 for r in ppc if not r['inlist']),supp=len(inlist),
-       supp_nov5m=sum(r['nov5m'] for r in inlist),supp_not_nov5m=sum(1 for r in inlist if not r['nov5m']))
-data=dict(N=N,tables={k:table(v,C_STD+([('In supp. list',lambda r:'Yes' if r['inlist'] else '')] if k!='supp' else [('Nov 5 review task',lambda r:'Yes' if r['nov5m'] else '—'),('Nov 5 PPC task',lambda r:'Yes' if r['nov5p'] else '—')])) for k,v in sets.items()},counts={k:len(v) for k,v in sets.items()})
-tpl=open(sys.argv[3]).read() if len(sys.argv)>3 else None
+N=dict(ar=sum(r['L5523'] for r in rows),im=sum(r['L5525'] for r in rows),sa=sum(r['L5527'] for r in rows),rev=len(rev),ppc=len(ppc),sup=len(sup),
+       ppc_rev=sum(1 for r in ppc if r in rev),ppc_sup=sum(1 for r in ppc if r['L5466']),
+       ar_excl=sum(1 for r in sets['ppcexcl'][0] if r['trend']=='At Risk'),im_excl=sum(1 for r in sets['ppcexcl'][0] if r['trend']=='Improving'))
 out=tpl
 for k,v in N.items(): out=out.replace('{{N.'+k+'}}',str(v))
-for k,v in data['counts'].items(): out=out.replace('{{C.'+k+'}}',str(v))
-for k,v in data['tables'].items(): out=out.replace('{{T.'+k+'}}',v)
-open(OUT,'w').write(out)
-print('written',OUT,N,data['counts'])
+for k,(L,cols) in sets.items(): out=out.replace('{{C.'+k+'}}',str(len(L))).replace('{{T.'+k+'}}',table(L,cols))
+assert '{{' not in out, out[out.index('{{'):out.index('{{')+40]
+open(OUT,'w').write(out); print('written',N,{k:len(v[0]) for k,v in sets.items()})
