@@ -84,6 +84,12 @@ tr.click{cursor:pointer}tr.click:hover td{background:var(--soft)}
 tr.dim td{color:var(--muted)}
 td.num{text-align:right;font-variant-numeric:tabular-nums}
 td.bad{color:var(--red);font-weight:600}
+.log-st{display:inline-block;font-size:12px;font-weight:600;padding:2px 10px;border-radius:20px;border:1px solid var(--line)}
+.log-st.open{color:var(--red);border-color:var(--red)}
+.log-edit{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
+.log-edit select,.log-edit input{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}
+.log-edit input{flex:1;min-width:200px}
+.log-edit button{font:inherit;padding:6px 14px;border-radius:8px;border:1px solid var(--line);background:var(--soft);color:var(--ink);cursor:pointer}
 .empty{background:var(--card);border:1px dashed var(--line);border-radius:12px;padding:18px;color:var(--muted)}
 .tool{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:14px 0}
 .tool label{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:14px;cursor:pointer}
@@ -181,6 +187,7 @@ button.cal-day.s-ok:hover,button.cal-day.s-bad:hover,button.cal-day.s-known:hove
  <section id="t-changes"></section>
  <section id="t-waiting"></section>
  <section id="t-off"></section>
+ <section id="t-log"></section>
  <div class="legend" id="legend"></div>
 </div></main>
 <script>
@@ -254,7 +261,7 @@ $('#title').textContent=`${D.team} weekly check`;
 $('#sub').textContent=`${day(w0)} to ${day(w1)} ${w1.slice(0,4)}  ·  Report for ${day(D.report_day)}  ·  Data read ${when(D.fetched_at)} (${(D.time_zone||'').replace('US/','US ')})`;
 const q1=items.filter(i=>i.q===1),q2=items.filter(i=>i.q===2),q3=items.filter(i=>i.q===3);
 const nBad=a=>a.filter(i=>i.kind==='bad').length;
-const TABS=[['overview','Overview',nBad(items),true],['tasks','Tasks created',nBad(q1),true],['links','Company links',nBad(q2),true],['changes','Workflow changes',q3.length,false],['waiting',`Waiting on ${D.decision_owner}`,D.waiting_on.length,false],['off','Switched off',(D.switched_off||[]).length,(D.switched_off||[]).some(w=>w.status!=='off_expected')]];
+const TABS=[['overview','Overview',nBad(items),true],['tasks','Tasks created',nBad(q1),true],['links','Company links',nBad(q2),true],['changes','Workflow changes',q3.length,false],['waiting',`Waiting on ${D.decision_owner}`,D.waiting_on.length,false],['off','Switched off',(D.switched_off||[]).length,(D.switched_off||[]).some(w=>w.status!=='off_expected')]].concat(D.error_log_from?[['log','Error log',0,true]]:[]);
 $('#nav').innerHTML=TABS.map(([id,l,n,red])=>`<button data-t="${id}">${l}${n?`<span class="badge${red?' red':''}">${n}</span>`:''}</button>`).join('');
 function show(id){document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===id));document.querySelectorAll('main section').forEach(s=>s.classList.toggle('on',s.id==='t-'+id));$('#facility').innerHTML='';window.scrollTo(0,0);}
 $('#nav').onclick=e=>{const b=e.target.closest('button');if(b)show(b.dataset.t);};
@@ -464,6 +471,41 @@ ${changed.map(c=>`<div class="panel" style="border-left:5px solid var(--amber)">
   ${w.summary_stale?`<p class="ok" style="margin-top:6px">This summary was written for revision ${esc(w.summary_revision)}; the workflow has changed since (master rules file: revision ${esc(w.master_revision)}). Ask Claude to rewrite it.</p>`:''}
   <div class="meta"><span class="chip">Last edited ${esc(when(w.last_edited.slice(0,16)))} UTC</span><span class="${c}" style="font-size:14px">${w.status==='off_expected'?esc(t):`${esc(t.replace(' See Workflow changes.',''))} <a href="#" data-go="changes">See Workflow changes →</a>`}</span></div></div></div></div>`;}).join(''):'<div class="empty">No workflow is switched off.</div>'}</div>`;
  $('#t-off').onclick=e=>{const b=e.target.closest('[data-go]');if(b){e.preventDefault();show(b.dataset.go);}};})();
+
+/* ---------- error log (published page only) ----------
+   One entry per error group (day, kind of error, task type), kept in the artifact's database (collection "error_log")
+   so it carries across weekly republishes. The audit session writes the entries; owners and editors set the status
+   and the resolution here. Opened as a plain file, the tab says where the log lives. */
+(function(){if(!D.error_log_from)return;const el=$('#t-log');
+ el.innerHTML=`<h2>Error log</h2><p class="lead">Every error the weekly audit has found since ${esc(day(D.error_log_from))} ${esc(D.error_log_from.slice(0,4))}, and why. It's kept from week to week, newest first.</p>
+ <div class="tool"><label><input type="checkbox" id="logopen"> Only show open errors</label></div><div id="logbody"><div class="empty">Loading the log…</div></div>`;
+ const body=$('#logbody');const use=window.claude&&window.claude.use;
+ if(!use){body.innerHTML='<div class="empty">The error log is kept on the published page. Open the page from its claude.ai link to see it.</div>';return;}
+ let rows=[],db=null,canEdit=false,loaded=false;
+ const STS=['Open','Resolved','Not an error'];
+ const badge=()=>{const n=rows.filter(r=>r.status==='Open').length,b=document.querySelector('nav button[data-t="log"]');if(b)b.innerHTML='Error log'+(n?`<span class="badge red">${n}</span>`:'');};
+ function render(){badge();const only=$('#logopen').checked,list=rows.filter(r=>!only||r.status==='Open').sort((a,b)=>String(b.happened_at||'').localeCompare(String(a.happened_at||''))||String(a.id).localeCompare(String(b.id)));
+  if(!list.length){body.innerHTML=`<div class="empty">${rows.length?'No open errors.':`No errors found since ${esc(day(D.error_log_from))}.`}</div>`;return;}
+  body.innerHTML=`<div class="list">${list.map(r=>{const fac=Array.isArray(r.facilities)?r.facilities:[],open=r.status==='Open';
+   return `<div class="item ${open?'bad':'known'}" data-id="${esc(r.id)}"><div class="head"><div class="cnt">${esc(r.count||fac.length||1)}<small>${(r.count||fac.length||1)===1?'facility':'facilities'}</small></div><div class="itxt">
+    <h3>${esc(r.error)}${r.task?`: ${esc(r.task)}`:''}</h3>
+    <p>${esc(r.why)}</p>
+    <div class="meta"><span class="log-st${open?' open':''}">${esc(r.status||'Open')}</span><span class="chip">Happened ${esc(day(r.happened_at||r.happened))}${/\d\d:\d\d/.test(r.happened_at||'')?' '+esc(String(r.happened_at).slice(11,16))+' EST':''}</span><span class="chip">Found by the audit of ${esc(day(r.found_by_audit))}</span>${r.workflow?`<span class="chip">${wfLink(r.workflow_id,r.workflow)}</span>`:''}${chips(r.label||'')}</div>
+    ${r.resolution?`<p style="margin-top:10px"><b>Resolution:</b> ${esc(r.resolution)}</p>`:''}
+    ${fac.length?`<details style="margin-top:10px"><summary>The ${plural(fac.length,'facility','facilities')}</summary><p style="margin-top:6px">${fac.map(f=>`${ext(coUrl(f.id),esc(f.name||f.id))}`).join(' · ')}</p></details>`:''}
+    ${canEdit?`<div class="log-edit"><select aria-label="Status">${STS.map(x=>`<option${x===(r.status||'Open')?' selected':''}>${x}</option>`).join('')}</select><input aria-label="Resolution" placeholder="Resolution or note" value="${esc(r.resolution||'')}"><button data-save="${esc(r.id)}">Save</button><span class="ok log-msg"></span></div>`:''}
+   </div></div></div>`;}).join('')}</div>`;}
+ $('#logopen').onchange=render;
+ body.addEventListener('click',async e=>{const b=e.target.closest('[data-save]');if(!b||!db)return;const box=b.closest('.log-edit'),msg=box.querySelector('.log-msg');
+  b.disabled=true;msg.textContent='Saving…';
+  try{await db.collection('error_log').doc(b.dataset.save).update({status:box.querySelector('select').value,resolution:box.querySelector('input').value.trim()});msg.textContent='Saved';}
+  catch(err){msg.textContent=err&&err.code==='invalid_argument'?'Only owners and editors can change the log.':'Not saved. Try again.';}
+  b.disabled=false;});
+ const timer=setTimeout(()=>{if(!loaded)body.innerHTML='<div class="empty">The log can\'t be reached yet. It will appear when the connection comes back.</div>';},10000);
+ use('user').then(u=>u&&u.canEdit()).then(v=>{canEdit=!!v;if(loaded)render();}).catch(()=>{});
+ use('db').then(d=>{db=d;if(!d){clearTimeout(timer);body.innerHTML='<div class="empty">Sign in to claude.ai to see the error log.</div>';return;}
+  d.collection('error_log').onSnapshot(snap=>{rows=snap.docs.map(x=>Object.assign({id:x.id},x.data()));if(!snap.metadata.fromCache){loaded=true;clearTimeout(timer);}render();},
+   ()=>{clearTimeout(timer);body.innerHTML='<div class="empty">The log could not be loaded on this visit.</div>';});});})();
 
 /* ---------- waiting ---------- */
 $('#t-waiting').innerHTML=`<h2>Waiting on ${esc(D.decision_owner)}</h2><p class="lead">Open questions. Until they're answered, anything they affect is listed here instead of as a new problem.</p>

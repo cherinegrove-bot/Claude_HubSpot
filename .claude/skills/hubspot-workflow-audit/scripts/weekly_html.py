@@ -40,6 +40,7 @@ data = {k: R[k] for k in ('team', 'decision_owner', 'portal', 'queue', 'queue_id
                           'counts', 'top', 'types', 'new_facilities', 'links', 'subtasks', 'changes', 'waiting_on', 'known_issues', 'expected_off',
                           'problems', 'companies', 'tasks')}
 data['schedules'] = R.get('schedules', [])
+data['error_log_from'] = TEAM.get('error_log_from')      # Error log tab (rows live in the published page's database)
 data['task_list'] = R.get('task_list', [])
 data['tier_columns'] = R.get('tier_columns', [])
 data['known_days'] = R.get('known_days', [])

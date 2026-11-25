@@ -657,6 +657,7 @@ The scripts read this block. Keep it in step with the text above.
     "flagged_reason": "missed: the facility is on the Street Rate Management exclusion list (\"Exclude from Ops tasks\"), which this workflow still excluded until 6 October",
     "flag_excluded_decided": "2026-10-14"
   },
+  "error_log_from": "2026-11-25",
   "makeup_workflows": [
     {
       "name": "R+S - Facility Performance Monitoring and Escalation (Fix)",
