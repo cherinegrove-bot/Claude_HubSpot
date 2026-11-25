@@ -135,6 +135,34 @@ day's contacts into the collapsed "Earlier days" list.
 If the page has a `<section id="today-prelim">` (an on-demand partial-day check),
 remove it on the next scheduled run; the full-day result replaces it.
 
+## Step 5: Error log tab (from 2026-11-25 onwards)
+
+The page has two tabs: "Daily report" (`#report`) and "Error log" (`#errors`).
+For every error on an audited day of 2026-11-25 or later (Missed ticket,
+Created incorrectly, Duplicate tickets, Blank source), add one row to
+`<table id="error-log"> <tbody>` (newest first) and keep all earlier rows.
+Never log days before 2026-11-25. The tab's counter and empty state update
+themselves from the row count; also update the "Checked so far" text in
+`#errors-empty` while there are no rows.
+
+Columns: Day (SAST) · Contact (link) · Facility tag · Source · Error (pill) ·
+Ticket (link or "None") · Why it happened · Status (`Open` until the user says
+it is resolved; then `Resolved <date>: <note>`).
+
+"Why it happened" must be an investigated reason, not a restatement:
+- Missed ticket: check the contact's workflow enrollment/history if visible;
+  check if facility_tag, source or contact_type were set or changed AFTER
+  creation (property history / lastmodifieddate vs createdate), whether the
+  contact was a re-sync of an existing record, and whether any ticket
+  (any pipeline, any source) exists.
+- Created incorrectly: compare the ticket's createdate with when `source`
+  was set to Internet Website (source changed after the ticket = timing issue
+  vs. workflow branch not matching), and check the exact source text.
+- Duplicates: list each ticket id and createdate; note re-enrollment if the
+  tickets are hours apart.
+If the cause can't be determined from the data, say what was checked and
+"cause not found".
+
 The report body contains:
 - Summary tiles: contacts audited, correct, missed tickets, incorrect tickets, duplicates.
 - **Exceptions first**: Missed tickets, Incorrect tickets, Duplicates, Criteria

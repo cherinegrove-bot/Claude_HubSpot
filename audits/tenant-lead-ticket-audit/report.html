@@ -41,6 +41,17 @@ a{color:var(--accent)}
 .flag{border-left:3px solid var(--bad);padding-left:14px;display:flex;flex-direction:column;gap:8px}
 details summary{cursor:pointer;font-family:var(--font-head);font-size:1.15rem;font-weight:600;padding-block:4px}
 details[open] summary{margin-bottom:8px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.tab{appearance:none;background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;padding:10px 14px;font:inherit;font-weight:500;color:var(--muted);cursor:pointer;display:flex;gap:8px;align-items:center}
+.tab[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+.tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.count{font-size:.75rem;padding:0 7px;border-radius:999px;background:var(--line);color:var(--fg);font-variant-numeric:tabular-nums}
+.panel{display:flex;flex-direction:column;gap:24px}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:8px;padding:20px;color:var(--muted)}
+.empty strong{color:var(--ok)}
+dl.types{display:grid;grid-template-columns:max-content 1fr;gap:6px 16px;margin:0;font-size:.9rem}
+dl.types dt{font-weight:600}
+dl.types dd{margin:0;color:var(--muted)}
 </style>
 
 <div class="wrap">
@@ -48,6 +59,27 @@ details[open] summary{margin-bottom:8px}
     <h1>Tenant Lead Ticket Audit</h1>
     <p class="meta">Runs daily at 08:00 SAST for the previous day · Tenant Leads pipeline · 18 in-scope facilities</p>
   </header>
+
+  <nav class="tabs" role="tablist" aria-label="Report sections">
+    <button class="tab" role="tab" id="tab-report" aria-controls="report" aria-selected="true">Daily report</button>
+    <button class="tab" role="tab" id="tab-errors" aria-controls="errors" aria-selected="false">Error log <span class="count" id="error-count">0</span></button>
+  </nav>
+
+  <div class="panel" id="report" role="tabpanel" aria-labelledby="tab-report">
+
+  <section id="today-prelim">
+    <h2>Today so far: 25 Nov (preliminary, 00:00 to 21:18 SAST)</h2>
+    <p class="meta">4 contacts, all correct, no errors. Tomorrow's 08:00 run replaces this with the full-day result.</p>
+    <div class="scroll"><table>
+      <thead><tr><th>Contact</th><th>Facility tag</th><th>Source</th><th>Created (SAST)</th><th>Lead status now</th><th>Workflow ticket</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/265269270808">Aarron grants</a></td><td>f__nobull_storage_arrow_way</td><td>Walk In Call Center</td><td>25 Nov 00:15</td><td>New</td><td><a href="https://app.hubspot.com/contacts/45059701/record/0-5/51915176290">51915176290</a></td><td><span class="pill ok">Ticket created</span></td></tr>
+        <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/265514291636">Kaylan Stackhouse</a></td><td>f__secureloc_self_storage</td><td>Internet Website</td><td>25 Nov 17:15</td><td>Attempted to Contact</td><td>None</td><td><span class="pill ok">No ticket</span></td></tr>
+        <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/265523239003">Jasmine Layfield</a></td><td>f__space_station_salisbury</td><td>Internet Website</td><td>25 Nov 18:15</td><td>Attempted to Contact</td><td>None</td><td><span class="pill ok">No ticket</span></td></tr>
+        <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-1/265526467924">Steve Henry</a></td><td>f__iron_mountain_storage</td><td>Internet Website</td><td>25 Nov 18:31</td><td>Connected</td><td>None</td><td><span class="pill ok">No ticket</span></td></tr>
+      </tbody>
+    </table></div>
+  </section>
 
   <section class="banner">
     <strong>Latest: Tuesday 24 Nov 2026 (full day, SAST).</strong>
@@ -156,4 +188,58 @@ details[open] summary{margin-bottom:8px}
       </tbody>
     </table></div>
   </section>
+  </div>
+
+  <div class="panel" id="errors" role="tabpanel" aria-labelledby="tab-errors" hidden>
+    <section>
+      <h2>Error log</h2>
+      <p class="meta">Every error the audit finds from 25 Nov 2026 onwards, with the reason behind it. Each day's run adds new errors here and they stay until marked resolved. Earlier days (20 to 24 Nov) are not logged.</p>
+    </section>
+
+    <section class="empty" id="errors-empty">
+      <strong>No errors logged.</strong> Checked so far: 25 Nov (4 contacts, partial day). Nothing was missed or created incorrectly.
+    </section>
+
+    <div class="scroll">
+      <table id="error-log">
+        <thead><tr><th>Day (SAST)</th><th>Contact</th><th>Facility tag</th><th>Source</th><th>Error</th><th>Ticket</th><th>Why it happened</th><th>Status</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <section>
+      <h2>Error types</h2>
+      <dl class="types">
+        <dt>Missed ticket</dt><dd>Source is not Internet Website, but the workflow did not create a Tenant Leads ticket.</dd>
+        <dt>Created incorrectly</dt><dd>Source is Internet Website, but the workflow created a Tenant Leads ticket.</dd>
+        <dt>Duplicate tickets</dt><dd>The workflow created more than one Tenant Leads ticket for the same contact.</dd>
+        <dt>Blank source</dt><dd>The contact has no Source, so the rule can't be applied reliably.</dd>
+      </dl>
+      <p class="meta">Tenant Leads tickets from chat, the inbox or created by hand are not errors and are not logged here.</p>
+    </section>
+  </div>
 </div>
+
+<script>
+(function(){
+  var tabs=[].slice.call(document.querySelectorAll('.tab'));
+  function show(id){
+    tabs.forEach(function(t){
+      var on=t.getAttribute('aria-controls')===id;
+      t.setAttribute('aria-selected',on?'true':'false');
+      document.getElementById(t.getAttribute('aria-controls')).hidden=!on;
+    });
+  }
+  tabs.forEach(function(t){t.addEventListener('click',function(){
+    var id=t.getAttribute('aria-controls'); show(id);
+    try{history.replaceState(null,'',id==='report'?location.pathname+location.search:'#errors')}catch(e){}
+  })});
+  function fromHash(){show(location.hash==='#errors'?'errors':'report')}
+  window.addEventListener('hashchange',fromHash); fromHash();
+  var rows=document.querySelectorAll('#error-log tbody tr').length;
+  document.getElementById('error-count').textContent=rows;
+  document.getElementById('errors-empty').hidden=rows>0;
+  document.getElementById('error-log').closest('.scroll').hidden=rows===0;
+})();
+</script>
+
