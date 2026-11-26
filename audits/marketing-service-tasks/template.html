@@ -52,9 +52,10 @@ header.top{display:grid;gap:14px}
 .fid{font-family:var(--f-mono);font-size:.8rem;color:var(--sev);font-weight:500}
 .finding dl{display:grid;grid-template-columns:110px 1fr;gap:6px 14px;margin:0}
 .finding dt{font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding-top:2px}
-.finding dd{margin:0;min-width:0}
+.finding dt{grid-column:1}
+.finding dd{margin:0;min-width:0;grid-column:2}
 .finding ul{margin:0;padding-left:18px}
-@media (max-width:560px){.finding dl{grid-template-columns:1fr}.finding dt{padding-top:6px}}
+@media (max-width:560px){.finding dl{grid-template-columns:1fr}.finding dt,.finding dd{grid-column:1}.finding dt{padding-top:6px}}
 .tw{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
 table{border-collapse:collapse;width:100%;font-size:.88rem;font-variant-numeric:tabular-nums}
 th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
@@ -135,7 +136,7 @@ footer{color:var(--muted);font-size:.85rem;border-top:1px solid var(--line);padd
     <div class="fhead"><span class="fid">H1</span><h3>{{C.owner}} review tasks will go to a different owner than the sheet says</h3><span class="pill p-high">Decision pending</span></div>
     <dl>
       <dt>What</dt><dd>The workflows assign the task from the company's Marketing Portfolio Mgr field. The sheet says Brock owns all Enterprise and Tier 1, and Tier 3 goes to the pooled queue.</dd>
-      <dd><ul><li>8 Tier 1 companies have Sarah as MPM.</li><li>A1 Self Storage (Tier 3) has Sarah as MPM instead of the pool.</li></ul></dd>
+      <dt>Affected</dt><dd><ul><li>8 Tier 1 companies have Sarah as MPM.</li><li>A1 Self Storage (Tier 3) has Sarah as MPM instead of the pool.</li></ul></dd>
       <dt>Status</dt><dd>You are confirming whether these follow the workflow (Marketing Portfolio Mgr) or the sheet. Either answer works with the current setup. If the sheet wins, update the field on these 9 companies before the run. See appendix A.</dd>
     </dl>
   </article>
