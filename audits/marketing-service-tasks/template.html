@@ -78,18 +78,18 @@ footer{color:var(--muted);font-size:.85rem;border-top:1px solid var(--line);padd
   <p class="eyebrow">White Label Storage · HubSpot portal 45059701 · Marketing Services</p>
   <h1>Marketing Service Task Audit</h1>
   <div class="meta">
-    <span>Run 4 · Pre-launch re-check</span>
+    <span>Run 5 · Full pre-launch re-check (next run only)</span>
     <span>Audited Thu 26 Nov 2026</span>
-    <span>Planned task creation: Fri 4 Dec or Mon 7 Dec 2026 (5 Dec is a Saturday)</span>
+    <span>Planned task creation: Fri 4 Dec or Mon 7 Dec 2026</span>
   </div>
-  <div class="verdict amber"><strong>NEARLY READY</strong><span>The setup and timing are now right: the stamp, the due dates and the run dates all line up. Three data or sheet decisions remain before the December run. None of them stops tasks being created.</span></div>
+  <div class="verdict amber"><strong>NEARLY READY</strong><span>The workflows, lists, timing and stamping are set up correctly for the next run. One item needs a decision: 9 companies would get a different owner than the sheet says. Three medium checks remain.</span></div>
   <div class="tally">
     <div class="c"><b>0</b><span>Critical</span></div>
-    <div class="h"><b>3</b><span>High</span></div>
+    <div class="h"><b>1</b><span>High</span></div>
     <div class="m"><b>8</b><span>Medium / Low</span></div>
-    <div class="o"><b>12</b><span>Resolved since Run 1</span></div>
+    <div class="o"><b>15</b><span>Resolved since Run 1</span></div>
   </div>
-  <p class="muted">Read-only audit. Nothing was changed in HubSpot or in the Google Sheet. List counts are a snapshot taken on 25 Nov. The lists are dynamic and will change when Trend to Goal is refreshed.</p>
+  <p class="muted">Read-only audit. Nothing was changed in HubSpot or in the Google Sheet. List counts are a snapshot taken on 26 Nov and will move when Trend to Goal is refreshed.</p>
 </header>
 
 <section>
@@ -98,11 +98,20 @@ footer{color:var(--muted);font-size:.85rem;border-top:1px solid var(--line);padd
     <div><span class="id">1892165928 · list 5523</span><b>At Risk</b><span>Manual, every 2 months</span><span class="pill p-off">Off</span></div>
     <div><span class="id">1892196753 · list 5525</span><b>Improving</b><span>Manual, every 2 months</span><span class="pill p-off">Off</span></div>
     <div><span class="id">1892197644 · list 5527</span><b>Standalone Marketing</b><span>Manual, every 2 months</span><span class="pill p-off">Off</span></div>
-    <div><span class="id">1892197744 · list 5529</span><b>Google Ads (PPC)</b><span>Manual, monthly, no suppression, no delay</span><span class="pill p-off">Off</span></div>
-    <div><span class="id">1934717342 · list 5466</span><b>Suppression</b><span>Joins 5466 → 45 days → removed</span><span class="pill p-on">On</span></div>
+    <div><span class="id">1892197744 · list 5529</span><b>Google Ads (PPC)</b><span>Manual, monthly</span><span class="pill p-off">Off</span></div>
+    <div><span class="id">1934717342 · list 5466</span><b>Suppression</b><span>45 days (25 for the current 42)</span><span class="pill p-on">On</span></div>
+    <div><span class="id">1855066380</span><b>Last Performance Review stamp</b><span>On task completed</span><span class="pill p-on">On</span></div>
   </div>
-  <p>Compared against the updated sheet <a href="https://docs.google.com/spreadsheets/d/1ZjoNUwcFEFkpxCo4L6LNkV4k_dAUy-uBr202adKexNY/edit" target="_blank" rel="noopener">Marketing HubSpot Task Management</a>, which replaces the Run 1 sheet. Also checked: the four trigger lists, suppression list 5466, the workflow that stamps Last Performance Review (<span class="mono">1855066380</span>), and the tasks created on 5 Nov.</p>
-  <div class="note">Subtask ownership was confirmed for Run 3. All subtasks stay unassigned, so they sit with the main task owner (the MPM), who works with Berat on his items. That matches the 5 Nov tasks. The review workflows have not changed since 24 Nov.</div>
+  <p>This run was a full pass, limited to what affects the next run. Tasks from earlier cycles are out of scope. It covered:</p>
+  <ul>
+    <li>All four tabs of the <a href="https://docs.google.com/spreadsheets/d/1ZjoNUwcFEFkpxCo4L6LNkV4k_dAUy-uBr202adKexNY/edit" target="_blank" rel="noopener">task sheet</a>, read in full.</li>
+    <li>Every action in all six workflows: 24 review task actions, the PPC task action, every branch, every add-to-list step and every delay.</li>
+    <li>The filters and members of all five lists.</li>
+    <li>The new "Next Performance Review due" property.</li>
+    <li>All 293 live companies.</li>
+    <li>Ticket association labels.</li>
+  </ul>
+  <div class="note">The HubSpot workflow API does not return subtask settings or Task Category on "Create task" actions. Those two items are taken from your confirmation and will be checked on the real tasks after the run.</div>
 </section>
 
 <section>
@@ -115,101 +124,91 @@ footer{color:var(--muted);font-size:.85rem;border-top:1px solid var(--line);padd
     <div><b>{{N.ppc}}</b><span>PPC tasks (list 5529)</span></div>
     <div class="m"><b>{{N.sup}}</b><span>Held in suppression, no review task</span></div>
   </div>
-  <p class="muted">None of the three review lists overlap. The review lists already leave out the {{N.sup}} suppressed companies. {{N.ppc_sup}} of those still get a PPC task, which is now correct. {{N.ppc_rev}} companies get both a review and a PPC task.</p>
+  <p class="muted">None of the three review lists overlap, and none of them includes a suppressed company. {{N.ppc_rev}} companies get both a review task and a PPC task. {{N.ppc_sup}} suppressed companies still get their PPC task, as intended.</p>
 </section>
 
 <section>
   <h2>Findings</h2>
 
   <article class="finding high">
-    <div class="fhead"><span class="fid">H1</span><h3>Task Category is not set on the review task or the PPC task</h3><span class="pill p-high">High</span></div>
+    <div class="fhead"><span class="fid">H1</span><h3>{{C.owner}} review tasks will go to a different owner than the sheet says</h3><span class="pill p-high">High</span></div>
     <dl>
-      <dt>What</dt><dd>None of the task actions set <span class="mono">task_catagory</span>. On 5 Nov the review subtasks had the right categories, but the main review task, the PPC task and the PPC subtasks had none.</dd>
-      <dt>Sheet says</dt><dd>Review: Monthly Analytics Report. PPC: PPC / Paid Search.</dd>
-    </dl>
-  </article>
-
-  <article class="finding high">
-    <div class="fhead"><span class="fid">H2</span><h3>The trigger lists also require PPC Enrolled = Yes, which the sheet does not mention</h3><span class="pill p-high">High</span></div>
-    <dl>
-      <dt>What</dt><dd>Lists 5523, 5525 and 5527 all include "PPC Enrolled (Yes/No) = Yes". The sheet triggers reviews on Trend to Goal and tier alone. Standalone is described as "Website-only".</dd>
-      <dt>Impact</dt><dd>{{N.ar_excl}} At Risk and {{N.im_excl}} Improving live companies that the sheet would include get no review because PPC Enrolled is No, Paused or blank. All 7 current Standalone companies are PPC Enrolled = Yes, so none are lost today. A future website-only client would be left out.</dd>
-      <dt>Decide</dt><dd>If PPC Enrolled = Yes means "is a Marketing Services client", add that rule to the sheet. If it doesn't, remove the filter from the review lists. See appendix C.</dd>
-    </dl>
-  </article>
-
-  <article class="finding high">
-    <div class="fhead"><span class="fid">H3</span><h3>{{C.owner}} review tasks will go to a different owner than the sheet says</h3><span class="pill p-high">High</span></div>
-    <dl>
-      <dt>What</dt><dd>The workflows assign the task from the Marketing Portfolio Mgr field. The sheet assigns by tier: Brock for all Enterprise and Tier 1, and the pooled queue for Tier 3. The mismatches are 8 Tier 1 companies with Sarah as MPM and 1 Tier 3 company with a named MPM.</dd>
-      <dt>Fix</dt><dd>Correct the field on these companies, or change the sheet if Sarah is meant to own them. See appendix B.</dd>
+      <dt>What</dt><dd>The workflows assign the task from the company's Marketing Portfolio Mgr field. The sheet says Brock owns all Enterprise and Tier 1, and Tier 3 goes to the pooled queue.</dd>
+      <dd><ul><li>8 Tier 1 companies have Sarah as MPM.</li><li>A1 Self Storage (Tier 3) has Sarah as MPM instead of the pool.</li></ul></dd>
+      <dt>Fix</dt><dd>Correct the field on these companies, or update the sheet if Sarah is meant to own them. See appendix B.</dd>
     </dl>
   </article>
 
   <article class="finding med">
-    <div class="fhead"><span class="fid">M1</span><h3>Check which delay the {{N.sup}} suppressed companies are actually waiting on</h3><span class="pill p-med">Medium</span></div>
+    <div class="fhead"><span class="fid">M1</span><h3>"Next Performance Review due" adds 1 month, but reviews run every 2 months</h3><span class="pill p-med">Medium</span></div>
     <dl>
-      <dt>Intent</dt><dd>The current members were added late (23 Nov) and should wait 25 days. Everyone enrolled from the December run onward waits 45 days. The 25-day path is removed after the next run.</dd>
-      <dt>What</dt><dd>The suppression workflow picks the delay with one check: "Is the company in list 5466?" Yes → 45 days. No → 25 days. A company enrolled because it joined 5466 is still in 5466 at that check, so it takes the 45-day path. As built, the 25-day path only runs for a company that has already left the list.</dd>
-      <dt>Either way</dt><dd><ul><li>25 days from 23 Nov: released 18 Dec. 45 days: released 7 Jan.</li><li>Both are after the December run and before the 5 Feb run. The timing works out whichever path they took.</li></ul></dd>
-      <dt>Check</dt><dd>In the suppression workflow's enrollment history, confirm all {{N.sup}} are enrolled and see which delay they are on. If none are enrolled, they stay suppressed until someone removes them. When the 25-day path is removed after the run, make sure every path still ends with "remove from list 5466".</dd>
+      <dt>What</dt><dd>The new ticket property <span class="mono">next_performance_review_due</span> is a calculation: <span class="mono">add_time(last_review_date, 1, 'month')</span>.</dd>
+      <dt>Example</dt><dd>A December review completed on 20 Jan shows the next review as due 20 Feb. The next review task is not created until 5 Apr.</dd>
+      <dt>Check</dt><dd>If the date should match the 2-month cycle, change the 1 to 2. Also, the older empty date property "Next review due" (<span class="mono">next_review_due</span>) still exists on tickets. Hide or archive it so nobody fills in the wrong one.</dd>
     </dl>
   </article>
 
   <article class="finding med">
-    <div class="fhead"><span class="fid">M2</span><h3>Nothing sets "Next Review Due"</h3><span class="pill p-med">Medium</span></div>
+    <div class="fhead"><span class="fid">M2</span><h3>{{C.noticket}} companies have a Marketing Services ticket, but it isn't labelled "Marketing"</h3><span class="pill p-med">Medium</span></div>
     <dl>
-      <dt>What</dt><dd>The stamping workflow now sets Last Performance Review when the task is completed, but it has no step for <span class="mono">next_review_due</span>. The sheet says completing the main task "schedules Next Review Due". No ticket has either date set yet.</dd>
-      <dt>Fix</dt><dd>Add a second action that sets Next Review Due, for example the completion date plus 2 months. Otherwise, remove that wording from the sheet.</dd>
+      <dt>What</dt><dd>The task's ticket link copies the company's ticket with the "Marketing" association label. Both companies below have a ticket in the Marketing Services pipeline (Enterprise stage), but it is linked with no label. Their tasks would attach to the company only.</dd>
+      <dt>Fix</dt><dd>Open each ticket and give its company association the "Marketing" label.</dd>
+      <dd>{{T.noticket}}</dd>
     </dl>
   </article>
 
   <article class="finding med">
-    <div class="fhead"><span class="fid">M3</span><h3>{{C.noticket}} companies have no Marketing ticket</h3><span class="pill p-med">Medium</span></div>
-    <dl><dt>What</dt><dd>The ticket link is copied from the company's "Marketing" ticket. Without one, the task is linked to the company only. SOA L006 Range Road would get a review and a PPC task with no ticket. SOA L019 Gratiot would get a PPC task with no ticket. See appendix A.</dd></dl>
-  </article>
-
-  <article class="finding med">
-    <div class="fhead"><span class="fid">M4</span><h3>The lists are dynamic, so their members change until you enroll them</h3><span class="pill p-low">Low</span></div>
-    <dl><dt>What</dt><dd>Membership follows Trend to Goal, tier and PPC flags at the moment of enrollment. Run the monthly performance import before you enroll. With the run moving to Fri 4 Dec, that import has to land a day earlier than usual. Save a list export at enrollment time so the follow-up audit can compare tasks against it.</dd></dl>
+    <div class="fhead"><span class="fid">M3</span><h3>The lists are dynamic, so their members change until you enroll them</h3><span class="pill p-med">Medium</span></div>
+    <dl><dt>What</dt><dd>Membership follows Trend to Goal, tier and the PPC flags at the moment of enrollment. If the run is on Fri 4 Dec, the monthly performance import has to land before then. Export the four lists when you enroll, so the follow-up audit can compare the created tasks against them.</dd></dl>
   </article>
 
   <article class="finding low">
-    <div class="fhead"><span class="fid">L1</span><h3>PPC task has no description and no queue</h3><span class="pill p-low">Low</span></div>
-    <dl><dt>What</dt><dd>The PPC task body is empty, so the checklist exists only as subtasks. It has no queue, unlike the review task, and is due in 20 business days. From 4 Dec that is Fri 1 Jan, a public holiday. From 7 Dec it is Mon 4 Jan. Both are before the 5 Jan PPC run. On 5 Nov the PPC subtasks still included "PPC budget in line with suggested budget". The sheet moved that item to the HubSpot Marketing Card subtask. Confirm the current PPC subtasks.</dd></dl>
+    <div class="fhead"><span class="fid">L1</span><h3>Task Category on the review task: please confirm</h3><span class="pill p-low">Low</span></div>
+    <dl><dt>What</dt><dd>You confirmed PPC / Paid Search is set on the main PPC task. The API can't show this field, so it is accepted as confirmed. The sheet also gives the main review task a category, Monthly Analytics Report. Confirm the review task in all 24 actions has it. The follow-up audit will check both on the real tasks.</dd></dl>
   </article>
 
   <article class="finding low">
-    <div class="fhead"><span class="fid">L2</span><h3>Sheet wording is out of date or inconsistent</h3><span class="pill p-low">Low</span></div>
-    <dl><dt>What</dt><dd><ul><li>Frequency still says "Trigger again 10/05" for reviews and "11/05" for PPC.</li><li>The main task has two names (Master &amp; Subtasks vs Task Matrix).</li><li>Checklist Detail lists six areas with Google Ads as #4. Master &amp; Subtasks has five subtasks.</li><li>"Links / Workflow Ref" is still a placeholder. The workflow and list IDs above can go there.</li><li>The sheet does not mention the PPC Enrolled rule (H2).</li><li>The sheet says "5th of month" everywhere. Add the rule "or the closest working day". Upcoming dates that move: 5 Jun 2027 (Sat), 5 Sep 2027 (Sun), 5 Dec 2027 (Sun).</li><li>The stamping workflow still lists "Marketing Sentiment", which is no longer in the sheet. Completing any leftover Sentiment task would also set Last Performance Review.</li><li>Master &amp; Subtasks lists BERAT under "Assigned To" for Google Business Profile and SpareFoot. Task Matrix says "BERAT is assigned". The agreed setup is that the MPM owns these subtasks and works with Berat. Reword these cells so nobody adds Berat as the owner later.</li></ul></dd></dl>
+    <div class="fhead"><span class="fid">L2</span><h3>PPC task has no description and no queue</h3><span class="pill p-low">Low</span></div>
+    <dl><dt>What</dt><dd><ul><li>The PPC task body is empty, so its checklist lives only in its subtasks.</li><li>It has no queue, unlike the review task.</li><li>It is due in 20 business days. From 4 Dec that is Fri 1 Jan, a public holiday. From 7 Dec it is Mon 4 Jan.</li><li>The sheet moved "PPC budget in line with suggested budget" to the HubSpot Marketing Card subtask. Check that the PPC subtasks no longer include it.</li></ul></dd></dl>
   </article>
 
   <article class="finding low">
-    <div class="fhead"><span class="fid">L3</span><h3>Branches with no current impact</h3><span class="pill p-low">Low</span></div>
-    <dl><dt>What</dt><dd><ul><li>A company with SpareFoot blank leaves the review workflow with no task, because that branch has no fallback path. No list member is blank today.</li><li>A "Mohammad Abudahab" MPM branch would give him the review task. No list member uses it.</li><li>Standalone defaults to Brock in the sheet, but the workflow leaves the task unassigned when MPM is blank. All 7 Standalone companies have an MPM today.</li></ul></dd></dl>
+    <div class="fhead"><span class="fid">L3</span><h3>Sheet wording still out of step in places</h3><span class="pill p-low">Low</span></div>
+    <dl><dt>Task Matrix</dt><dd><ul><li>The Sub-task column says "BERAT is assigned: Google Business Profile, SpareFoot…". Subtasks are actually owned by the MPM, who works with Berat.</li><li>PPC Frequency reads "Trigger again 12/05 months". The word "Monthly" was lost.</li><li>The PPC trigger says "accounts with PPC active" but doesn't mention PPC Enrolled = Yes, which list 5529 also requires.</li><li>"Links / Workflow Ref" is still a placeholder on every row.</li></ul></dd>
+    <dt>Master &amp; Subtasks</dt><dd><ul><li>The main task is called "Monthly Marketing Performance Review Checklist". The workflows and Task Matrix use "Marketing Performance Review".</li><li>The main task note still says "schedules Next Review Due". Task Matrix now says "Next Performance Review due".</li><li>"Assigned To" shows BERAT for Google Business Profile and SpareFoot, and the main task note says "Berat is assigned the GBP and SpareFoot subtasks".</li></ul></dd>
+    <dt>Legend &amp; Ownership</dt><dd><ul><li>Section B (trigger rules) doesn't mention PPC Enrolled = Yes.</li><li>Sections B and C say "created on the 5th" with no closest-working-day rule. In 2027, 5 Jun is a Saturday, and 5 Sep and 5 Dec are Sundays.</li><li>Section D says "Berat is assigned…" and still describes Marketing Sentiment, which is no longer in the Task Matrix.</li></ul></dd>
+    <dt>Checklist Detail</dt><dd>It lists six areas, with Google Ads as #4. Master &amp; Subtasks has five subtasks plus a separate PPC task.</dd></dl>
   </article>
 
   <article class="finding low">
-    <div class="fhead"><span class="fid">L4</span><h3>Leftover test tasks and old workflows</h3><span class="pill p-low">Low</span></div>
-    <dl><dt>What</dt><dd>Two completed "Marketing Performance Review" test tasks from 19 Nov are linked to 21 companies each. They have no ticket. Older copies <span class="mono">1854867276</span> and <span class="mono">1897042192</span> are off; keep them off.</dd></dl>
+    <div class="fhead"><span class="fid">L4</span><h3>Branches with no current impact</h3><span class="pill p-low">Low</span></div>
+    <dl><dt>What</dt><dd><ul><li>A company with SpareFoot blank leaves the review workflow with no task. No list member is blank today.</li><li>The "Mohammad Abudahab" MPM branch would give him the review task. No list member uses it.</li><li>The sheet makes Brock the default owner for Standalone, but the workflow leaves the task unassigned when MPM is blank. All 7 Standalone companies have an MPM today.</li></ul></dd></dl>
+  </article>
+
+  <article class="finding low">
+    <div class="fhead"><span class="fid">L5</span><h3>Leftovers</h3><span class="pill p-low">Low</span></div>
+    <dl><dt>What</dt><dd><ul><li>Old workflow copies <span class="mono">1854867276</span> and <span class="mono">1897042192</span> are off.</li><li>The stamp workflow still lists "Marketing Sentiment" as a title, so completing any leftover Sentiment task would also set Last Performance Review.</li></ul></dd></dl>
   </article>
 </section>
 
 <section>
   <h2>Resolved since Run 1</h2>
   <ul>
-    <li><b>Last Performance Review stamp</b> (Run 3): the workflow now fires when the task status changes to Completed, filtered by title. The follow-up audit will confirm the first real stamp.</li>
-    <li><b>Due date</b> (Run 2): review tasks are now due in 40 business days. From 4 Dec that is Fri 29 Jan, and from 7 Dec Mon 1 Feb. Both are before the 5 Feb run.</li>
-    <li><b>Saturday 5 Dec</b> (Run 2): the run happens on the closest working day, Fri 4 Dec or Mon 7 Dec. Suppression then releases on 18 Jan or 21 Jan, both before 5 Feb.</li>
-    <li><b>PPC fixed-date delay</b> (Run 2): removed. Enrolling now creates the PPC task straight away, every month.</li>
-    <li><b>Berat's subtasks</b> (Run 2): confirmed as intended. Subtasks stay unassigned and sit with the MPM.</li>
-    <li><b>PPC and reviews blocking each other:</b> the PPC workflow no longer uses list 5466 for suppression, its first branch or an add-to-list step.</li>
-    <li><b>No enrollment rules:</b> trigger lists 5523, 5525 and 5527 now apply the trend and tier rules. None of them overlap, and they leave out suppressed companies.</li>
-    <li><b>Improving in the wrong tiers:</b> list 5525 is limited to Enterprise, Tier 1 and Tier 2.1.</li>
-    <li><b>Closed Marketing tickets:</b> no list member has its ticket in the closed "PPC Enrolled No" stage (10 in Run 1).</li>
-    <li><b>Blank MPM:</b> every review company in Tier 1–2.2 now has an MPM (12 were blank in Run 1).</li>
-    <li><b>Sentiment tasks:</b> removed from the sheet, so they are no longer expected.</li>
-    <li><b>Suppressed companies:</b> kept in the list by decision. Their release around 7 Jan stays within 2 months (see M1).</li>
+    <li><b>PPC Enrolled = Yes</b> (Run 2): now written into the Task Matrix trigger for every review lane.</li>
+    <li><b>Next review date</b> (Run 2): the new calculated property "Next Performance Review due" fills in automatically from Last Performance Review. M1 covers the 1-month interval.</li>
+    <li><b>Suppression delays</b> (Run 2): accepted as designed. The current 42 finish before 5 Feb 2027, and every new enrollment takes the 45-day path.</li>
+    <li><b>Last Performance Review stamp</b> (Run 3): fires when the task status changes to Completed, filtered by title.</li>
+    <li><b>Due date</b> (Run 2): 40 business days, so 29 Jan (from 4 Dec) or 1 Feb (from 7 Dec). Both are before 5 Feb.</li>
+    <li><b>Saturday 5 Dec</b> (Run 2): the run goes on the closest working day, Fri 4 Dec or Mon 7 Dec.</li>
+    <li><b>PPC fixed-date delay</b> (Run 2): removed.</li>
+    <li><b>Subtask ownership</b> (Run 2): all subtasks stay unassigned and sit with the MPM, as intended.</li>
+    <li><b>PPC and reviews blocking each other</b> (Run 1): PPC no longer uses list 5466.</li>
+    <li><b>Enrollment rules</b> (Run 1): trigger lists 5523, 5525 and 5527 apply trend, tier and PPC Enrolled.</li>
+    <li><b>Improving in the wrong tiers</b> (Run 1): list 5525 is limited to Enterprise, Tier 1 and Tier 2.1.</li>
+    <li><b>Closed Marketing tickets</b> (Run 1): no list member's ticket is in the closed stage.</li>
+    <li><b>Blank MPM</b> (Run 1): every Tier 1–2.2 review company has an MPM.</li>
+    <li><b>Sentiment tasks</b> (Run 1): removed from the Task Matrix.</li>
+    <li><b>Companies already suppressed</b> (Run 1): kept in the list by decision.</li>
   </ul>
 </section>
 
@@ -218,20 +217,21 @@ footer{color:var(--muted);font-size:.85rem;border-top:1px solid var(--line);padd
   <div class="tw"><table class="align">
     <thead><tr><th>Rule in sheet</th><th>Setup</th><th>Where</th><th>Status</th></tr></thead>
     <tbody>
-      <tr><td>Reviews every 2 months (5th or closest working day)</td><td>Manual run on 4 or 7 Dec; shared list 5466 held 45 days</td><td>Reviews</td><td><span class="pill p-ok">Aligned</span></td></tr>
-      <tr><td>PPC monthly</td><td>Manual run, no suppression, no delay</td><td>PPC</td><td><span class="pill p-ok">Aligned</span></td></tr>
-      <tr><td>One review workflow per company</td><td>Shared suppression list; lists don't overlap</td><td>Reviews</td><td><span class="pill p-ok">Aligned</span></td></tr>
-      <tr><td>At Risk: all tiers, Tier 3 to the pool</td><td>List 5523: At Risk, Ent–Tier 3, live, <b>PPC Enrolled = Yes</b></td><td>At Risk</td><td><span class="pill p-high">Extra filter</span></td></tr>
-      <tr><td>Improving: Ent, Tier 1, Tier 2.1</td><td>List 5525: same tiers, live, <b>PPC Enrolled = Yes</b></td><td>Improving</td><td><span class="pill p-high">Extra filter</span></td></tr>
-      <tr><td>Standalone: every cycle, any trend</td><td>List 5527: Standalone Services includes Marketing, live, <b>PPC Enrolled = Yes</b></td><td>Standalone</td><td><span class="pill p-med">Extra filter</span></td></tr>
-      <tr><td>PPC: At Risk any tier; Improving Ent / T1 / T2.1</td><td>List 5529: matches, plus PPC Enrolled and PPC Active = Yes</td><td>PPC</td><td><span class="pill p-ok">Aligned</span></td></tr>
+      <tr><td>Reviews every 2 months, 5th or closest working day</td><td>Manual run; list 5466 held 45 days</td><td>Reviews</td><td><span class="pill p-ok">Aligned</span></td></tr>
+      <tr><td>PPC monthly</td><td>Manual, no suppression, no delay, re-enrollment on</td><td>PPC</td><td><span class="pill p-ok">Aligned</span></td></tr>
+      <tr><td>At Risk: PPC Enrolled, all tiers, Tier 3 to pool</td><td>List 5523: live, PPC Enrolled, At Risk, Ent to Tier 3</td><td>At Risk</td><td><span class="pill p-ok">Aligned</span></td></tr>
+      <tr><td>Improving: PPC Enrolled, Ent / T1 / T2.1</td><td>List 5525: same</td><td>Improving</td><td><span class="pill p-ok">Aligned</span></td></tr>
+      <tr><td>Standalone: every cycle, PPC Enrolled</td><td>List 5527: live, PPC Enrolled, Standalone Services includes Marketing</td><td>Standalone</td><td><span class="pill p-ok">Aligned</span></td></tr>
+      <tr><td>PPC: At Risk any tier; Improving Ent / T1 / T2.1</td><td>List 5529: same, plus PPC Enrolled and PPC Active</td><td>PPC</td><td><span class="pill p-ok">Aligned</span></td></tr>
+      <tr><td>One review workflow per company</td><td>Shared list 5466; lists don't overlap</td><td>Reviews</td><td><span class="pill p-ok">Aligned</span></td></tr>
       <tr><td>Owner by tier</td><td>Owner from Marketing Portfolio Mgr</td><td>Reviews</td><td><span class="pill p-high">{{C.owner}} mismatches</span></td></tr>
-      <tr><td>Subtasks with the MPM, who works with Berat</td><td>All subtasks unassigned (5 Nov)</td><td>Reviews</td><td><span class="pill p-ok">Aligned</span></td></tr>
-      <tr><td>Linked to company and Marketing ticket</td><td>Company + ticket copied from "Marketing" label</td><td>All</td><td><span class="pill p-ok">Aligned</span></td></tr>
-      <tr><td>Task Category set</td><td>Not set on review or PPC task</td><td>All</td><td><span class="pill p-high">Missing</span></td></tr>
-      <tr><td>Completion stamps Last Review / Next Review Due</td><td>Last Review stamped on completion; Next Review Due not set</td><td>Ticket</td><td><span class="pill p-med">Partly</span></td></tr>
-      <tr><td>Complete before next cycle</td><td>Due in 40 business days: 29 Jan or 1 Feb</td><td>Reviews</td><td><span class="pill p-ok">Aligned</span></td></tr>
-      <tr><td>SpareFoot subtask only when active</td><td>4 subtasks when SpareFoot = No, 5 when Yes (5 Nov)</td><td>Reviews</td><td><span class="pill p-ok">Aligned</span></td></tr>
+      <tr><td>Subtasks with the MPM (works with Berat)</td><td>Subtasks unassigned</td><td>Reviews</td><td><span class="pill p-ok">Aligned</span></td></tr>
+      <tr><td>Linked to company and Marketing ticket</td><td>Company + ticket with "Marketing" label</td><td>All</td><td><span class="pill p-med">2 unlabelled</span></td></tr>
+      <tr><td>Task Category</td><td>PPC confirmed; review task to confirm</td><td>All</td><td><span class="pill p-low">Confirm</span></td></tr>
+      <tr><td>Completion stamps Last Performance Review</td><td>Fires on status → Completed</td><td>Ticket</td><td><span class="pill p-ok">Aligned</span></td></tr>
+      <tr><td>Next Performance Review due</td><td>Calculated: last review + 1 month</td><td>Ticket</td><td><span class="pill p-med">Interval</span></td></tr>
+      <tr><td>Complete before next cycle</td><td>Due in 40 business days</td><td>Reviews</td><td><span class="pill p-ok">Aligned</span></td></tr>
+      <tr><td>SpareFoot subtask only when active</td><td>SpareFoot Yes / No branches</td><td>Reviews</td><td><span class="pill p-ok">Aligned</span></td></tr>
     </tbody>
   </table></div>
 </section>
@@ -239,36 +239,32 @@ footer{color:var(--muted);font-size:.85rem;border-top:1px solid var(--line);padd
 <section>
   <h2>Checks passed</h2>
   <ul>
-    <li>Owner IDs are correct and active: Brock <span class="mono">87928198</span>, Sarah <span class="mono">88093745</span>, Mohammad <span class="mono">81311893</span>.</li>
-    <li>The three review workflows match in every branch: same title, description, owners, queue (<span class="mono">13519272</span>), due rule and links. Every review task is followed by "add to list 5466".</li>
-    <li>Review workflows remove anyone already in 5466 before creating a task.</li>
-    <li>Suppression timing: a run on 4 Dec releases on 18 Jan, and on 7 Dec on 21 Jan. Current members are released on 18 Dec (25 days) or 7 Jan (45 days). All of these are before 5 Feb.</li>
-    <li>No company is in more than one review list. No company has two Marketing tickets.</li>
-    <li>Every review company has SpareFoot set. None has Mohammad as MPM. Every Tier 2.2 company is Sarah's.</li>
-    <li>The PPC workflow can re-enroll each month (re-enrollment is on). It has no delay and no suppression.</li>
+    <li><b>Owners:</b> all three owner IDs are correct and active. Every Tier 2.2 review company is Sarah's. No company has Mohammad as MPM.</li>
+    <li><b>The three review workflows match:</b> 8 task actions each, all with the same title, description, queue (<span class="mono">13519272</span>), 40-business-day due date and links. Each is followed by "add to list 5466", and each workflow first removes anyone already in 5466.</li>
+    <li><b>Suppression workflow:</b> removes the company from 5466 on both paths. A run on 4 Dec releases on 18 Jan, and on 7 Dec on 21 Jan. Current members are released by 7 Jan at the latest. All are before 5 Feb.</li>
+    <li><b>Stamp workflow:</b> sets Last Performance Review on the task's ticket.</li>
+    <li><b>Lists:</b> no company is in more than one review list, and no suppressed company is in a review list. Every list member is live. No member has two Marketing tickets or a blank SpareFoot value.</li>
+    <li><b>No change since Run 4</b> in list filters, list sizes or company data.</li>
   </ul>
 </section>
 
 <section>
   <h2>Before the December run</h2>
   <ol class="steps">
-    <li>Set Task Category on the review and PPC tasks (H1).</li>
-    <li>Decide on the PPC Enrolled filter in the review lists (H2).</li>
-    <li>Correct Marketing Portfolio Mgr on the companies in appendix B, or update the sheet (H3).</li>
-    <li>Confirm the {{N.sup}} suppressed companies are enrolled in the suppression workflow, and on which delay (M1).</li>
-    <li>Optional: add a Next Review Due step (M2).</li>
-    <li>On the run day (Fri 4 or Mon 7 Dec): refresh Trend to Goal, export the four lists, switch the workflows on, then enroll 5523, 5525, 5527 and 5529 into their own workflows (M4).</li>
+        <li>Correct Marketing Portfolio Mgr on the 9 companies in appendix B, or update the sheet (H1).</li>
+    <li>Confirm the 1-month interval on Next Performance Review due (M1).</li>
+    <li>Add the "Marketing" label to the 2 tickets in M2.</li>
+        <li>On the run day (Fri 4 or Mon 7 Dec): refresh Trend to Goal, export the four lists, switch the workflows on, and enroll 5523, 5525, 5527 and 5529 into their own workflows (M3).</li>
   </ol>
-  <div class="note"><b>After the December run:</b> the follow-up audit compares the created tasks with the list exports. It checks owners, subtask owners, Task Category, company and ticket links, that every review company joined 5466 and the suppression workflow, and that no company received two review tasks.</div>
+  <div class="note"><b>After the December run:</b> the follow-up audit compares the created tasks with the list exports. It checks owners, that subtasks are unassigned, Task Category, the company and ticket links, and that every review company joined 5466 and the suppression workflow. It also checks that no company got two new review tasks, and that completing a task stamps Last Performance Review and fills Next Performance Review due.</div>
 </section>
 
 <section>
   <h2>Appendix</h2>
-  <details><summary>A. Companies with no Marketing ticket <span class="n">{{C.noticket}}</span></summary><div class="inner">{{T.noticket}}</div></details>
+  <details><summary>A. Companies whose Marketing Services ticket has no "Marketing" label <span class="n">{{C.noticket}}</span></summary><div class="inner">{{T.noticket}}</div></details>
   <details><summary>B. Review owner differs from the sheet <span class="n">{{C.owner}}</span></summary><div class="inner">{{T.owner}}</div></details>
-  <details><summary>C. Left out of review lists only because PPC Enrolled is not Yes <span class="n">{{C.ppcexcl}}</span></summary><div class="inner">{{T.ppcexcl}}</div></details>
-  <details><summary>D. Held in suppression list 5466 <span class="n">{{C.supp}}</span></summary><div class="inner">{{T.supp}}</div></details>
-  <details><summary>E. Expected review tasks for the December run (snapshot) <span class="n">{{C.review}}</span></summary><div class="inner">{{T.review}}</div></details>
+  <details><summary>C. Held in suppression list 5466 <span class="n">{{C.supp}}</span></summary><div class="inner">{{T.supp}}</div></details>
+  <details><summary>D. Expected review tasks for the December run (snapshot) <span class="n">{{C.review}}</span></summary><div class="inner">{{T.review}}</div></details>
 </section>
 
 <section>
@@ -276,13 +272,14 @@ footer{color:var(--muted);font-size:.85rem;border-top:1px solid var(--line);padd
   <div class="tw"><table>
     <thead><tr><th>Run</th><th>Date</th><th>Type</th><th>Result</th></tr></thead>
     <tbody>
-      <tr><td>4</td><td>26 Nov 2026</td><td>Re-check (stamp trigger fixed, due date 40 days, run on closest working day)</td><td><span class="pill p-high">Nearly ready</span> 0 critical, 3 high, 8 medium/low; 12 resolved</td></tr>
-      <tr><td>3</td><td>25 Nov 2026</td><td>Re-check (PPC delay removed, subtask ownership confirmed, stamp title updated)</td><td><span class="pill p-high">Nearly ready</span> 0 critical, 5 high, 8 medium/low; 9 resolved</td></tr>
-      <tr><td>2</td><td>25 Nov 2026</td><td>Pre-launch re-check (new sheet, trigger lists, PPC un-suppressed)</td><td><span class="pill p-crit">Not ready</span> 2 critical, 5 high, 8 medium/low; 7 resolved</td></tr>
+      <tr><td>5</td><td>26 Nov 2026</td><td>Full re-check: every sheet tab, every workflow action, all lists and data</td><td><span class="pill p-high">Nearly ready</span> 0 critical, 1 high, 8 medium/low; 15 resolved</td></tr>
+      <tr><td>4</td><td>26 Nov 2026</td><td>Re-check (stamp trigger fixed, due date 40 days, closest working day). This was a spot check and missed fixes already made to the sheet.</td><td><span class="pill p-high">Nearly ready</span> 0 critical, 3 high, 8 medium/low</td></tr>
+      <tr><td>3</td><td>25 Nov 2026</td><td>Re-check (PPC delay removed, subtask ownership confirmed)</td><td><span class="pill p-high">Nearly ready</span> 0 critical, 5 high, 8 medium/low</td></tr>
+      <tr><td>2</td><td>25 Nov 2026</td><td>Re-check (new sheet, trigger lists, PPC no longer suppressed)</td><td><span class="pill p-crit">Not ready</span> 2 critical, 5 high, 8 medium/low</td></tr>
       <tr><td>1</td><td>24 Nov 2026</td><td>Pre-launch</td><td><span class="pill p-crit">Not ready</span> 4 critical, 6 high, 6 medium/low</td></tr>
     </tbody>
   </table></div>
 </section>
 
-<footer>Sources: HubSpot workflow definitions (automation v4), lists 5523 / 5525 / 5527 / 5529 / 5466, CRM companies, tickets and tasks; Google Sheet "Marketing HubSpot Task Management" (updated version 1ZjoNUwc…). Owner on task = what the workflow will assign from Marketing Portfolio Mgr.</footer>
+<footer>Sources: HubSpot workflow definitions (automation v4), lists 5523 / 5525 / 5527 / 5529 / 5466, ticket property definitions, CRM companies, tickets and tasks; Google Sheet "Marketing HubSpot Task Management" (1ZjoNUwc…), all four tabs. "Owner on task" is what the workflow will assign from Marketing Portfolio Mgr.</footer>
 </div>

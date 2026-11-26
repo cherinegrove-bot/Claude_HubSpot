@@ -3,6 +3,7 @@ Usage: python3 -I build_report.py <rows2.json from step2b.py> <out.html> <templa
 Template placeholders: {{N.x}} numbers, {{C.x}} table counts, {{T.x}} tables."""
 import json,sys,html
 rows=json.load(open(sys.argv[1])); OUT=sys.argv[2]; tpl=open(sys.argv[3]).read()
+EX=json.load(open(sys.argv[4])) if len(sys.argv)>4 else {}
 PORTAL='45059701'
 LISTS={'5523':'At Risk','5525':'Improving','5527':'Standalone'}
 def link(r): return f'<a href="https://app.hubspot.com/contacts/{PORTAL}/record/0-2/{r["id"]}" target="_blank" rel="noopener">{html.escape(r["name"])}</a>'
@@ -24,8 +25,14 @@ BASE=[('Company',link),('Tier',lambda r:TIER.get(r['tier'],r['tier'])),('Trend',
 rev=[r for r in rows if r['L5523'] or r['L5525'] or r['L5527']]
 ppc=[r for r in rows if r['L5529']]; sup=[r for r in rows if r['L5466']]
 by=lambda L:sorted(L,key=lambda r:r['name'].lower())
+def tlink(r):
+    L=EX.get('noticket_tickets',{}).get(r['id'],[])
+    return '<br>'.join(f'<a href="https://app.hubspot.com/contacts/{PORTAL}/record/0-5/{i}" target="_blank" rel="noopener">{html.escape(s)}</a> <span class="muted">({st} stage, no "Marketing" label)</span>' for i,s,st in L) or '<span class="muted">none found</span>'
+OR=EX.get('open_review',{}); PO=set(EX.get('ppc_open',[]))
 sets={
- 'noticket':(by([r for r in rows if (r in rev or r in ppc) and r['ntk']==0]),BASE+[('Review list',wf),('PPC list',lambda r:'Yes' if r['L5529'] else '—'),('Suppressed',lambda r:'Yes' if r['L5466'] else '—')]),
+ 'noticket':(by([r for r in rows if (r in rev or r in ppc) and r['ntk']==0]),[('Company',link),('Marketing Services ticket',tlink),('Review list',wf),('PPC list',lambda r:'Yes' if r['L5529'] else '—'),('Suppressed',lambda r:'Yes' if r['L5466'] else '—')]),
+ 'openrev':(by([r for r in rev if r['id'] in OR]),BASE+[('Workflow',wf),('Open review task created',lambda r:', '.join(x[1] for x in OR[r['id']])),('Due',lambda r:', '.join(x[2] for x in OR[r['id']]))]),
+ 'ppcopen':(by([r for r in ppc if r['id'] in PO]),BASE+[('Also in a review list',wf)]),
  'owner':(by([r for r in rev if (r['tier'] in('Enterprise','TIER 1') and r['mpm']!='Brock Hegr') or (r['tier']=='TIER 3' and not r['L5527'] and r['mpm'] not in(None,'','Not Assigned'))]),BASE+[('Sheet owner',exp_owner),('Workflow will assign',wf_owner)]),
  'ppcexcl':(by([r for r in rows if r['live']=='Yes' and not r['L5466'] and ((r['trend']=='At Risk' and r['tier'] in('Enterprise','TIER 1','TIER 2','Tier 2 - L2','TIER 3') and not r['L5523']) or (r['trend']=='Improving' and r['tier'] in('Enterprise','TIER 1','TIER 2') and not r['L5525'])) and not r['L5527']]),BASE+[('PPC Enrolled',lambda r:{'true':'Yes','false':'No'}.get(r['ppc_en'],r['ppc_en'] or 'blank'))]),
  'supp':(by(sup),BASE+[('Status',lambda r:r['live']),('In PPC list',lambda r:'Yes' if r['L5529'] else '—')]),
