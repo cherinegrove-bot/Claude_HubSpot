@@ -84,12 +84,12 @@ footer{color:var(--muted);font-size:.85rem;border-top:1px solid var(--line);padd
     <span>Audited Thu 26 Nov 2026</span>
     <span>Planned task creation: Fri 4 Dec or Mon 7 Dec 2026</span>
   </div>
-  <div class="verdict green"><strong>READY</strong><span>The workflows, lists, ticket links, timing, stamping and Next Performance Review due are all set up correctly for the December run. One decision is still open: whether 9 companies keep the owner the workflow gives them or change to match the sheet. The rest is sheet wording.</span></div>
+  <div class="verdict green"><strong>READY</strong><span>The workflows, lists, ticket links, timing, stamping and Next Performance Review due are all set up correctly for the December run. One decision is still open: whether 9 companies keep the owner the workflow gives them or change to match the sheet.</span></div>
   <div class="tally">
     <div class="c"><b>0</b><span>Critical</span></div>
     <div class="h"><b>1</b><span>Decision pending</span></div>
-    <div class="m"><b>4</b><span>Low</span></div>
-    <div class="o"><b>20</b><span>Resolved since Run 1</span></div>
+    <div class="m"><b>0</b><span>Medium / Low</span></div>
+    <div class="o"><b>24</b><span>Resolved or closed since Run 1</span></div>
   </div>
   <p class="muted">Read-only audit. Nothing was changed in HubSpot or in the Google Sheet. List counts are a snapshot taken on 26 Nov. Companies are enrolled from whatever the lists hold on the run day.</p>
 </header>
@@ -141,33 +141,15 @@ footer{color:var(--muted);font-size:.85rem;border-top:1px solid var(--line);padd
     </dl>
   </article>
 
-  <article class="finding low">
-    <div class="fhead"><span class="fid">L1</span><h3>PPC due date over New Year, and one subtask to check</h3><span class="pill p-low">Low</span></div>
-    <dl><dt>What</dt><dd><ul><li>The PPC task is due in 20 business days. From Fri 4 Dec that is Fri 1 Jan, a public holiday. From Mon 7 Dec it is Mon 4 Jan. Both are before the 5 Jan PPC run.</li><li>The sheet moved "PPC budget in line with suggested budget" to the HubSpot Marketing Card subtask. Check that the PPC task's subtasks no longer include it.</li></ul></dd></dl>
-  </article>
-
-  <article class="finding low">
-    <div class="fhead"><span class="fid">L2</span><h3>Sheet wording still out of step in places</h3><span class="pill p-low">Low</span></div>
-    <dl><dt>Task Matrix</dt><dd><ul><li>The Sub-task column says "BERAT is assigned: Google Business Profile, SpareFoot…". Subtasks are actually owned by the MPM, who works with Berat.</li><li>PPC Frequency reads "Trigger again 12/05 months". The word "Monthly" was lost.</li><li>The PPC trigger says "accounts with PPC active" but doesn't mention PPC Enrolled = Yes, which list 5529 also requires.</li><li>"Links / Workflow Ref" is still a placeholder on every row.</li></ul></dd>
-    <dt>Master &amp; Subtasks</dt><dd><ul><li>The main task is called "Monthly Marketing Performance Review Checklist". The workflows and Task Matrix use "Marketing Performance Review".</li><li>The main task note still says "schedules Next Review Due". Task Matrix now says "Next Performance Review due".</li><li>"Assigned To" shows BERAT for Google Business Profile and SpareFoot, and the main task note says "Berat is assigned the GBP and SpareFoot subtasks".</li></ul></dd>
-    <dt>Legend &amp; Ownership</dt><dd><ul><li>Section B (trigger rules) doesn't mention PPC Enrolled = Yes.</li><li>Sections B and C say "created on the 5th" with no closest-working-day rule. In 2027, 5 Jun is a Saturday, and 5 Sep and 5 Dec are Sundays.</li><li>Section D says "Berat is assigned…" and still describes Marketing Sentiment, which is no longer in the Task Matrix.</li></ul></dd>
-    <dt>Checklist Detail</dt><dd>It lists six areas, with Google Ads as #4. Master &amp; Subtasks has five subtasks plus a separate PPC task.</dd></dl>
-  </article>
-
-  <article class="finding low">
-    <div class="fhead"><span class="fid">L3</span><h3>Branches with no current impact</h3><span class="pill p-low">Low</span></div>
-    <dl><dt>What</dt><dd><ul><li>A company with SpareFoot blank leaves the review workflow with no task. No list member is blank today.</li><li>The "Mohammad Abudahab" MPM branch would give him the review task. No list member uses it.</li><li>The sheet makes Brock the default owner for Standalone, but the workflow leaves the task unassigned when MPM is blank. All 7 Standalone companies have an MPM today.</li></ul></dd></dl>
-  </article>
-
-  <article class="finding low">
-    <div class="fhead"><span class="fid">L4</span><h3>Leftovers that don't affect the run</h3><span class="pill p-low">Low</span></div>
-    <dl><dt>What</dt><dd><ul><li>Old workflow copies <span class="mono">1854867276</span> and <span class="mono">1897042192</span> are off.</li><li>The stamp workflow still lists "Marketing Sentiment" as a title, so completing a Sentiment task would also set Last Performance Review.</li><li>The old date property "Next review due" (<span class="mono">next_review_due</span>) is still visible on tickets next to the new "Next Performance Review due". Hiding it avoids confusion.</li></ul></dd></dl>
-  </article>
-</section>
+  </section>
 
 <section>
-  <h2>Resolved since Run 1</h2>
+  <h2>Resolved or closed since Run 1</h2>
   <ul>
+    <li><b>PPC due date over New Year and PPC subtask check</b> (Run 6, L1): closed by you.</li>
+    <li><b>Sheet wording</b> (Run 6, L2): closed by you.</li>
+    <li><b>Branches with no current impact</b> (Run 6, L3): closed by you.</li>
+    <li><b>Leftovers that don't affect the run</b> (Run 6, L4): closed by you.</li>
     <li><b>Ticket links</b> (Run 5): both companies flagged in Run 5 already had their ticket labelled "Marketing". Run 5 was wrong. Each company has about 11,000 linked tickets, and the API returned only part of that list. This run checks from the ticket side instead. All 94 list companies have exactly one Marketing-labelled Marketing Services ticket, and none is in a closed stage.</li>
     <li><b>Next Performance Review due</b> (Run 5): now Last Performance Review + 2 months, matching the review cycle.</li>
     <li><b>Task Category</b> (Run 2): confirmed on the main PPC task (PPC / Paid Search) and the main review task (Monthly Analytics Report).</li>
@@ -232,7 +214,6 @@ footer{color:var(--muted);font-size:.85rem;border-top:1px solid var(--line);padd
   <h2>Before the December run</h2>
   <ol class="steps">
     <li>Decide the owner for the 9 companies in appendix A (H1).</li>
-    <li>Optional: tidy the sheet wording in L2.</li>
     <li>On the run day (Fri 4 or Mon 7 Dec): switch the four workflows on, then enroll 5523 → At Risk, 5525 → Improving, 5527 → Standalone and 5529 → PPC. Export the four lists at that moment for the follow-up audit.</li>
   </ol>
   <div class="note"><b>After the December run:</b> the follow-up audit compares the created tasks with the list exports. It checks owners, that subtasks are unassigned, Task Category, the company and ticket links, and that every review company joined 5466 and the suppression workflow. It also checks that no company got two new review tasks, and that completing a task stamps Last Performance Review and fills Next Performance Review due.</div>
@@ -250,7 +231,7 @@ footer{color:var(--muted);font-size:.85rem;border-top:1px solid var(--line);padd
   <div class="tw"><table>
     <thead><tr><th>Run</th><th>Date</th><th>Type</th><th>Result</th></tr></thead>
     <tbody>
-      <tr><td>6</td><td>26 Nov 2026</td><td>Full re-check. Ticket links now checked from the ticket side, which corrects a false finding in Run 5.</td><td><span class="pill p-ok">Ready</span> 0 critical, 1 decision pending, 4 low; 20 resolved</td></tr>
+      <tr><td>6</td><td>26 Nov 2026</td><td>Full re-check. Ticket links now checked from the ticket side, which corrects a false finding in Run 5.</td><td><span class="pill p-ok">Ready</span> 0 critical, 1 decision pending; 24 resolved or closed (L1–L4 closed by you)</td></tr>
       <tr><td>5</td><td>26 Nov 2026</td><td>Full re-check: every sheet tab, every workflow action, all lists and data</td><td><span class="pill p-high">Nearly ready</span> 0 critical, 1 high, 8 medium/low; 15 resolved</td></tr>
       <tr><td>4</td><td>26 Nov 2026</td><td>Re-check (stamp trigger fixed, due date 40 days, closest working day). This was a spot check and missed fixes already made to the sheet.</td><td><span class="pill p-high">Nearly ready</span> 0 critical, 3 high, 8 medium/low</td></tr>
       <tr><td>3</td><td>25 Nov 2026</td><td>Re-check (PPC delay removed, subtask ownership confirmed)</td><td><span class="pill p-high">Nearly ready</span> 0 critical, 5 high, 8 medium/low</td></tr>
