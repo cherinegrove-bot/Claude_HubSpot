@@ -1,0 +1,276 @@
+<title>New Company Intake Audit</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Instrument+Sans:wght@500;600;700&display=swap">
+<style>
+/* Layout: single reading column; summary, then issue list, then one expandable field-by-field table per company */
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1b2230;
+  --muted: #5b6577;
+  --line: #dfe3ea;
+  --accent: #1f5fae;
+  --ok: #1d7a4a;
+  --ok-bg: #e5f4ec;
+  --bad: #b3261e;
+  --bad-bg: #fbe9e7;
+  --warn: #8a5a00;
+  --warn-bg: #fdf2d8;
+  --info: #475569;
+  --info-bg: #eef1f5;
+  --font-display: "Instrument Sans", "IBM Plex Sans", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11151c; --surface: #181d26; --fg: #e4e8ef; --muted: #98a2b3; --line: #2a313d;
+    --accent: #6ea8f0; --ok: #5fcf92; --ok-bg: #16301f; --bad: #f28b82; --bad-bg: #3a1c1a;
+    --warn: #f0c35a; --warn-bg: #352a10; --info: #b4bfcd; --info-bg: #232a35; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11151c; --surface: #181d26; --fg: #e4e8ef; --muted: #98a2b3; --line: #2a313d;
+  --accent: #6ea8f0; --ok: #5fcf92; --ok-bg: #16301f; --bad: #f28b82; --bad-bg: #3a1c1a;
+  --warn: #f0c35a; --warn-bg: #352a10; --info: #b4bfcd; --info-bg: #232a35; color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-block: 40px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 36px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; line-height: 1.2; }
+h1 { font-size: 1.9rem; font-weight: 700; }
+h2 { font-size: 1.25rem; font-weight: 600; }
+h3 { font-size: 1.05rem; font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+a { color: var(--accent); text-underline-offset: 2px; }
+a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.eyebrow { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+header { display: grid; gap: 10px; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 20px; color: var(--muted); font-size: 0.9rem; }
+section { display: grid; gap: 14px; }
+
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; display: grid; gap: 2px; }
+.stat b { font-family: var(--font-display); font-size: 1.7rem; font-variant-numeric: tabular-nums; }
+.stat span { color: var(--muted); font-size: 0.85rem; }
+.stat.bad b { color: var(--bad); }
+.stat.ok b { color: var(--ok); }
+.stat.warn b { color: var(--warn); }
+.fixed { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.fixed li { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.fixed li span:last-child { flex: 1 1 280px; min-width: 0; }
+@media (max-width: 640px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.issues { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.issue { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--line); border-radius: 6px; padding: 12px 16px; display: grid; gap: 4px; }
+.issue.sev-high { border-left-color: var(--bad); }
+.issue.sev-med { border-left-color: var(--warn); }
+.issue.sev-low { border-left-color: var(--info); }
+.issue-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
+.issue-head strong { font-weight: 600; }
+.issue p { color: var(--muted); font-size: 0.92rem; }
+.issue .who { font-size: 0.85rem; }
+
+.pill { display: inline-block; font-family: var(--font-mono); font-size: 0.72rem; font-weight: 500; letter-spacing: 0.03em; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.p-ok { background: var(--ok-bg); color: var(--ok); }
+.p-bad { background: var(--bad-bg); color: var(--bad); }
+.p-warn { background: var(--warn-bg); color: var(--warn); }
+.p-info { background: var(--info-bg); color: var(--info); }
+
+.table-scroll { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 500; background: var(--bg); }
+tr:last-child td { border-bottom: 0; }
+td.v { font-family: var(--font-mono); font-size: 0.82rem; white-space: pre-line; overflow-wrap: anywhere; }
+td.field { font-weight: 500; white-space: nowrap; }
+td.note { color: var(--muted); font-size: 0.85rem; min-width: 180px; }
+tr.row-bad td { background: color-mix(in srgb, var(--bad-bg) 55%, transparent); }
+tr.row-warn td { background: color-mix(in srgb, var(--warn-bg) 55%, transparent); }
+
+details.company { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+details.company > summary { cursor: pointer; list-style: none; padding: 14px 16px; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+details.company > summary::-webkit-details-marker { display: none; }
+details.company > summary::before { content: "▸"; color: var(--muted); transition: transform .15s; }
+details.company[open] > summary::before { transform: rotate(90deg); }
+details.company .sum-title { font-family: var(--font-display); font-weight: 600; font-size: 1.02rem; }
+details.company .sum-counts { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
+.company-body { padding: 0 16px 16px; display: grid; gap: 12px; }
+.company-body .table-scroll { border-radius: 6px; }
+.kv { display: flex; flex-wrap: wrap; gap: 4px 22px; font-size: 0.88rem; color: var(--muted); }
+.kv b { color: var(--fg); font-weight: 500; }
+.callout { background: var(--info-bg); border-radius: 6px; padding: 12px 14px; font-size: 0.9rem; display: grid; gap: 6px; }
+.callout ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 0.85rem; color: var(--muted); align-items: center; }
+@media (prefers-reduced-motion: reduce) { details.company > summary::before { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">HubSpot · Company creation audit</div>
+    <h1>New Company Intake Audit</h1>
+    <div class="meta">
+      <span>Window: Nov 19 – Nov 26, 2026</span>
+      <span>Run: Nov 26, 2026</span>
+      <span>Approved workflow: Create Facility from Intake form submission (ID 1852542804)</span>
+    </div>
+    <p>Two checks for every company created in the window. First, was it created by the approved workflow? Second, does the company hold the details from the associated contact's intake form?</p>
+  </header>
+
+  <section>
+    <div class="stats">
+      <div class="stat"><b>10</b><span>Companies created</span></div>
+      <div class="stat bad"><b>8</b><span>Not created by approved workflow</span></div>
+      <div class="stat ok"><b>1</b><span>Intake data fully on company</span></div>
+      <div class="stat bad"><b>1</b><span>Workflow company with a mismatch</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Check 1: How each company was created</h2>
+    <p>Two companies came from the approved workflow. The other eight were created by Ilse Modene on Nov 25: seven by a spreadsheet import named "sTORElINK" and one by cloning StorageLink - Sartell.</p>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Company</th><th>Created</th><th>How it was created</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-2/61564100256" target="_blank" rel="noopener">Merchants Moving &amp; Storage</a></td><td>Nov 20, 20:34 UTC</td><td>Automation · Create Facility from Intake form submission</td><td><span class="pill p-ok">Approved</span></td></tr>
+          <tr><td><a href="https://app.hubspot.com/contacts/45059701/record/0-2/61737864504" target="_blank" rel="noopener">Bear Creek Safe and Sound Self Storage</a></td><td>Nov 24, 19:17 UTC</td><td>Automation · Create Facility from Intake form submission</td><td><span class="pill p-ok">Approved</span></td></tr>
+          <tr class="row-bad"><td><a href="https://app.hubspot.com/contacts/45059701/record/0-2/61803486596" target="_blank" rel="noopener">StorageLink - Monticello, Chelsea Rd</a></td><td>Nov 25, 16:54 UTC</td><td>Import "sTORElINK" · Ilse Modene</td><td><span class="pill p-bad">Not approved</span></td></tr>
+          <tr class="row-bad"><td><a href="https://app.hubspot.com/contacts/45059701/record/0-2/61787396127" target="_blank" rel="noopener">StorageLink - Eastside St. Cloud</a></td><td>Nov 25, 16:54 UTC</td><td>Import "sTORElINK" · Ilse Modene</td><td><span class="pill p-bad">Not approved</span></td></tr>
+          <tr class="row-bad"><td><a href="https://app.hubspot.com/contacts/45059701/record/0-2/61805032481" target="_blank" rel="noopener">StorageLink - St. Joe</a></td><td>Nov 25, 16:54 UTC</td><td>Import "sTORElINK" · Ilse Modene</td><td><span class="pill p-bad">Not approved</span></td></tr>
+          <tr class="row-bad"><td><a href="https://app.hubspot.com/contacts/45059701/record/0-2/61774027609" target="_blank" rel="noopener">StorageLink - West St. Cloud</a></td><td>Nov 25, 16:54 UTC</td><td>Import "sTORElINK" · Ilse Modene</td><td><span class="pill p-bad">Not approved</span></td></tr>
+          <tr class="row-bad"><td><a href="https://app.hubspot.com/contacts/45059701/record/0-2/61794643874" target="_blank" rel="noopener">StorageLink - Sartell</a></td><td>Nov 25, 16:54 UTC</td><td>Import "sTORElINK" · Ilse Modene</td><td><span class="pill p-bad">Not approved</span></td></tr>
+          <tr class="row-bad"><td><a href="https://app.hubspot.com/contacts/45059701/record/0-2/61806581684" target="_blank" rel="noopener">StorageLink - Monticello, Dundas Rd</a></td><td>Nov 25, 16:54 UTC</td><td>Import "sTORElINK" · Ilse Modene</td><td><span class="pill p-bad">Not approved</span></td></tr>
+          <tr class="row-bad"><td><a href="https://app.hubspot.com/contacts/45059701/record/0-2/61803794298" target="_blank" rel="noopener">StorageLink - County Rd 74</a></td><td>Nov 25, 16:54 UTC</td><td>Import "sTORElINK" · Ilse Modene</td><td><span class="pill p-bad">Not approved</span></td></tr>
+          <tr class="row-bad"><td><a href="https://app.hubspot.com/contacts/45059701/record/0-2/61770271060" target="_blank" rel="noopener">StorageLink - Roosevelt Rd</a></td><td>Nov 25, 17:39 UTC</td><td>Cloned from StorageLink - Sartell · Ilse Modene</td><td><span class="pill p-bad">Not approved</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Issues to review</h2>
+    <p>Most serious first.</p>
+    <ul class="issues">
+      <li class="issue sev-high">
+        <div class="issue-head"><span class="pill p-bad">High</span><strong>8 StorageLink companies were created outside the approved workflow</strong></div>
+        <p>Ilse Modene created them on Nov 25: seven through an import and one by cloning. All eight are linked to one contact, Bruce Stainbrook, who hasn't submitted an intake form. His only form activity is a meeting booking. None of these companies has intake data behind it, so their details can't be checked.</p>
+        <div class="who">Monticello Chelsea Rd, Eastside St. Cloud, St. Joe, West St. Cloud, Sartell, Monticello Dundas Rd, County Rd 74, Roosevelt Rd</div>
+      </li>
+      <li class="issue sev-med">
+        <div class="issue-head"><span class="pill p-warn">Medium</span><strong>The workflow still leaves Prior Software blank</strong></div>
+        <p>Bear Creek's form says "Web Self Storage". The company's Prior Software is empty, and the answer went to "Current Software (at onboarding)" instead. All four Lifestyle Storage companies had the same problem last week, so the workflow's field mapping needs fixing.</p>
+        <div class="who">Bear Creek Safe and Sound Self Storage</div>
+      </li>
+      <li class="issue sev-low">
+        <div class="issue-head"><span class="pill p-info">Security</span><strong>A password is stored in plain text on a company</strong></div>
+        <p>Bear Creek's "Login to Current Management Software" holds a username and password, copied from the form. It's hidden in this report. Move it to a password manager and clear the field.</p>
+        <div class="who">Bear Creek Safe and Sound Self Storage</div>
+      </li>
+      <li class="issue sev-low">
+        <div class="issue-head"><span class="pill p-info">Check</span><strong>Bear Creek's website field isn't a website</strong></div>
+        <p>The form answer "None (U-Haul has us on their's)" became the website value <code>http://None (U-Haul has us on their's)</code>. Clear it or replace it with the U-Haul listing URL.</p>
+        <div class="who">Bear Creek Safe and Sound Self Storage</div>
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Check 2: Intake form vs. company, field by field</h2>
+    <div class="legend">
+      <span class="pill p-ok">Match</span>
+      <span class="pill p-bad">Mismatch</span>
+      <span class="pill p-warn">Check</span>
+      <span>Bank account numbers are masked to the last 4 digits.</span>
+    </div>
+
+    <details class="company" open>
+      <summary>
+        <span class="sum-title">Bear Creek Safe and Sound Self Storage</span>
+        <span class="sum-counts"><span class="pill p-ok">18 match</span><span class="pill p-bad">1 mismatch</span></span>
+      </summary>
+      <div class="company-body">
+        <div class="kv">
+          <span>Company <b><a href="https://app.hubspot.com/contacts/45059701/record/0-2/61737864504" target="_blank" rel="noopener">61737864504</a></b></span>
+          <span>Contact <b><a href="https://app.hubspot.com/contacts/45059701/record/0-1/261649865825" target="_blank" rel="noopener">Ron Hanselman</a></b></span>
+          <span>Latest form <b>ACH Capture</b> · Nov 24 (4 submissions)</span>
+        </div>
+        <div class="table-scroll"><table>
+          <thead><tr><th>Field</th><th>Intake form (contact)</th><th>Company</th><th>Status</th><th>Note</th></tr></thead>
+          <tbody>
+            <tr><td class="field">Street address</td><td class="v">18450 Hwy 377</td><td class="v">18450 Hwy 377</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
+            <tr><td class="field">City / State / Zip</td><td class="v">Cresson, TX 76035</td><td class="v">Cresson, TX 76035</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
+            <tr><td class="field">Country</td><td class="v">USA</td><td class="v">USA</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
+            <tr><td class="field">Phone</td><td class="v">+18173969286</td><td class="v">+18173969286</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
+            <tr><td class="field">Units</td><td class="v">110</td><td class="v">110</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
+            <tr class="row-warn"><td class="field">Website</td><td class="v">http://None (U-Haul has us on their's)</td><td class="v">http://None (U-Haul has us on their's)</td><td><span class="pill p-ok">Match</span></td><td class="note">Copied correctly, but it isn't a real URL.</td></tr>
+            <tr><td class="field">Entity / business address</td><td class="v">18450 HWY 377 S, Cresson, TX, 76035</td><td class="v">18450 HWY 377 S, Cresson, TX, 76035</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
+            <tr><td class="field">Entity EIN</td><td class="v">43-2189298</td><td class="v">43-2189298</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
+            <tr><td class="field">Legal entity</td><td class="v">Bear Creek Safe and Sound Self Storage</td><td class="v">Bear Creek Safe and Sound Self Storage</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
+            <tr><td class="field">Owner home address</td><td class="v">171 Constellation Dr, Cresson, TX, 76035</td><td class="v">171 Constellation Dr, Cresson, TX, 76035</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
+            <tr class="row-bad"><td class="field">Prior software</td><td class="v">Web Self Storage</td><td class="v">(blank)</td><td><span class="pill p-bad">Missing</span></td><td class="note">The answer went to Current Software (at onboarding) instead.</td></tr>
+            <tr><td class="field">Tenant insurance</td><td class="v">Safestor Tenant Insurance</td><td class="v">Safestor Tenant Insurance</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
+            <tr class="row-warn"><td class="field">Mgmt software login</td><td class="v">[username + password, hidden]</td><td class="v">[username + password, hidden]</td><td><span class="pill p-ok">Match</span></td><td class="note">Plain-text password. Move it to a password manager.</td></tr>
+            <tr><td class="field">Status</td><td class="v">Onboarding</td><td class="v">Onboarding</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
+            <tr><td class="field">Bank name</td><td class="v">Navy Federal Credit Union</td><td class="v">Navy Federal Credit Union</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
+            <tr><td class="field">Account holder</td><td class="v">Bear Creek Safe and Sound Self Storage LLC</td><td class="v">Bear Creek Safe and Sound Self Storage LLC</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
+            <tr><td class="field">Account type / no.</td><td class="v">Checking · ••••1721</td><td class="v">Checking · ••••1721</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
+            <tr><td class="field">Routing number</td><td class="v">256074974</td><td class="v">256074974</td><td><span class="pill p-ok">Match</span></td><td class="note">9 digits.</td></tr>
+            <tr><td class="field">Entity business documentation</td><td class="v">Uploaded file (pdf)</td><td class="v">Same file link</td><td><span class="pill p-ok">Match</span></td><td class="note"></td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="company">
+      <summary>
+        <span class="sum-title">Merchants Moving &amp; Storage</span>
+        <span class="sum-counts"><span class="pill p-ok">All 19 match</span></span>
+      </summary>
+      <div class="company-body">
+        <div class="kv">
+          <span>Company <b><a href="https://app.hubspot.com/contacts/45059701/record/0-2/61564100256" target="_blank" rel="noopener">61564100256</a></b></span>
+          <span>Contact <b><a href="https://app.hubspot.com/contacts/45059701/record/0-1/245160503147" target="_blank" rel="noopener">Louis Hamilton</a></b></span>
+          <span>Form <b>New Facility - louis hamilton</b> · Nov 20, 20:34 UTC</span>
+        </div>
+        <div class="table-scroll"><table>
+          <thead><tr><th>Field</th><th>Intake form (contact)</th><th>Company</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td class="field">Street address</td><td class="v">1410 N 1st St</td><td class="v">1410 N 1st St</td><td><span class="pill p-ok">Match</span></td></tr>
+            <tr><td class="field">City / State / Zip</td><td class="v">Hamilton, MT 59840</td><td class="v">Hamilton, MT 59840</td><td><span class="pill p-ok">Match</span></td></tr>
+            <tr><td class="field">Country</td><td class="v">USA</td><td class="v">USA</td><td><span class="pill p-ok">Match</span></td></tr>
+            <tr><td class="field">Phone</td><td class="v">+14063634314</td><td class="v">+14063634314</td><td><span class="pill p-ok">Match</span></td></tr>
+            <tr><td class="field">Units</td><td class="v">100</td><td class="v">100</td><td><span class="pill p-ok">Match</span></td></tr>
+            <tr><td class="field">Website</td><td class="v">(blank)</td><td class="v">(blank)</td><td><span class="pill p-ok">Match</span></td></tr>
+            <tr><td class="field">Entity / business address</td><td class="v">1410 N 1st Street</td><td class="v">1410 N 1st Street</td><td><span class="pill p-ok">Match</span></td></tr>
+            <tr><td class="field">Entity EIN</td><td class="v">432721834</td><td class="v">432721834</td><td><span class="pill p-ok">Match</span></td></tr>
+            <tr><td class="field">Legal entity</td><td class="v">Merchant Storage Solutions</td><td class="v">Merchant Storage Solutions</td><td><span class="pill p-ok">Match</span></td></tr>
+            <tr><td class="field">Owner home address</td><td class="v">Louis Hamilton
+PO Box 1430</td><td class="v">Louis Hamilton
+PO Box 1430</td><td><span class="pill p-ok">Match</span></td></tr>
+            <tr><td class="field">Prior software</td><td class="v">None</td><td class="v">None</td><td><span class="pill p-ok">Match</span></td></tr>
+            <tr><td class="field">Tenant insurance</td><td class="v">Farmers Insurance. Give me an email to send this to…</td><td class="v">Farmers Insurance. Give me an email to send this to…</td><td><span class="pill p-ok">Match</span></td></tr>
+            <tr><td class="field">Mgmt software login</td><td class="v">none managed on Excel</td><td class="v">none managed on Excel</td><td><span class="pill p-ok">Match</span></td></tr>
+            <tr><td class="field">Status</td><td class="v">Onboarding</td><td class="v">Onboarding</td><td><span class="pill p-ok">Match</span></td></tr>
+            <tr><td class="field">Bank name</td><td class="v">US Bank</td><td class="v">US Bank</td><td><span class="pill p-ok">Match</span></td></tr>
+            <tr><td class="field">Account holder</td><td class="v">Merchant Storage solutions LLC</td><td class="v">Merchant Storage solutions LLC</td><td><span class="pill p-ok">Match</span></td></tr>
+            <tr><td class="field">Account type / no.</td><td class="v">Checking · ••••8075</td><td class="v">Checking · ••••8075</td><td><span class="pill p-ok">Match</span></td></tr>
+            <tr><td class="field">Routing number</td><td class="v">124302150</td><td class="v">124302150</td><td><span class="pill p-ok">Match</span></td></tr>
+            <tr><td class="field">Entity business documentation</td><td class="v">Uploaded file (jpg)</td><td class="v">Same file link</td><td><span class="pill p-ok">Match</span></td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+  </section>
+
+  <section>
+    <h2>How this was checked</h2>
+    <div class="callout">
+      <ul>
+        <li>Companies: every company with a create date from Nov 19 to Nov 26, 2026. The record source shows whether a company came from a workflow, an import or a clone, and who created it.</li>
+        <li>Intake answers: HubSpot stores form answers on the contact, so the contact's values stand in for the submission. When a contact submits more than once, only the latest answers are kept.</li>
+        <li>The four Lifestyle Storage companies were created on Nov 16, before this window. Their open items are in the Nov 23 report.</li>
+      </ul>
+    </div>
+  </section>
+</div>
